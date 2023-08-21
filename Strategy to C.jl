@@ -38,19 +38,29 @@ $(join(["    **$k** => $v" for (k,v) in sort(collect(json["actions"]), by=((k) -
 
 # ╔═╡ f2b82444-77da-4ec5-9991-186f609d9576
 action_dict = Dict(
-	"0" => "Negative_acc",
-	"1" => "Positive_acc",
-	"2" => "No_acceleration"
+	"0" => "NegativeAcceleration",
+	"1" => "PositiveAcceleration",
+	"2" => "NoAcceleration"
 )
 
 # ╔═╡ f9f09026-dc0d-41cd-af2c-6ca18d3768d0
 regressor = json["regressors"]["(1)"]["regressor"]
 
-# ╔═╡ 9f83ff3e-33ff-4a2a-b87d-58476b422686
-regressor["1"]
+# ╔═╡ 36031e3c-ff0d-4f29-99f3-316b7b2992e5
+Markdown.parse("""
+!!! info "Point variables"
+$(join(["    **$k** => $v" for (k,v) in enumerate(json["pointvars"])], "\n\n"))
+""")
 
 # ╔═╡ 4de463bf-8e89-4aa8-ac89-872bc9399d78
-vars = json["pointvars"]
+vars = [
+	"velocity",
+	"velocity_front",
+	"distance"
+]
+
+# ╔═╡ 9f83ff3e-33ff-4a2a-b87d-58476b422686
+regressor["1"]
 
 # ╔═╡ b10ccf72-c9f9-4c7a-855f-aed16ca5a794
 function indentation(io::IO, indent)
@@ -64,7 +74,7 @@ begin
 		var = vars[regressor["var"] + 1]
 		
 		indentation(io, indent)
-		@printf io "if (%s <= %.2f)\n" var threshold
+		@printf io "if (%s >= %.2f)\n" var threshold
 		
 		indent += 1
 		if_chain(io, regressor["high"], indent)
@@ -101,10 +111,10 @@ begin
 	
 	function all_regressors(io::IO, regressors::Dict, indent)
 		for (k, v) in regressors
-			args = join(["float $var" for var in vars], ", ")
+			args = join(["double $var" for var in vars], ", ")
 			
 			indentation(io, indent)
-			@printf io "float expected_%s(%s) {\n" action_dict[k] args
+			@printf io "double expected_%s(%s) {\n" action_dict[k] args
 	
 			indent += 1
 	
@@ -126,18 +136,18 @@ begin
 	end
 
 	function action_decider(io::IO, regressors::Dict, indent)
-		args = join(["float $var" for var in vars], ", ")
+		args = join(["double $var" for var in vars], ", ")
 		
 		indentation(io, indent)
 		@printf io "int get_action(%s) {\n" args
 
 		indent += 1
 		indentation(io, indent)
-		@printf io "float best = INFINITY;\n"
+		@printf io "double best = INFINITY;\n"
 		indentation(io, indent)
 		@printf io "int result = 0;\n"
 		indentation(io, indent)
-		@printf io "float expected;\n"
+		@printf io "double expected;\n"
 		
 		args = join(["$var" for var in vars], ", ")
 		
@@ -154,7 +164,7 @@ begin
 			indentation(io, indent)
 			@printf io "best = expected;\n"
 			indentation(io, indent)
-			@printf io "result = %s;\n" uppercase(action)
+			@printf io "result = %s;\n" action
 			
 			indent -= 1
 			indentation(io, indent)
@@ -178,7 +188,7 @@ function header(io::IO)
 	@printf io "#include <math.h>\n\n"
 
 	for (k, v) in action_dict
-		@printf io "const int %s = %s;\n" uppercase(v) k
+		@printf io "const int %s = %s;\n" v k
 	end
 
 	@printf io "\n"
@@ -506,11 +516,12 @@ version = "17.4.0+0"
 # ╠═3bb7e0de-5364-4a52-ab7d-7d5cb9273efa
 # ╠═451b36a9-9712-42ac-b53e-e2031c978ec2
 # ╠═46d36365-2146-4094-9bd7-15310269e746
-# ╟─c78f40f4-945c-4ee0-ad4e-8b47a734f222
+# ╠═c78f40f4-945c-4ee0-ad4e-8b47a734f222
 # ╠═f2b82444-77da-4ec5-9991-186f609d9576
 # ╠═f9f09026-dc0d-41cd-af2c-6ca18d3768d0
-# ╠═9f83ff3e-33ff-4a2a-b87d-58476b422686
+# ╠═36031e3c-ff0d-4f29-99f3-316b7b2992e5
 # ╠═4de463bf-8e89-4aa8-ac89-872bc9399d78
+# ╠═9f83ff3e-33ff-4a2a-b87d-58476b422686
 # ╠═b10ccf72-c9f9-4c7a-855f-aed16ca5a794
 # ╠═b1129b94-6ad6-4d50-9155-10821419fb62
 # ╠═308aa994-8cf5-4393-9631-4f4baac64c6a
