@@ -27,13 +27,13 @@ Kim Guldstrand Larsen, Marius Mikucionis, Jakob Haahr Taankvist.
 */
 clock time;
 
-const int fleetSize = 3;
+const int fleetSize = 2;
 
-const int minVelocity = 0;
+const int minVelocity = -10;
 const int maxVelocity = 20;
-const int radarRange = 200;    //TODO: use this.
-const int farAway = radarRange + 1;
-const double crashPenalty = 1000;
+
+const int minDistance = 0;
+const int maxDistance = 200;
 
 int[-2,2] acceleration[fleetSize];   // acceleration of car
 broadcast chan choose[fleetSize];    // signal for car to decide 
@@ -42,7 +42,7 @@ broadcast chan tick;    // Signal to check if distance greater than 200
 
 
 hybrid clock velocity[fleetSize];   		// velocity of each car
-hybrid clock distance[fleetSize - 1] = {50, 50}; 	// distance between cars [i] and [i + 1]
+hybrid clock distance[fleetSize - 1] = {50}; 	// distance between cars [i] and [i + 1]
 hybrid clock D[fleetSize - 1]; 				// "cost" of distance used in strategy optimization
 
 /* Hybrid clocks:
@@ -53,13 +53,6 @@ hybrid clock D[fleetSize - 1]; 				// "cost" of distance used in strategy optimi
 - Are used in concrete simulations (Concrete Simulator, SMC queries like simulate, Pr, minE, maxE, E[...](max:)).      
 */
 
-// TODO: Use this to enforce radar range.
-double relVelocity(double velFront, double vel, double dist) {
-    if (dist &lt;= radarRange)
-        return velFront - vel;
-    else
-        return 0.0;
-}
 
 
 /** Pre-trained agent */
@@ -68,13 +61,34 @@ const int PositiveAcceleration = 1;
 const int NegativeAcceleration = 0;
 const int NoAcceleration = 2;
 
+/*
 import "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/libcar1.so"
 {
-    int get_action(double velocity, double velocityFront, double distance);
+    int get_action_car1(double velocity, double velocityFront, double distance);
 };
+import "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/libcar2.so"
+{
+    int get_action_car2(double velocity, double velocityFront, double distance);
+};
+*/
+
+
+/* Stubs 
+*/
+int get_action_car1(double velocity, double velocityFront, double distance) { return NoAcceleration; }
+int get_action_car2(double velocity, double velocityFront, double distance) { return NoAcceleration; }
+
+int get_action(int i) {
+    if (i == 1)
+        return get_action_car1(velocity[i], velocity[i - 1], distance[i - 1]);
+    else if (i == 2)
+        return get_action_car2(velocity[i], velocity[i - 1], distance[i - 1]);
+    else
+        return acceleration[i - 100]; // Provoke Error: No strategy loaded for i.
+}
 
 void preTrainedChoice(int i) {
-    int action = get_action(velocity[i], velocity[i - 1], distance[i - 1]);
+    int action = get_action(i);
     if (action == NoAcceleration)
         acceleration[i] = 0;
     else if (action == PositiveAcceleration)
@@ -110,19 +124,24 @@ allowedActions intToActions(int bitarray) {
     return result;
 }
 
+int debugUnsafeState = 0;
+
 int backup_policy(allowedActions allowed) {
     if (allowed.forwards)
         return 2;
     else if (allowed.neutral)
         return 0;
-    else
+    else if (allowed.backwards)
         return -2;
+    
+    debugUnsafeState = 1;
+    return 0;
 }
 
 void apply_shield(int i) {
     double v = velocity[i]+0.0;
-    double vFront = fmax(1, velocity[i - 1]);
-    double d = fmax(-1, fmin(distance[i - 1], 201));
+    double vFront = velocity[i - 1]+0.0;
+    double d = distance[i - 1]+0.0;
     allowedActions allowed = intToActions(get_value(v, vFront, d));
     if (!allowed.forwards &amp;&amp; !allowed.neutral &amp;&amp; !allowed.backwards)
         return;
@@ -199,19 +218,19 @@ that time reversing.</label>
 	<template>
 		<name>Shield</name>
 		<parameter>int i</parameter>
-		<location id="id10" x="-25" y="-8">
+		<location id="id10" x="-17" y="-8">
 		</location>
 		<init ref="id10"/>
-		<transition id="id11">
+		<transition id="id11" controllable="false">
 			<source ref="id10"/>
 			<target ref="id10"/>
-			<label kind="synchronisation" x="-93" y="-161">shield?</label>
-			<label kind="assignment" x="-85" y="-144">apply_shield(i)</label>
-			<nail x="17" y="-42"/>
-			<nail x="17" y="-127"/>
-			<nail x="-26" y="-110"/>
-			<nail x="-68" y="-127"/>
-			<nail x="-68" y="-42"/>
+			<label kind="synchronisation" x="-85" y="-161">shield?</label>
+			<label kind="assignment" x="-77" y="-144">apply_shield(i)</label>
+			<nail x="25" y="-34"/>
+			<nail x="25" y="-119"/>
+			<nail x="-17" y="-110"/>
+			<nail x="-60" y="-119"/>
+			<nail x="-59" y="-34"/>
 		</transition>
 	</template>
 	<template>
@@ -226,14 +245,14 @@ that time reversing.</label>
 		<transition id="id14" controllable="false">
 			<source ref="id12"/>
 			<target ref="id13"/>
-			<label kind="assignment" x="-76" y="-110">preTrainedChoice(i)</label>
-			<nail x="17" y="-93"/>
+			<label kind="assignment" x="-68" y="-42">preTrainedChoice(i)</label>
+			<nail x="17" y="-25"/>
 		</transition>
 		<transition id="id15" controllable="false">
 			<source ref="id13"/>
 			<target ref="id12"/>
-			<label kind="synchronisation" x="-25" y="-34">choose[i]?</label>
-			<nail x="85" y="-8"/>
+			<label kind="synchronisation" x="-25" y="8">choose[i]?</label>
+			<nail x="17" y="8"/>
 		</transition>
 	</template>
 	<template>
@@ -249,106 +268,120 @@ that time reversing.</label>
 			<name x="-153" y="85">No_acceleration</name>
 		</location>
 		<location id="id19" x="0" y="-34">
-			<name x="17" y="-42">Choose</name>
+			<name x="-59" y="-42">Choose</name>
 			<committed/>
 		</location>
+		<branchpoint id="id20" x="34" y="-34"/>
 		<init ref="id18"/>
-		<transition id="id20" controllable="false">
+		<transition id="id21">
+			<source ref="id20"/>
+			<target ref="id18"/>
+			<label kind="assignment" x="-212" y="-68">acceleration[i] = 0</label>
+			<label kind="probability" x="-297" y="-52">1</label>
+			<nail x="8" y="-68"/>
+			<nail x="-51" y="-34"/>
+			<nail x="-102" y="-34"/>
+		</transition>
+		<transition id="id22">
+			<source ref="id20"/>
+			<target ref="id17"/>
+			<label kind="assignment" x="85" y="-24">acceleration[i] = -2</label>
+			<label kind="probability" x="85" y="-8">velocity[i] &gt; minVelocity ? 
+    (velocity[i] &gt; 10 ? 2 : 1) 
+    : 0</label>
+		</transition>
+		<transition id="id23">
+			<source ref="id20"/>
+			<target ref="id16"/>
+			<label kind="assignment" x="93" y="-119">acceleration[i] = 2</label>
+			<label kind="probability" x="93" y="-102">velocity[i] &lt; maxVelocity ? 
+    (velocity[i] &lt; 0 ? 2 : 1)
+    : 0</label>
+		</transition>
+		<transition id="id24" controllable="false">
+			<source ref="id19"/>
+			<target ref="id20"/>
+		</transition>
+		<transition id="id25" controllable="false">
 			<source ref="id17"/>
 			<target ref="id19"/>
 			<label kind="synchronisation" x="-25" y="68">choose[i]?</label>
 			<nail x="0" y="68"/>
 		</transition>
-		<transition id="id21" controllable="false">
+		<transition id="id26" controllable="false">
 			<source ref="id16"/>
 			<target ref="id19"/>
 			<label kind="synchronisation" x="-17" y="-153">choose[i]?</label>
 			<nail x="0" y="-136"/>
 		</transition>
-		<transition id="id22" controllable="false">
+		<transition id="id27" controllable="false">
 			<source ref="id18"/>
 			<target ref="id19"/>
 			<label kind="synchronisation" x="-93" y="17">choose[i]?</label>
-		</transition>
-		<transition id="id23" controllable="false">
-			<source ref="id19"/>
-			<target ref="id17"/>
-			<label kind="guard" x="26" y="9">velocity[i] &gt; minVelocity</label>
-			<label kind="assignment" x="26" y="26">acceleration[i] = -2</label>
-		</transition>
-		<transition id="id24" controllable="false">
-			<source ref="id19"/>
-			<target ref="id16"/>
-			<label kind="guard" x="26" y="-102">velocity[i] &lt; maxVelocity</label>
-			<label kind="assignment" x="26" y="-85">acceleration[i] = 2</label>
-		</transition>
-		<transition id="id25" controllable="false">
-			<source ref="id19"/>
-			<target ref="id18"/>
-			<label kind="assignment" x="-204" y="-8">acceleration[i] = 0</label>
-			<nail x="-102" y="-8"/>
 		</transition>
 	</template>
 	<template>
 		<name>Decisions</name>
 		<declaration>clock timer;
 int[0, fleetSize] i = 0; </declaration>
-		<location id="id26" x="-238" y="-187">
+		<location id="id28" x="-238" y="-187">
 			<name x="-255" y="-170">Wait</name>
 			<label kind="invariant" x="-272" y="-153">timer &lt;= 1</label>
 		</location>
-		<location id="id27" x="-314" y="-272">
+		<location id="id29" x="-314" y="-272">
 			<urgent/>
 		</location>
-		<init ref="id27"/>
-		<transition id="id28" controllable="false">
-			<source ref="id27"/>
-			<target ref="id27"/>
+		<init ref="id29"/>
+		<transition id="id30" controllable="false">
+			<source ref="id29"/>
+			<target ref="id29"/>
 			<label kind="guard" x="-357" y="-357">i &lt; fleetSize</label>
 			<label kind="synchronisation" x="-357" y="-340">choose[i]!</label>
 			<label kind="assignment" x="-357" y="-374">i++</label>
 			<nail x="-357" y="-314"/>
 			<nail x="-272" y="-314"/>
 		</transition>
-		<transition id="id29" controllable="false">
-			<source ref="id27"/>
-			<target ref="id26"/>
+		<transition id="id31" controllable="false">
+			<source ref="id29"/>
+			<target ref="id28"/>
 			<label kind="guard" x="-263" y="-306">i == fleetSize</label>
 			<label kind="synchronisation" x="-263" y="-272">shield!</label>
 			<label kind="assignment" x="-263" y="-289">timer = 0</label>
 			<nail x="-136" y="-272"/>
 		</transition>
-		<transition id="id30" controllable="false">
-			<source ref="id26"/>
-			<target ref="id27"/>
+		<transition id="id32" controllable="false">
+			<source ref="id28"/>
+			<target ref="id29"/>
 			<label kind="guard" x="-365" y="-221">timer == 1</label>
 			<label kind="assignment" x="-357" y="-238">i = 0</label>
 		</transition>
 	</template>
 	<template>
 		<name>Dynamics</name>
-		<location id="id31" x="-153" y="-144">
+		<location id="id33" x="-153" y="-144">
 			<label kind="invariant" x="-314" y="-127">forall (i : int[0, fleetSize - 1]) velocity[i]' == acceleration[i] &amp;&amp;
 forall (j : int[0, fleetSize - 2]) distance[j]' == velocity[j] - velocity[j + 1] &amp;&amp;
-forall (j : int[0, fleetSize - 2]) D[j]' == (distance[j]+0.0 &lt; 0.0 ? crashPenalty : distance[j]+0.0)</label>
+forall (j : int[0, fleetSize - 2]) D[j]' == distance[j]</label>
 		</location>
-		<init ref="id31"/>
+		<init ref="id33"/>
 	</template>
-	<system>Learner2 = Learner(2);
-Learner1 = Learner(1);
+	<system>Learner1 = Learner(1);
+Learner2 = Learner(2);
+Learner3 = Learner(3);
 Shield1 = Shield(1);
 Shield2 = Shield(2);
+Shield3 = Shield(3);
 PreTrained1 = PreTrained(1);
 PreTrained2 = PreTrained(2);
 Random0 = Random(0);
-system Dynamics, Decisions, Shield1, Shield2, PreTrained2, PreTrained1, Random0;</system>
+system Dynamics, Decisions, Shield1, Learner1, Random0;</system>
 	<queries>
 		<query>
 			<formula>strategy car1 = minE(D[0]) [&lt;=105] {}-&gt;{velocity[1], velocity[0], distance[0]}: &lt;&gt; time &gt;= 100</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>saveStrategy("/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/car1.json", car1)</formula>
+			<formula>saveStrategy("/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/car1.json", car1)</formula>
 			<comment/>
 		</query>
 		<query>
@@ -356,11 +389,19 @@ system Dynamics, Decisions, Shield1, Shield2, PreTrained2, PreTrained1, Random0;
 			<comment/>
 		</query>
 		<query>
-			<formula>saveStrategy("/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/car2.json", car2)</formula>
+			<formula>strategy car3 = minE(D[2]) [&lt;=105] {}-&gt;{velocity[3], velocity[2], distance[2]}: &lt;&gt; time &gt;= 100</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>saveStrategy("/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/car2.json", car2)</formula>
 			<comment/>
 		</query>
 		<query>
 			<formula>E[&lt;=100;1000](max:D[0])</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[&lt;=100;1000](max:D[1])</formula>
 			<comment/>
 		</query>
 		<query>
@@ -373,6 +414,10 @@ system Dynamics, Decisions, Shield1, Shield2, PreTrained2, PreTrained1, Random0;
 		</query>
 		<query>
 			<formula>E[&lt;=100;1000](max:D[1]) under car2</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[&lt;=100;1000](max:D[2]) under car3</formula>
 			<comment/>
 		</query>
 		<query>
@@ -392,19 +437,15 @@ system Dynamics, Decisions, Shield1, Shield2, PreTrained2, PreTrained1, Random0;
 			<comment/>
 		</query>
 		<query>
-			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; 0))</formula>
+			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance))</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; 0)) under car1</formula>
+			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance)) under car1</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; 0)) under car2</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
+			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance)) under car2</formula>
 			<comment/>
 		</query>
 		<query>
@@ -420,7 +461,11 @@ system Dynamics, Decisions, Shield1, Shield2, PreTrained2, PreTrained1, Random0;
 			<comment/>
 		</query>
 		<query>
-			<formula/>
+			<formula>simulate[&lt;=100;10] {maxVelocity - velocity[0], velocity[0] - minVelocity }</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>simulate[&lt;=100;100] {velocity[0]}</formula>
 			<comment/>
 		</query>
 		<query>

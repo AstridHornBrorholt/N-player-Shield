@@ -338,26 +338,6 @@ model = SimulationModel(simulation_function, randomness_space, samples_per_axis,
 # ╔═╡ 4b651d7e-7e05-4cdf-a5d7-734653183e96
 reachability_function = get_barbaric_reachability_function(model)
 
-# ╔═╡ c101b329-fc0f-4627-9048-2862d9cf9ac0
-# ╠═╡ disabled = true
-#=╠═╡
-# Explore reachability
-let
-	grid = deepcopy(grid)
-	partition = GridShielding.Partition(grid, partition.indices)
-	reachable = get_reachable_area(model, partition, action)
-	reachable = [GridShielding.Partition(grid, r) for r in reachable]
-	set_value!(partition, 5)
-	[set_value!(r, 1) for r in reachable]
-	@info possible_outcomes(model, partition, action)
-	@info Bounds(partition)
-	draw′(grid)
-	slice = [box(grid, v_ego, v_front, distance).indices[1], :, :]
-	draw_barbaric_transition!(model, partition, action, slice)
-	plot!()
-end
-  ╠═╡ =#
-
 # ╔═╡ da8a843d-b5c7-4155-b90c-3df160996c13
 md"""
 ### Time to make the shield!
@@ -501,22 +481,7 @@ end
 traces, safety_violations, example_of_unsafe_trace = evaluate(m, shielded_random)
 
 # ╔═╡ b4eea529-3c88-4e9d-b1b1-99fe2f9c4f94
-if safety_violations > 0
-	Markdown.parse("""
-	!!! danger "Unsafe trace found"
-			Shielded random agent was found to be unsafe.
-
-			Out of $traces traces, $safety_violations were found to be unsafe.
-	""")
-end
-
-# ╔═╡ db29fb3a-0e95-44f6-b324-5238ac02427c
-if !isnothing(example_of_unsafe_trace)
-	plot_sequence(example_of_unsafe_trace..., title="Example of Unsafe Trace", legend=:topleft)
-end
-
-# ╔═╡ 74aea3e6-45e4-4051-a535-c442aa3c4ba8
-if !isnothing(example_of_unsafe_trace) let
+if safety_violations > 0 let
 	first_unsafe = nothing
 	states, times = example_of_unsafe_trace
 	for (i, s) in enumerate(states)
@@ -525,18 +490,26 @@ if !isnothing(example_of_unsafe_trace) let
 			break
 		end
 	end
-
 	Markdown.parse("""
-	First unsafe sate reached: 
-	
-	`$(states[first_unsafe])`
-	
-	The state before that: 
-	
-	`$(states[first_unsafe - 1])`
-	
+	!!! danger "Unsafe trace found"
+		Shielded random agent was found to be unsafe.
+
+		Out of $traces traces, $safety_violations were found to be unsafe.
+
+		First unsafe sate reached: 
+		
+			$(states[first_unsafe])
+		
+		The state before that: 
+		
+			$(states[first_unsafe - 1])
 	""")
 end end
+
+# ╔═╡ db29fb3a-0e95-44f6-b324-5238ac02427c
+if !isnothing(example_of_unsafe_trace)
+	plot_sequence(example_of_unsafe_trace..., title="Example of Unsafe Trace", legend=:topleft)
+end
 
 # ╔═╡ 298dadf8-41a4-443d-90c9-9dba1a87145c
 let
@@ -545,6 +518,18 @@ let
 	print(buf, str)
 	DownloadButton(take!(buf), "shield_dump.c")
 end
+
+# ╔═╡ 55852049-5765-4be4-9f40-351d5bfb6d51
+m.v_ego_min
+
+# ╔═╡ fecc0e61-d45f-4241-a13d-3764c423a1bf
+@bind actual NumberField(0:2:20)
+
+# ╔═╡ 3f65e438-7384-4c4a-86aa-2ac0a64db603
+20 - actual
+
+# ╔═╡ c96fc0fd-00a1-488d-b2b4-efb4efb8775b
+actual - 0
 
 # ╔═╡ Cell order:
 # ╟─1e159603-fc61-45f8-9595-f75e55318344
@@ -602,5 +587,8 @@ end
 # ╠═93741008-85f5-479c-908e-27a3716ef25f
 # ╟─b4eea529-3c88-4e9d-b1b1-99fe2f9c4f94
 # ╟─db29fb3a-0e95-44f6-b324-5238ac02427c
-# ╟─74aea3e6-45e4-4051-a535-c442aa3c4ba8
 # ╠═298dadf8-41a4-443d-90c9-9dba1a87145c
+# ╠═55852049-5765-4be4-9f40-351d5bfb6d51
+# ╠═fecc0e61-d45f-4241-a13d-3764c423a1bf
+# ╠═3f65e438-7384-4c4a-86aa-2ac0a64db603
+# ╠═c96fc0fd-00a1-488d-b2b4-efb4efb8775b
