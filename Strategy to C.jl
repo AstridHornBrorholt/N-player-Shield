@@ -4,53 +4,71 @@
 using Markdown
 using InteractiveUtils
 
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
-        el
-    end
-end
-
 # ╔═╡ fc499f82-3c3c-11ee-109a-f534985c8341
 begin
 	using JSON
 	using Printf
-	using PlutoUI
 end
 
+# ╔═╡ 5615668e-7020-43b2-9a97-07dbca4aa115
+# ╠═╡ skip_as_script = true
+#=╠═╡
+using PlutoUI
+  ╠═╡ =#
+
+# ╔═╡ 7161e853-49b1-468e-a4ba-949c34ef2da2
+md"""
+# Strategy to C
+
+Turn a UPPAAL strategy exported as JSON into a C shared object which can be loaded back into UPPAAL.
+
+This Pluto notebook is also a valid julia-script which provides the following funciton: 
+## `strategy_to_c`
+$(@doc strategy_to_c)
+"""
+
 # ╔═╡ 3bb7e0de-5364-4a52-ab7d-7d5cb9273efa
+#=╠═╡
 @bind picked_file FilePicker()
+  ╠═╡ =#
 
 # ╔═╡ 451b36a9-9712-42ac-b53e-e2031c978ec2
+#=╠═╡
 text = String(picked_file["data"])
+  ╠═╡ =#
 
 # ╔═╡ 46d36365-2146-4094-9bd7-15310269e746
+#=╠═╡
 json = JSON.parse(text)
+  ╠═╡ =#
 
 # ╔═╡ c78f40f4-945c-4ee0-ad4e-8b47a734f222
+#=╠═╡
 Markdown.parse("""
 !!! info "Actions"
 $(join(["    **$k** => $v" for (k,v) in sort(collect(json["actions"]), by=((k) -> k))], "\n\n"))
 """)
+  ╠═╡ =#
 
 # ╔═╡ f2b82444-77da-4ec5-9991-186f609d9576
-action_dict = Dict(
+actions = Dict(
 	"0" => "NegativeAcceleration",
 	"1" => "PositiveAcceleration",
 	"2" => "NoAcceleration"
 )
 
 # ╔═╡ f9f09026-dc0d-41cd-af2c-6ca18d3768d0
+#=╠═╡
 regressor = json["regressors"]["(1)"]["regressor"]
+  ╠═╡ =#
 
 # ╔═╡ 36031e3c-ff0d-4f29-99f3-316b7b2992e5
+#=╠═╡
 Markdown.parse("""
 !!! info "Point variables"
 $(join(["    **$k** => $v" for (k,v) in enumerate(json["pointvars"])], "\n\n"))
 """)
+  ╠═╡ =#
 
 # ╔═╡ 4de463bf-8e89-4aa8-ac89-872bc9399d78
 vars = [
@@ -60,7 +78,9 @@ vars = [
 ]
 
 # ╔═╡ 9f83ff3e-33ff-4a2a-b87d-58476b422686
+#=╠═╡
 regressor["1"]
+  ╠═╡ =#
 
 # ╔═╡ b10ccf72-c9f9-4c7a-855f-aed16ca5a794
 function indentation(io::IO, indent)
@@ -69,7 +89,10 @@ end
 
 # ╔═╡ b1129b94-6ad6-4d50-9155-10821419fb62
 begin
-	function if_chain(io::IO, regressor::Dict, indent)
+	# An if/else chain making up the core of the decision process.
+	# On the same format as the JSON regressor, i.e. it returns an expected
+	# value of taking the action corresponding to the given regressor.
+	function if_chain(io::IO, regressor::Dict, vars::AbstractArray, indent)
 		threshold = regressor["bound"]
 		var = vars[regressor["var"] + 1]
 		
@@ -77,48 +100,59 @@ begin
 		@printf io "if (%s >= %.2f)\n" var threshold
 		
 		indent += 1
-		if_chain(io, regressor["high"], indent)
+		if_chain(io, regressor["high"], vars, indent)
 	
 		indent -= 1
 		indentation(io, indent)
 		@printf io "else\n"
 		indent += 1
 		
-		if_chain(io, regressor["low"], indent)
+		if_chain(io, regressor["low"], vars, indent)
 		
 		indent -= 1
 	end
 	
-	function if_chain(io, regressor::Number, indent)
+	function if_chain(io, regressor::Number, _, indent)
 		indentation(io, indent)
 		@printf io "return %.2f;\n" regressor
 	end
 	
-	function if_chain(regressor::Dict, indent)
+	function if_chain(regressor::Dict, vars::AbstractArray, indent)
 		buf = IOBuffer()
-		if_chain(buf, regressor, indent)
+		if_chain(buf, regressor, vars, indent)
 		return String(take!(buf))
 	end
 end
 
 # ╔═╡ 308aa994-8cf5-4393-9631-4f4baac64c6a
 begin
-	function all_regressors(regressors::Dict, indent)
+	# A C-function for each regressor which returns the expected outcome
+	# of its corresponding aciton.
+	function all_regressors(regressors::Dict, 
+			vars::AbstractArray, 
+			actions::Dict, 
+			indent)
+		
 		buf = IOBuffer()
-		all_regressors(buf, regressors, indent)
+		all_regressors(buf, regressors, vars, actions, indent)
 		return String(take!(buf))
 	end
 	
-	function all_regressors(io::IO, regressors::Dict, indent)
+	function all_regressors(io::IO, 
+			regressors::Dict, 
+			vars::AbstractArray, 
+			actions::Dict, 
+			indent)
+		
 		for (k, v) in regressors
 			args = join(["double $var" for var in vars], ", ")
 			
 			indentation(io, indent)
-			@printf io "double expected_%s(%s) {\n" action_dict[k] args
+			@printf io "double expected_%s(%s) {\n" actions[k] args
 	
 			indent += 1
 	
-			println(io, if_chain(v, indent))
+			println(io, if_chain(v, vars, indent))
 			
 			indent -= 1
 			
@@ -127,19 +161,39 @@ begin
 	end
 end
 
+# ╔═╡ 67978236-9ffa-49e0-a3b0-d4c3f4985d3a
+function action_decider_signature(name, vars::AbstractArray) 
+	args = join(["double $var" for var in vars], ", ")
+	"int get_action_$name($args)"
+end
+
 # ╔═╡ 879a90ad-f58a-4c38-aef6-8b8363016651
 begin
-	function action_decider(regressors::Dict, indent)
+	# A C-function which returns the best action according to the regressors.
+	# At the moment, *lowest* is considered "best". 
+	# `name`: Name of the strategy. Function name will be `get_action_$name()`
+	function action_decider(regressors::Dict, 
+			vars::AbstractArray, 
+			actions::Dict,
+			name, 
+			indent)
+		
 		buf = IOBuffer()
-		action_decider(buf, regressors, indent)
+		action_decider(buf, regressors, vars, actions, name, indent)
 		return String(take!(buf))
 	end
 
-	function action_decider(io::IO, regressors::Dict, indent)
-		args = join(["double $var" for var in vars], ", ")
+	function action_decider(io::IO, 
+			regressors::Dict, 
+			vars::AbstractArray, 
+			actions::Dict,
+			name, 
+			indent)
+		
 		
 		indentation(io, indent)
-		@printf io "int get_action(%s) {\n" args
+		print(io, action_decider_signature(name, vars))
+		@printf io " {\n"
 
 		indent += 1
 		indentation(io, indent)
@@ -152,7 +206,7 @@ begin
 		args = join(["$var" for var in vars], ", ")
 		
 		for (k, v) in regressors
-			action = action_dict[k]
+			action = actions[k]
 			@printf io "\n"
 			indentation(io, indent)
 			@printf io "expected = expected_%s(%s);\n" action args
@@ -180,14 +234,17 @@ begin
 	end
 end
 
-# ╔═╡ d1663eca-6f1f-4026-a036-da8016815977
-@info action_decider(json["regressors"]["(1)"]["regressor"], 0)
-
 # ╔═╡ df870b5a-7232-4195-9d9a-4d92cba2cec2
-function header(io::IO)
+# Various header-stuff.
+function header(io::IO, name, actions::Dict)
+	# A comment with compile instructions
+	println(io, "/* Compile as:\n\tgcc -c -fPIC $name.c -o $name.o\n\tgcc -shared -o lib$name.so $name.o\n*/")
+
+	# Includes
 	@printf io "#include <math.h>\n\n"
 
-	for (k, v) in action_dict
+	# Constants representing the given actions.
+	for (k, v) in actions
 		@printf io "const int %s = %s;\n" v k
 	end
 
@@ -196,46 +253,159 @@ end
 
 # ╔═╡ eb410fb5-2677-4168-8c1b-aceddf47e994
 begin
-	function entire_file(regressors::Dict)
+	# This is it. 
+	function entire_file(regressors::Dict, 
+			vars::AbstractArray, 
+			actions::Dict, 
+			name)
+		
 		buf = IOBuffer()
-		entire_file(buf, regressors)
+		entire_file(buf, regressors, name)
 		return String(take!(buf))
 	end
 
-	function entire_file(io::IO, regressors::Dict)
-		header(io)
-		all_regressors(io, regressors, 0)
-		action_decider(io, regressors, 0)
+	function entire_file(io::IO, 
+			regressors::Dict, 
+			vars::AbstractArray, 
+			actions::Dict, 
+			name)
+		
+		header(io, name, actions)
+		all_regressors(io, regressors, vars, actions, 0)
+		action_decider(io, regressors, vars, actions, name, 0)
 		@printf io "\nint main() {}"
 	end
 end
 
+# ╔═╡ 4a05ce54-e3fe-4017-b642-699747bb96ac
+#=╠═╡
+@bind name TextField(60, default="car1")
+  ╠═╡ =#
+
+# ╔═╡ d1663eca-6f1f-4026-a036-da8016815977
+#=╠═╡
+@info action_decider(json["regressors"]["(1)"]["regressor"], vars, actions, name, 0)
+  ╠═╡ =#
+
 # ╔═╡ 5e7f42a5-7292-440c-a8e0-57b84b357955
+#=╠═╡
 begin
 	save_buffer = IOBuffer()
-	entire_file(save_buffer, json["regressors"]["(1)"]["regressor"])
-	DownloadButton(take!(save_buffer), "regressors.c")
+	
+	entire_file(save_buffer, 
+		json["regressors"]["(1)"]["regressor"], 
+		vars,
+		actions,
+		name)
+	
+	DownloadButton(take!(save_buffer), "$name.c")
 end
+  ╠═╡ =#
 
 # ╔═╡ ae547020-fdda-47c4-baf6-40b69001d7a5
+#=╠═╡
 # Write a file path here, which will be written to reactively
 @bind savepath TextField(80, default="")
+  ╠═╡ =#
 
 # ╔═╡ 6d3d2412-e8a9-4bf0-92df-21973375e7fb
+#=╠═╡
 if isdir(dirname(savepath))
 	open(savepath, "w") do io
-		entire_file(io, json["regressors"]["(1)"]["regressor"])
+		entire_file(io, json["regressors"]["(1)"]["regressor"], vars, actions, name)
 	end
 	@info "saved to '$savepath'"
 end
+  ╠═╡ =#
 
-# ╔═╡ 69ef60c4-ebb0-4e47-bf17-0c904bc33f0d
-md"""
-**Run as:** 
+# ╔═╡ b727f3d0-11a2-4150-80ad-e6bccd2b7017
+#=╠═╡
+# Write a file path here, which will be read from reactively
+@bind strategy_path TextField(80, default="")
+  ╠═╡ =#
 
-	gcc -c -fPIC car1.c -o car1.o
-	gcc -shared -o libcar1.so car1.o
+# ╔═╡ b80ec1d9-6975-4198-b1c7-46acd5c84544
+excluding_extension(file::String) = file[1:findlast(==('.'), file) - 1]
+
+# ╔═╡ 3058c083-d9de-4b55-aa91-b5b7ded5abca
+excluding_extension("foo.bar.baz")
+
+# ╔═╡ c5cde56e-cd4b-4509-a739-d8281a7c5248
+⨝ = joinpath
+
+# ╔═╡ a9e5461c-7495-476b-a9d9-e18c6912e6f5
 """
+	strategy_to_C(strategy_path, 
+			vars::AbstractArray, 
+			actions::Dict, 
+			output_dir;
+			name=nothing)
+
+Take a JSON format UPPAAL strategy, and create a C shared-object which exports a corresponding decision function. 
+
+**Returns:** `(function_signature, output_path)`
+- `function_signature`: Full signature of the function which returns the action according to the strategy.
+- `output_path`: Path to the `.so` file that was created.
+
+**Arguments:**
+- `strategy_path`: Path to the JSON format strategy.
+- `vars`: User-chosen names for the strategy's point variables. Must be valid C variable names.
+- `actions`: A Dict{String, String}("0" => "turnLeft" ...) pair of actions and their corresponding desired names.
+- `output_dir`: Output. Default: `"lib\$name.so"` and same folder as `strategy_path`.
+- `name`: User-chosen name that will be used in a bunch of ways. Default: Input strategy's file name excluding the .json extension.
+"""
+function strategy_to_c(strategy_path, 
+		vars::AbstractArray, 
+		actions::Dict, 
+		output_dir;
+		name=nothing)
+
+	name = something(name, strategy_path |> basename |> excluding_extension)
+	if isdir(output_dir)
+		output_dir = output_dir ⨝ "lib$name.so"
+	elseif !isfile(output_dir)
+		throw("Invalid output_dir")
+	end
+
+	# Load JSON
+	json = nothing
+	open(strategy_path, "r") do strategy_file
+		json = JSON.parse(strategy_file)
+	end
+	previous_working_dir = pwd() # pun: pwd() is "print working dir"
+	try
+		mktempdir() do tmp
+			cd(tmp)
+			
+			# Create C-file
+			open("$name.c", "w") do c_file
+				entire_file(c_file, 
+					json["regressors"]["(1)"]["regressor"],
+					vars, 
+					actions,
+					name)
+				
+			end
+			
+			# Compile C-file and export library
+			run(`gcc -c -fPIC $name.c -o $name.o`)
+			run(`gcc -shared -o lib$name.so $name.o`)
+			cp("lib$name.so", output_dir, force=true)
+		end
+	catch
+		cd(previous_working_dir)
+		rethrow()
+	end
+	cd(previous_working_dir)
+	return action_decider_signature(name, vars), output_dir
+end;
+
+# ╔═╡ 96d0609b-87a4-428d-aadf-8c996089e6f0
+#=╠═╡
+if isfile(strategy_path)
+	strategy_to_c(strategy_path, vars, actions, dirname(strategy_path))
+end
+  ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -512,7 +682,9 @@ version = "17.4.0+0"
 """
 
 # ╔═╡ Cell order:
+# ╟─7161e853-49b1-468e-a4ba-949c34ef2da2
 # ╠═fc499f82-3c3c-11ee-109a-f534985c8341
+# ╠═5615668e-7020-43b2-9a97-07dbca4aa115
 # ╠═3bb7e0de-5364-4a52-ab7d-7d5cb9273efa
 # ╠═451b36a9-9712-42ac-b53e-e2031c978ec2
 # ╠═46d36365-2146-4094-9bd7-15310269e746
@@ -525,13 +697,20 @@ version = "17.4.0+0"
 # ╠═b10ccf72-c9f9-4c7a-855f-aed16ca5a794
 # ╠═b1129b94-6ad6-4d50-9155-10821419fb62
 # ╠═308aa994-8cf5-4393-9631-4f4baac64c6a
+# ╠═67978236-9ffa-49e0-a3b0-d4c3f4985d3a
 # ╠═879a90ad-f58a-4c38-aef6-8b8363016651
 # ╠═d1663eca-6f1f-4026-a036-da8016815977
-# ╠═eb410fb5-2677-4168-8c1b-aceddf47e994
 # ╠═df870b5a-7232-4195-9d9a-4d92cba2cec2
+# ╠═eb410fb5-2677-4168-8c1b-aceddf47e994
+# ╠═4a05ce54-e3fe-4017-b642-699747bb96ac
 # ╠═5e7f42a5-7292-440c-a8e0-57b84b357955
 # ╠═ae547020-fdda-47c4-baf6-40b69001d7a5
 # ╠═6d3d2412-e8a9-4bf0-92df-21973375e7fb
-# ╠═69ef60c4-ebb0-4e47-bf17-0c904bc33f0d
+# ╠═b80ec1d9-6975-4198-b1c7-46acd5c84544
+# ╠═3058c083-d9de-4b55-aa91-b5b7ded5abca
+# ╠═c5cde56e-cd4b-4509-a739-d8281a7c5248
+# ╠═a9e5461c-7495-476b-a9d9-e18c6912e6f5
+# ╠═b727f3d0-11a2-4150-80ad-e6bccd2b7017
+# ╠═96d0609b-87a4-428d-aadf-8c996089e6f0
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
