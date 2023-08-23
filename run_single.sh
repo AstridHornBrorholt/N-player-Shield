@@ -20,7 +20,7 @@ verifyta_call='verifyta  -s
 
 for ((N=2; N<=$max_cars; N++))
 do
-    echo "ⓘ ${date +%T} Running Fleet of ${N} Cars..."
+    echo "ⓘ $(date +%T) Running Fleet of ${N} Cars..."
     outfile="$results/Query Results/Fleet of $N Cars.txt"
     model_and_query=$($julia 'Create Fleet.jl' \
             --blueprint-path "$blueprint" \
