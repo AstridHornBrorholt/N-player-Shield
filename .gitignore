@@ -50,7 +50,3 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-
-Shield/shield_dump.c
-
-Strategies/
