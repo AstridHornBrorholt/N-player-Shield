@@ -1,9 +1,6 @@
 #!/bin/bash
 
 ## Parameters ##
-runs=${1:-100}
-checks=${2:-100}
-max_cars=${3:-4}
 results="$HOME/Results/N-player CC"
 mkdir -p "$HOME/Results"
 mkdir -p "$results"
