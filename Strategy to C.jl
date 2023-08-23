@@ -318,12 +318,6 @@ if isdir(dirname(savepath))
 end
   ╠═╡ =#
 
-# ╔═╡ b727f3d0-11a2-4150-80ad-e6bccd2b7017
-#=╠═╡
-# Write a file path here, which will be read from reactively
-@bind strategy_path TextField(80, default="")
-  ╠═╡ =#
-
 # ╔═╡ b80ec1d9-6975-4198-b1c7-46acd5c84544
 excluding_extension(file::String) = file[1:findlast(==('.'), file) - 1]
 
@@ -364,7 +358,7 @@ function strategy_to_c(strategy_path,
 	if isdir(output_dir)
 		output_dir = output_dir ⨝ "lib$name.so"
 	elseif !isfile(output_dir)
-		throw("Invalid output_dir")
+		throw("Invalid output_dir '$output_dir'")
 	end
 
 	# Load JSON
@@ -399,6 +393,12 @@ function strategy_to_c(strategy_path,
 	cd(previous_working_dir)
 	return action_decider_signature(name, vars), output_dir
 end;
+
+# ╔═╡ b727f3d0-11a2-4150-80ad-e6bccd2b7017
+#=╠═╡
+# Write a file path here, which will be read from reactively
+@bind strategy_path TextField(80, default="")
+  ╠═╡ =#
 
 # ╔═╡ 96d0609b-87a4-428d-aadf-8c996089e6f0
 #=╠═╡
