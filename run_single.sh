@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ## Parameters ##
+julia=${julia:-"julia"}
 results="$HOME/Results/N-player CC"
 mkdir -p "$HOME/Results"
 mkdir -p "$results"
@@ -21,7 +22,7 @@ for ((N=2; N<=$max_cars; N++))
 do
     echo "ⓘ ${date +%T} Running Fleet of ${N} Cars..."
     outfile="$results/Query Results/Fleet of $N Cars.txt"
-    model_and_query=$(julia 'Create Fleet.jl' \
+    model_and_query=$($julia 'Create Fleet.jl' \
             --blueprint-path "$blueprint" \
             --strategy-paths "${strategies[@]}" \
             --shield-path "$shield" \
