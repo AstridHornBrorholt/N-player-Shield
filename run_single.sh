@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## Parameters ##
-julia=${julia:-"julia"}
+julia=${julia:-"/nfs/home/cs.aau.dk/oq82yk/julia-1.9.2/bin/julia"}
 results="$HOME/Results/N-player CC"
 mkdir -p "$HOME/Results"
 mkdir -p "$results"
