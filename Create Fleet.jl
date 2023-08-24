@@ -649,6 +649,8 @@ Support for running this script from the command line.
 """
 
 # ╔═╡ a3e1e009-7d3d-4be8-9f76-ae64bace2514
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	s = ArgParseSettings()
 	@add_arg_table s begin
@@ -671,8 +673,10 @@ begin
 			required=false
 	end
 end;
+  ╠═╡ =#
 
 # ╔═╡ 8eb7b2c0-6c8e-4b4e-adf2-a0b67f819caf
+#=╠═╡
 if !occursin("#==#", @__FILE__) let
 	args = parse_args(s)
 
@@ -684,6 +688,7 @@ if !occursin("#==#", @__FILE__) let
 		checks=args["checks"])
 	println("'$model' '$queries'")
 end end
+  ╠═╡ =#
 
 # ╔═╡ Cell order:
 # ╠═488ee430-40cf-11ee-3160-1f10b20c5be6
