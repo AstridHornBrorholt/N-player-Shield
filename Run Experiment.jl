@@ -55,12 +55,13 @@ verifyta_call = String[
 ]
 
 isdir(results_dir) || mkdir(results_dir)
-isdir(results_dir ⨝ "Query Results") || mkdir(results_dir ⨝ "Query Results")
+query_results_dir = results_dir ⨝ "Query Results" ⨝ "$runs"
+isdir(query_results_dir) || mkdir(query_results_dir)
 
 strategy_paths = []
 for N in 2:max_cars
     status("Running Fleet of $N Cars...")
-    outfile = results_dir ⨝ "Query Results/Fleet of $N Cars.txt"
+    outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
     model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, results_dir; checks)
     open(outfile, "w") do io
         result = [verifyta_call..., model_path, queries_path] |> Cmd |> read |> String
