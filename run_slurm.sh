@@ -1,4 +1,5 @@
-EXECUTOR="sbatch --out="~/output_latest_run.txt" --exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4] --partition=cpu -n1 --mem=16G "
+$log_output=$(realpath "$HOME/Results/N-player CC/log.txt")
+EXECUTOR="sbatch --o="$log_output" --exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4] --partition=cpu -n1 --mem=16G "
 
 export runs=1000
 export checks=1000

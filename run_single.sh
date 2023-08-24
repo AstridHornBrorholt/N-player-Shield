@@ -20,17 +20,19 @@ verifyta_call='verifyta  -s
 
 for ((N=2; N<=$max_cars; N++))
 do
-    echo "ⓘ $(date +%T) Running Fleet of ${N} Cars..."
-    outfile="$results/Query Results/Fleet of $N Cars.txt"
-    model_and_query=$($julia 'Create Fleet.jl' \
-            --blueprint-path "$blueprint" \
-            --strategy-paths "${strategies[@]}" \
-            --shield-path "$shield" \
-            --destination "$results" \
-            --checks $checks )
+        echo "ⓘ $(date +%T) Running Fleet of ${N} Cars..."
+        outfile="$results/Query Results/Fleet of $N Cars.txt"
+        model_and_query=$($julia 'Create Fleet.jl' \
+                --blueprint-path "$blueprint" \
+                --strategy-paths "${strategies[@]}" \
+                --shield-path "$shield" \
+                --destination "$results" \
+                --checks $checks )
 
-    # https://stackoverflow.com/a/21163341/10595676
-    # eval to avoid model_and_query being interpretred as one single argument.
-    eval $verifyta_call $model_and_query > "$outfile"
-    strategies+=("$results/Models/car$((N-1)).json")
+        echo $model_and_query > $log_output
+
+        # https://stackoverflow.com/a/21163341/10595676
+        # eval to avoid model_and_query being interpretred as one single argument.
+        eval $verifyta_call $model_and_query > "$outfile"
+        strategies+=("$results/Models/car$((N-1)).json")
 done
