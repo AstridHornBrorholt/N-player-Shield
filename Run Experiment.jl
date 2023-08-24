@@ -4,7 +4,7 @@ function status(str)
     time = Dates.Time(Dates.now())
     println("$time $🍎 $str")
 end
-@info "Starting..."
+status("Starting...")
 using Pkg
 Pkg.activate(".")
 
@@ -59,7 +59,7 @@ isdir(results_dir ⨝ "Query Results") || mkdir(results_dir ⨝ "Query Results")
 
 strategy_paths = []
 for N in 2:max_cars
-    @info "Running Fleet of $N Cars..."
+    status("Running Fleet of $N Cars...")
     outfile = results_dir ⨝ "Query Results/Fleet of $N Cars.txt"
     model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, results_dir; checks)
     open(outfile, "w") do io
@@ -67,3 +67,5 @@ for N in 2:max_cars
         write(io, result)
     end
 end
+
+status("All done.")
