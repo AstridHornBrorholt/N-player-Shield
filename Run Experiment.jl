@@ -1,3 +1,4 @@
+@info "Julia Started."
 using Pkg
 Pkg.activate(".")
 

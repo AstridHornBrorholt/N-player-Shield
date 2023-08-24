@@ -1,3 +1,5 @@
+echo "Scheduling slurm jobs"
+
 export log_output="$HOME/Results/N-player CC/log.txt"
 
 OUT="-o=$log_output"
@@ -8,18 +10,24 @@ export runs=1000
 export checks=1000
 export max_cars=6
 sbatch "$OUT" $ARGS ./run_single.sh
+echo "Job scheduled."
+
+exit 
 
 export runs=2000
 export checks=1000
 export max_cars=6
 sbatch "$OUT" $ARGS ./run_single.sh
+echo "Job scheduled."
 
 export runs=4000
 export checks=1000
 export max_cars=6
 sbatch "$OUT" $ARGS ./run_single.sh
+echo "Job scheduled."
 
 export runs=8000
 export checks=1000
 export max_cars=6
 sbatch "$OUT" $ARGS ./run_single.sh
+echo "Job scheduled."
