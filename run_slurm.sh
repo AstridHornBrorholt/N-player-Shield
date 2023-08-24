@@ -2,8 +2,8 @@ echo "Scheduling slurm jobs"
 
 export log_output="$HOME/Results/N-player CC/log.txt"
 
-OUT="-o=$log_output"
 date > "$log_output"
+OUT="-o=$log_output"
 ARGS="--exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4] --partition=cpu -n1 --mem=16G "
 
 export runs=1000

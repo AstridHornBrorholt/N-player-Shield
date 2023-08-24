@@ -1,4 +1,10 @@
-@info "Julia Started."
+using Dates
+🍎 = rand("🍇🍈🍉🍊🍋🍌🍍🥭🍎🍏🍐🍑🍒🍓🫐🥝🍅🫒🥥")
+function status(str) 
+    time = Dates.Time(Dates.now())
+    println("$time $🍎 $str")
+end
+@info "Starting..."
 using Pkg
 Pkg.activate(".")
 
