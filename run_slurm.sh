@@ -1,22 +1,24 @@
-$log_output=$(realpath "$HOME/Results/N-player CC/log.txt")
-EXECUTOR="sbatch -o="$log_output" --exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4] --partition=cpu -n1 --mem=16G "
+log_output="$HOME/Results/N-player CC/log.txt"
+
+OUT="-o=$log_output"
+ARGS="--exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4] --partition=cpu -n1 --mem=16G "
 
 export runs=1000
 export checks=1000
 export max_cars=6
-$EXECUTOR "./run_single.sh"
+sbatch "$OUT" $ARGS ./run_single.sh
 
 export runs=2000
 export checks=1000
 export max_cars=6
-$EXECUTOR "./run_single.sh"
+sbatch "$OUT" $ARGS ./run_single.sh
 
 export runs=4000
 export checks=1000
 export max_cars=6
-$EXECUTOR "./run_single.sh"
+sbatch "$OUT" $ARGS ./run_single.sh
 
 export runs=8000
 export checks=1000
 export max_cars=6
-$EXECUTOR "./run_single.sh"
+sbatch "$OUT" $ARGS ./run_single.sh
