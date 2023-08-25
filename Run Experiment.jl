@@ -1,4 +1,5 @@
 using Dates
+# The fruit is there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.
 🍎 = rand("🍇🍈🍉🍊🍋🍌🍍🥭🍎🍏🍐🍑🍒🍓🫐🥝🍅🫒🥥")
 function status(str) 
     time = Dates.Time(Dates.now())
@@ -12,6 +13,7 @@ using ArgParse
 include("Create Fleet.jl")
 
 ⨝ = joinpath
+← = push!
 
 begin
 	s = ArgParseSettings()
@@ -56,13 +58,14 @@ verifyta_call = String[
 
 isdir(results_dir) || mkdir(results_dir)
 query_results_dir = results_dir ⨝ "Query Results" ⨝ "$runs"
-isdir(query_results_dir) || mkdir(query_results_dir)
+isdir(query_results_dir) || mkpath(query_results_dir)
 
-strategy_paths = []
+strategy_paths = String[]
 for N in 2:max_cars
     status("Running Fleet of $N Cars...")
     outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
     model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, results_dir; checks)
+    strategy_paths ← (results_dir ⨝ "Models/car$(N - 1).json")
     open(outfile, "w") do io
         result = [verifyta_call..., model_path, queries_path] |> Cmd |> read |> String
         write(io, result)

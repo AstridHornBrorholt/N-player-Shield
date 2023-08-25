@@ -152,7 +152,7 @@ begin
 	
 			indent += 1
 	
-			println(io, if_chain(v, vars, indent))
+			if_chain(io, v, vars, indent)
 			
 			indent -= 1
 			
