@@ -57,7 +57,9 @@ verifyta_call = String[
 ]
 
 isdir(results_dir) || mkdir(results_dir)
-query_results_dir = results_dir ⨝ "Query Results" ⨝ "$runs"
+results_dir = results_dir ⨝ "$runs"
+isdir(results_dir) || mkdir(results_dir)
+query_results_dir = results_dir ⨝ "Query Results"
 isdir(query_results_dir) || mkpath(query_results_dir)
 
 strategy_paths = String[]
