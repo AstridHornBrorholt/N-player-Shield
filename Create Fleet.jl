@@ -239,6 +239,15 @@ html"""
 <marquee> uwu Purr eow mrow purr purr uwu owo meow purr owo uwu meow purr purr owo mrow uwu uwu meow purr mrow mew owo uwu owo uwu mrow mew purr owo uwu puirr mrow meow mew mmmeoww purr uwu owo mrow meow mew ow purr hsss *scratches you* mrow meow purr uwu purr uwu owo mrow mew ow purr meow uwu </marquee>
 """
 
+# ╔═╡ 73225f3b-eed4-403b-a564-dad605862566
+function multiline(str)
+	HTML("""
+	<pre style='max-height:30em; margin:8pt 0 8pt 0; overflow-y:scroll'>
+	$str
+	</pre>
+	""")
+end
+
 # ╔═╡ 627b26ba-0479-41fd-9b0d-94df3c1d3ae0
 #=╠═╡
 @bind number_of_strategies NumberField(0:10)
@@ -257,7 +266,7 @@ function strategy_paths_input(number_of_strategies)
 		names = ["$i" for i in 1:number_of_strategies]
 		inputs = [
 			md""" $(name): $(
-				Child(name, TextField(70, default = "/home/asger/Results/N-player CC/Models/car" * name * ".json"))
+				Child(name, TextField(70, default = "/home/asger/Results/N-player CC/1/Models/car" * name * ".json"))
 			)"""
 			
 			for name in names
@@ -354,19 +363,10 @@ Fields in the blueprint surrouned with `%`. Functions or variable names here are
 isfile(shield_path)
   ╠═╡ =#
 
-# ╔═╡ 73225f3b-eed4-403b-a564-dad605862566
-function multiline(str)
-	HTML("""
-	<pre style='max-height:30em; margin:8pt 0 8pt 0; overflow-y:scroll'>
-	$str
-	</pre>
-	""")
-end
-
 # ╔═╡ e5e56986-4728-480e-8c07-cb78c61e9579
 function imports(strategies::T) where T <: AbstractVector{Tuple{String, String}}
 	result = String[]
-	for (signature, path) in strategies
+	for (signature, path) in strategies |> unique
 		result ← "import \"$path\""
 		result ← "{"
 		result ← "\t" * signature * ";"
@@ -471,14 +471,18 @@ These will be easiest to generate in the same swoop.
 """
 
 # ╔═╡ c7baa1ea-5252-4319-adfd-d003aa8ee0df
-function queries(number_of_strategies, output_path; checks=1000)
+function queries(number_of_strategies, output_path; checks=1000, skip_training=false)
 	result = String[]
 	for i in 0:number_of_strategies-1
 		result ← "E[<=100;$checks](max:D[$(i)])"
 	end
 	i = number_of_strategies + 1
-	result ← "strategy car$i = minE(D[$(i - 1)]) [<=100] {}->{velocity[$i], velocity[$(i - 1)], distance[$(i - 1)]}: <> time >= 100"
-	result ← "saveStrategy(\"$output_path/car$i.json\", car$i)"
+	if !skip_training
+		result ← "strategy car$i = minE(D[$(i - 1)]) [<=100] {}->{velocity[$i], velocity[$(i - 1)], distance[$(i - 1)]}: <> time >= 100"
+		result ← "saveStrategy(\"$output_path/car$i.json\", car$i)"
+	else
+		result ← "strategy car$i = loadStrategy{}->{velocity[$i], velocity[$(i - 1)], distance[$(i - 1)]} (\"$output_path/car1.json\")"
+	end
 	result ← "E[<=100;$checks](max:D[$(i - 1)]) under car$i"
 	# Probability of safety violation
 	result ← "Pr[<=100;1000](<> forall (i : int[0, fleetSize - 2]) (distance[i] < minDistance || distance[i] > maxDistance)) under car$i"
@@ -591,7 +595,8 @@ function create_fleet(blueprint_path,
 		strategy_paths, 
 		shield_path, 
 		destination; 
-		checks=100)
+		checks=100,
+		skip_training=false)
 	
 	# UPPAAL wants absolute paths
 	strategy_paths = [abspath(p) for p in strategy_paths if p != ""]
@@ -632,7 +637,8 @@ function create_fleet(blueprint_path,
 	# Save queries, too
 	queries_path = model_dir ⨝ "Fleet of $fleet_size Cars.q"
 	open(queries_path, "w") do query_file
-		print(query_file, queries(number_of_strategies, model_dir; checks))
+		q = queries(number_of_strategies, model_dir; checks, skip_training)
+		print(query_file, q)
 	end
 
 	model_path, queries_path
@@ -696,6 +702,7 @@ end end
 # ╠═488ee430-40cf-11ee-3160-1f10b20c5be6
 # ╟─5476773a-3daa-4c81-be1a-b29c2b2033b0
 # ╠═d2d9ca40-af15-4a65-910e-0319065cd6bf
+# ╠═73225f3b-eed4-403b-a564-dad605862566
 # ╠═627b26ba-0479-41fd-9b0d-94df3c1d3ae0
 # ╟─18664fb8-d399-4fc0-ba01-96ffe552a8ce
 # ╠═5daa0ac6-d6c5-4ca7-8f7c-d3efdf89d66b
@@ -712,7 +719,6 @@ end end
 # ╟─c5f3e21f-b929-41e1-81e2-7b0ec2dd0f28
 # ╠═6ba15d9e-1490-47a3-ac77-288eae1dc281
 # ╠═b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb
-# ╠═73225f3b-eed4-403b-a564-dad605862566
 # ╠═e5e56986-4728-480e-8c07-cb78c61e9579
 # ╠═d642235d-8da6-4a9c-b346-1c01ba5ef885
 # ╠═468c1f4a-a306-4a16-aa42-dc7e7728d959

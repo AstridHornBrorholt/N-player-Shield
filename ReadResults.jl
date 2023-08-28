@@ -261,9 +261,6 @@ end
 @bind folder TextField(80, default="$(homedir())/Results/N-player CC/$subfolder/Query Results")
   ╠═╡ =#
 
-# ╔═╡ 8dab1b76-df22-48c5-ba0c-a475da93a6e5
-
-
 # ╔═╡ 5ac717ee-a3a9-4d03-9506-050173fc996b
 #=╠═╡
 isdir(folder)
@@ -282,6 +279,16 @@ end
 # ╔═╡ 67e8b215-836e-41b5-a6e0-8a535f5ed585
 #=╠═╡
 files = read_files(folder)
+  ╠═╡ =#
+
+# ╔═╡ bb7d14c1-c609-4642-aa74-61ee233a7264
+#=╠═╡
+@bind 🐟 NumberField(1:length(files))
+  ╠═╡ =#
+
+# ╔═╡ 62aca942-8315-4212-b65f-4b2eeff54a91
+#=╠═╡
+multiline(files[🐟])
   ╠═╡ =#
 
 # ╔═╡ 95e5cfb9-5de8-4bd6-b1e7-7315b8c619fa
@@ -307,19 +314,9 @@ function safety_violation_occured(file)
 	end
 end
 
-# ╔═╡ bb7d14c1-c609-4642-aa74-61ee233a7264
-#=╠═╡
-@bind 🐟 NumberField(1:length(files))
-  ╠═╡ =#
-
 # ╔═╡ 2194dd37-0bd1-4273-b9da-323401d8285e
 #=╠═╡
 safety_violation_occured(files[🐟])
-  ╠═╡ =#
-
-# ╔═╡ 62aca942-8315-4212-b65f-4b2eeff54a91
-#=╠═╡
-multiline(files[🐟])
   ╠═╡ =#
 
 # ╔═╡ 2ed0bf96-9c36-49f9-aff0-ab6533b66f6d
@@ -329,12 +326,17 @@ if any(safety_violation_occured(file) for file in files)
 	!!! danger "Possible Safety violation."
 		One of the files did not have a query showing 0 unsafe traces. Either this query didn't run, wasn't properly matched with regex, or it contains a safety violation. Check warnings in this file for the same message and a list of matches in that file.
 	"""
+else
+	md"""
+	!!! success "All safe"
+		Every file has a `(0/xxx runs)` entry, implying that the statistical query estimating the probablility of safety violation encountered no unsafe traces.
+	"""
 end
   ╠═╡ =#
 
 # ╔═╡ dbe10e8e-ab43-403e-ac7d-687326ea6a0a
 #=╠═╡
-extract_results(files[1])
+extract_results(files[🐟])
   ╠═╡ =#
 
 # ╔═╡ 4680dcec-ae67-4a26-b61a-68ec18bee9c6
@@ -387,16 +389,15 @@ end
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═82da6cf2-7872-4021-8bfc-37b74000cd8f
 # ╠═8f12c790-0269-4626-a206-ba6066697d05
-# ╠═8dab1b76-df22-48c5-ba0c-a475da93a6e5
 # ╠═5ac717ee-a3a9-4d03-9506-050173fc996b
 # ╠═531b8bda-8ecc-48f4-88de-9d148b4df5ef
 # ╠═67e8b215-836e-41b5-a6e0-8a535f5ed585
+# ╠═bb7d14c1-c609-4642-aa74-61ee233a7264
+# ╠═62aca942-8315-4212-b65f-4b2eeff54a91
 # ╠═95e5cfb9-5de8-4bd6-b1e7-7315b8c619fa
 # ╠═4eba4ebc-e0eb-48a3-a835-3acb21747d64
 # ╠═f8b89f55-4667-45ab-aefc-30d1e41de4d5
-# ╠═bb7d14c1-c609-4642-aa74-61ee233a7264
 # ╠═2194dd37-0bd1-4273-b9da-323401d8285e
-# ╠═62aca942-8315-4212-b65f-4b2eeff54a91
 # ╟─2ed0bf96-9c36-49f9-aff0-ab6533b66f6d
 # ╠═dbe10e8e-ab43-403e-ac7d-687326ea6a0a
 # ╠═4680dcec-ae67-4a26-b61a-68ec18bee9c6
