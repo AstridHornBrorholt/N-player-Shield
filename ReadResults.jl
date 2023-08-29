@@ -371,7 +371,7 @@ end
 # ╔═╡ a1d0165d-112b-4aee-a17a-3ce3a626b0a6
 #=╠═╡
 begin
-	plot([r[end] for r in results], 
+	plot([r[end] for r in results if length(r) > 0], 
 		label="Learned performance",
 		marker=:circle,
 		markersize=8,
