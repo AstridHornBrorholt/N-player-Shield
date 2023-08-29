@@ -65,12 +65,17 @@ results_dir = results_dir ⨝ "$runs"
 isdir(results_dir) || mkdir(results_dir)
 query_results_dir = results_dir ⨝ "Query Results"
 isdir(query_results_dir) || mkpath(query_results_dir)
+models_dir = results_dir ⨝ "Models"
+isdir(models_dir) || mkpath(models_dir)
+shield_path′ = models_dir ⨝ basename(shield_path)
+cp(shield_path, shield_path′,force=true)
+shield_path = shield_path′
 
 strategy_paths = String[]
 for N in 2:max_cars
     status("Running Fleet of $N Cars...")
     outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
-    model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, results_dir; checks, skip_training)
+    model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, models_dir; checks, skip_training)
     if skip_training
         strategy_paths ← (results_dir ⨝ "Models/car1.json")
     else

@@ -609,12 +609,11 @@ function create_fleet(blueprint_path,
 	else
 		error("Invalid destination"; destination)
 	end
-	model_dir = destination ⨝ "Models"
-	isdir(model_dir) || mkdir(model_dir)
+	isdir(destination) || mkdir(destination)
 	
 
 	# Compile strategies
-	strategies = strategies_to_c(strategy_paths, model_dir)
+	strategies = strategies_to_c(strategy_paths, destination)
 
 	# Compute replacements
 	replacements = Dict{String, String}()
@@ -629,15 +628,15 @@ function create_fleet(blueprint_path,
 	
 
 	# Apply replacements to blueprint
-	model_path = model_dir ⨝ "Fleet of $fleet_size Cars.xml"
+	model_path = destination ⨝ "Fleet of $fleet_size Cars.xml"
 	search_and_replace(blueprint_path, model_path, replacements)
 	
 	error_on_regex_in(model_path, r"%")
 
 	# Save queries, too
-	queries_path = model_dir ⨝ "Fleet of $fleet_size Cars.q"
+	queries_path = destination ⨝ "Fleet of $fleet_size Cars.q"
 	open(queries_path, "w") do query_file
-		q = queries(number_of_strategies, model_dir; checks, skip_training)
+		q = queries(number_of_strategies, destination; checks, skip_training)
 		print(query_file, q)
 	end
 
