@@ -50,6 +50,18 @@ $(join(["    **$k** => $v" for (k,v) in sort(collect(json["actions"]), by=((k) -
 """)
   ╠═╡ =#
 
+# ╔═╡ 0981acdc-1c81-4e64-8542-c0686eb5f618
+#=╠═╡
+if !(occursin("NegativeAcc", json["actions"]["0"]) &&
+		occursin("PositiveAcc", json["actions"]["1"]) &&
+		occursin("NoAcc", json["actions"]["2"]))
+	md"""
+	!!! danger "Discrepancy Detected"
+	See the conditional.
+	"""
+end
+  ╠═╡ =#
+
 # ╔═╡ f2b82444-77da-4ec5-9991-186f609d9576
 actions = Dict(
 	"0" => "NegativeAcceleration",
@@ -97,7 +109,8 @@ begin
 		var = vars[regressor["var"] + 1]
 		
 		indentation(io, indent)
-		@printf io "if (%s >= %.2f)\n" var threshold
+		# 17 digits used: https://stackoverflow.com/a/8990831
+		@printf io "if (%s >= %.17f)\n" var threshold
 		
 		indent += 1
 		if_chain(io, regressor["high"], vars, indent)
@@ -114,7 +127,7 @@ begin
 	
 	function if_chain(io, regressor::Number, _, indent)
 		indentation(io, indent)
-		@printf io "return %.2f;\n" regressor
+		@printf io "return %.17f;\n" regressor
 	end
 	
 	function if_chain(regressor::Dict, vars::AbstractArray, indent)
@@ -123,6 +136,11 @@ begin
 		return String(take!(buf))
 	end
 end
+
+# ╔═╡ 490df7d6-a79b-4d3e-8e9b-a302d1e359db
+#=╠═╡
+@info if_chain(regressor["1"], vars, 0)[1:1000]*"\n..."
+  ╠═╡ =#
 
 # ╔═╡ 308aa994-8cf5-4393-9631-4f4baac64c6a
 begin
@@ -689,6 +707,7 @@ version = "17.4.0+0"
 # ╠═451b36a9-9712-42ac-b53e-e2031c978ec2
 # ╠═46d36365-2146-4094-9bd7-15310269e746
 # ╠═c78f40f4-945c-4ee0-ad4e-8b47a734f222
+# ╟─0981acdc-1c81-4e64-8542-c0686eb5f618
 # ╠═f2b82444-77da-4ec5-9991-186f609d9576
 # ╠═f9f09026-dc0d-41cd-af2c-6ca18d3768d0
 # ╠═36031e3c-ff0d-4f29-99f3-316b7b2992e5
@@ -696,6 +715,7 @@ version = "17.4.0+0"
 # ╠═9f83ff3e-33ff-4a2a-b87d-58476b422686
 # ╠═b10ccf72-c9f9-4c7a-855f-aed16ca5a794
 # ╠═b1129b94-6ad6-4d50-9155-10821419fb62
+# ╠═490df7d6-a79b-4d3e-8e9b-a302d1e359db
 # ╠═308aa994-8cf5-4393-9631-4f4baac64c6a
 # ╠═67978236-9ffa-49e0-a3b0-d4c3f4985d3a
 # ╠═879a90ad-f58a-4c38-aef6-8b8363016651
