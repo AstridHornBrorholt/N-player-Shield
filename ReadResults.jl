@@ -239,6 +239,46 @@ html"""
 <marquee> uwu Purr eow mrow purr purr uwu owo meow purr owo uwu meow purr purr owo mrow uwu uwu meow purr mrow mew owo uwu owo uwu mrow mew purr owo uwu puirr mrow meow mew mmmeoww purr uwu owo mrow meow mew ow purr hsss *scratches you* mrow meow purr uwu purr uwu owo mrow mew ow purr meow uwu </marquee>
 """
 
+# ╔═╡ c9e1bc2c-a6f7-4b88-8038-51cf2ef2a008
+html"""
+<style>
+pluto-editor {
+	background-image: url("https://i.imgur.com/VqU9gsd.png");
+}
+pluto-notebook {
+	background: none;
+}
+
+pluto-output  {
+	border-radius: 4pt;
+	padding: 4pt;
+}
+
+pluto-input .cm-editor {
+	background: #fafafafa;
+}
+
+pluto-cell.code_differs .cm-editor .cm-gutters {
+	background: #c8dcfa;
+}
+
+body:not(.___) pluto-cell.code_differs > pluto-trafficlight {
+	background: #b4caed;
+	border-left-color: #b4caed;
+}
+
+body:not(.___) pluto-cell.errored > pluto-trafficlight {
+	background: #ffa18a;
+}
+
+body:not(.___) pluto-cell:focus-within > pluto-trafficlight {
+	background: #b4caed;
+}
+</style>
+
+<p>🎨 Custom style sheet loaded.</p>
+"""
+
 # ╔═╡ 95e38fbd-142d-4926-9291-27e69ddf7c75
 function multiline(str)
 	HTML("""
@@ -384,6 +424,7 @@ end
 # ╔═╡ Cell order:
 # ╠═d0db8070-41a9-11ee-2b97-818668d7efa8
 # ╟─2bd47b9e-31e3-4ee1-aa87-60dfc40869a9
+# ╟─c9e1bc2c-a6f7-4b88-8038-51cf2ef2a008
 # ╠═95e38fbd-142d-4926-9291-27e69ddf7c75
 # ╠═61c15d44-75be-4613-8b60-484d94847b8a
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
