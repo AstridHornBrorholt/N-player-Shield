@@ -485,7 +485,7 @@ function queries(number_of_strategies, output_path; checks=1000, skip_training=f
 	end
 	result ← "E[<=100;$checks](max:D[$(i - 1)]) under car$i"
 	# Probability of safety violation
-	result ← "Pr[<=100;1000](<> forall (i : int[0, fleetSize - 2]) (distance[i] < minDistance || distance[i] > maxDistance)) under car$i"
+	result ← "Pr[<=100;$checks](<> forall (i : int[0, fleetSize - 2]) (distance[i] < minDistance || distance[i] > maxDistance)) under car$i"
 
 	join(result, "\n")
 end
