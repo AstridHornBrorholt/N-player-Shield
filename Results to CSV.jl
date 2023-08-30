@@ -252,12 +252,15 @@ pluto-notebook {
 }
 
 pluto-output  {
-	border-radius: 4pt;
+	border-radius: 4pt 4pt 0 0;
 	padding: 4pt;
+	background: none;
+	backdrop-filter: blur(5px)brightness(104%);
 }
 
 pluto-input .cm-editor {
-	background: #fafafafa;
+	background: none;
+	backdrop-filter: blur(5px)brightness(98%);
 }
 
 pluto-cell.code_differs .cm-editor .cm-gutters {

@@ -252,12 +252,15 @@ pluto-notebook {
 }
 
 pluto-output  {
-	border-radius: 4pt;
+	border-radius: 4pt 4pt 0 0;
 	padding: 4pt;
+	background: none;
+	backdrop-filter: blur(5px)brightness(104%);
 }
 
 pluto-input .cm-editor {
-	background: #fafafafa;
+	background: none;
+	backdrop-filter: blur(5px)brightness(98%);
 }
 
 pluto-cell.code_differs .cm-editor .cm-gutters {
@@ -365,11 +368,17 @@ end
 @bind runs Select(means[!, :runs] |> unique)
   ╠═╡ =#
 
+# ╔═╡ 8a8ad7a8-94cb-4f94-9e78-7684091272c8
+#=╠═╡
+@info "Repetitions found: $(nrow(filter(:fleet_size => (x -> x == 2), filter(:runs => (x -> x == runs), cleandata))))"
+  ╠═╡ =#
+
 # ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
 begin
 	function learned_performance_plot!(means::DataFrame, 
 			runs;
-			color=colors.POMEGRANATE)
+			color=colors.POMEGRANATE,
+			show_other_measurements=true)
 		
 		df = filter(:runs => (x -> x == runs), 
 			means)
@@ -387,14 +396,16 @@ begin
 			ylabel="performance",
 			label="trained for $runs runs",
 			legend=:outertop)
-	
-		marker = (markercolor=color, markershape=:circle, markersize=6, markerstrokecolor=:white)
-		for f in fleet_min:fleet_max
-			df′ = filter(:fleet_size => (x -> x == f), df)
-			other_cars = df′[!, :other_cars]
-			scatter!(other_cars; marker..., label=nothing)
+
+		if show_other_measurements
+			marker = (markercolor=color, markershape=:circle, markersize=6, markerstrokecolor=:white)
+			for f in fleet_min:fleet_max
+				df′ = filter(:fleet_size => (x -> x == f), df)
+				other_cars = df′[!, :other_cars]
+				scatter!(other_cars; marker..., label=nothing)
+			end
 		end
-		scatter!([]; marker..., label=nothing)
+		plot!()
 	end
 	function learned_performance_plot(x...)
 		plot()
@@ -407,13 +418,22 @@ end
 learned_performance_plot(means, runs)
   ╠═╡ =#
 
+# ╔═╡ 121a1235-4dd8-4282-8f01-b2d6b743286e
+#=╠═╡
+ylims=(
+	min(means[!, :learned_performance]...) - 200, 
+	max(means[!, :learned_performance]...) + 200)
+  ╠═╡ =#
+
 # ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
 #=╠═╡
-begin
-	plot(ylim=(1500, 4000))
+let
+	plot(;ylims)
 	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.WISTERIA, colors.CARROT]
 	for (i, r) in enumerate(means[!, :runs] |> unique)
-		learned_performance_plot!(means, r, color=c[i%length(c) + 1])
+		learned_performance_plot!(means, r, 
+			color=c[i%length(c) + 1], 
+			show_other_measurements=false)
 	end
 	plot!()
 end
@@ -436,6 +456,8 @@ end
 # ╠═85871e02-b379-4306-a547-1d6239e61fc2
 # ╠═a675d6b9-0f2b-4023-af2a-1bb43303f6a7
 # ╠═ef7d9898-c2be-493b-913e-51a854d74c32
+# ╠═8a8ad7a8-94cb-4f94-9e78-7684091272c8
 # ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
 # ╠═3f04b408-1027-4c87-b138-35e63ab4697a
+# ╠═121a1235-4dd8-4282-8f01-b2d6b743286e
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
