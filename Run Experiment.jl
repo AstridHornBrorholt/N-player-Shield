@@ -5,7 +5,6 @@ function status(str)
     time = Dates.Time(Dates.now())
     println("$time $🍎 $str")
 end
-status("Starting...")
 using Pkg
 Pkg.activate(".")
 
@@ -53,6 +52,7 @@ repetitions = args["repetitions"]
 results_dir = args["results-dir"]
 verifyta_path = args["verifyta-path"]
 skip_training = args["skip-training"]
+status("Starting... (runs=$runs, max_cars=$max_cars, repetitions=$repetitions, skip_training=$skip_training)")
 
 isdir(results_dir) || mkdir(results_dir) # Provoke error if path is invalid
 isfile(verifyta_path) || error("File verifyta not found at path $verifyta_path")
@@ -84,7 +84,7 @@ for repetition in 1:repetitions
 
     strategy_paths = String[]
     for N in 2:max_cars
-        status("Running Fleet of $N Cars...")
+        status("Running Fleet of $N Cars...  (repetition=$repetition)")
         outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
         model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, models_dir; checks, skip_training)
         if skip_training
@@ -96,6 +96,7 @@ for repetition in 1:repetitions
             result = [verifyta_call..., model_path, queries_path] |> Cmd |> read |> String
             write(io, result)
         end
+        status("Done running Fleet of $N Cars.  (repetition=$repetition)")
     end
 end
 
