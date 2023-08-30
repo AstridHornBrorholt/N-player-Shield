@@ -4,16 +4,6 @@
 using Markdown
 using InteractiveUtils
 
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
-        el
-    end
-end
-
 # ╔═╡ 7d449a33-2530-44a0-9b9c-8c0ffe4ba475
 begin
 	using Pkg
@@ -23,10 +13,14 @@ begin
 	using Glob
 	using Plots
 	include("Strategy to C.jl")
+	include("FlatUI Colors.jl")
 end;
 
 # ╔═╡ 30662bc6-251c-4c7d-9386-9ecdbe52967d
+# ╠═╡ skip_as_script = true
+#=╠═╡
 using PlutoUI
+  ╠═╡ =#
 
 # ╔═╡ b28d2e2a-1dc2-4287-8fc4-1e018628844a
 html"""
@@ -300,7 +294,9 @@ end
 ← = push!
 
 # ╔═╡ ffeb8853-b48c-4244-8e87-cb1f1d84a146
+#=╠═╡
 @bind results_dir TextField(80, default="$(homedir())/Results/N-player CC/")
+  ╠═╡ =#
 
 # ╔═╡ 926c21d4-29dc-43c0-8161-72b53692fe94
 function firstcapture(re::Regex, str::AbstractString)
@@ -311,62 +307,12 @@ function firstcapture(re::Regex, str::AbstractString)
 	m[1]
 end
 
-# ╔═╡ 7470f46c-e4cb-414e-8f02-21922e401201
-`tree $results_dir` |> read |> String |> multiline
-
-# ╔═╡ 5cd92a3f-90a4-4d0b-a476-0acf91f4af03
-md"""
-Example path:
-
-	N-player CC/10 Runs/Repetition 1/Query Results/Fleet of 3 Cars.txt
-"""
-
-# ╔═╡ 5e254378-b6dd-4b26-94ae-39840bf0e1d7
-multiline("/home/asger/Results/N-player CC/1 Runs/Repetition 1/Query Results/Fleet of 3 Cars.txt" |> read |> String)
-
-# ╔═╡ ebb81812-f7de-421c-912c-5f4bb2dfc59f
-header = "runs; repetition; fleet_size; learned_performance; other_cars;"
-
 # ╔═╡ e900855f-6c9f-41d4-8f1e-9580190a92f8
 function extract_results(file)
-	re_mean = r"mean=(\d+\.\d+)"
+	re_mean = r"mean=(\d+\.?\d*)"
 	result = [m[1] for m in eachmatch(re_mean, file)]
 	result = [parse(Float64, v) for v in result]
 end
-
-# ╔═╡ b44fec5b-1841-4e78-aaff-53fb5d667d5d
-extract_results("/home/asger/Results/N-player CC/1 Runs/Repetition 1/Query Results/Fleet of 3 Cars.txt" |> read |> String)
-
-# ╔═╡ 1e34748a-20ee-4903-a9b2-a514de81b68a
-function to_csv(results_dir)
-	isdir(results_dir) || error("Not found: $results_dir")
-	result = String[header]
-	for f in glob("* Runs", results_dir)
-		runs = firstcapture(r"(\d+) Runs", f)
-		for g in glob("Repetition *", f)
-			repetition = firstcapture(r"Repetition (\d+)", g)
-			for h in glob("Query Results/Fleet of * Cars.txt", g)
-				fleet_size = firstcapture(r"Fleet of (\d+) Cars.txt", h)
-				fleet_size = parse(Int64, fleet_size)
-				query_results = extract_results(h |> read |> String)
-				if length(query_results) != fleet_size - 1 
-					@warn "Skipping file with unexpected number of query results: $h"
-					continue
-				end
-				learned_performance = query_results[end]
-				other_cars = query_results[1:end - 1]
-				if length(other_cars) == 0
-					other_cars = "[]"
-				end
-				result ← "$runs; $repetition; $fleet_size; $learned_performance, $other_cars"
-			end
-		end
-	end
-	to_csv(result)
-end
-
-# ╔═╡ b646f1e9-e216-44dc-9566-54fc077a9910
-to_csv(results_dir)
 
 # ╔═╡ 5c625d7a-a646-4613-b8dd-b2c246ce0c22
 function safety_violation_occured(file)
@@ -381,6 +327,86 @@ function safety_violation_occured(file)
 	end
 end
 
+# ╔═╡ 7470f46c-e4cb-414e-8f02-21922e401201
+#=╠═╡
+`tree $results_dir` |> read |> String |> multiline
+  ╠═╡ =#
+
+# ╔═╡ 5cd92a3f-90a4-4d0b-a476-0acf91f4af03
+md"""
+Example path:
+
+	N-player CC/1000 Runs/Repetition 1/Query Results/Fleet of 3 Cars.txt
+"""
+
+# ╔═╡ 16f320a0-6b75-4760-86d0-bbbd19cab4a6
+#=╠═╡
+query_result_path = rand(glob("* Runs/Repetition */Query Results/Fleet of * Cars.txt", results_dir))
+  ╠═╡ =#
+
+# ╔═╡ b44fec5b-1841-4e78-aaff-53fb5d667d5d
+#=╠═╡
+extract_results(results_dir ⨝ query_result_path |> read |> String)
+  ╠═╡ =#
+
+# ╔═╡ 5e254378-b6dd-4b26-94ae-39840bf0e1d7
+#=╠═╡
+multiline(query_result_path |> read |> String)
+  ╠═╡ =#
+
+# ╔═╡ ebb81812-f7de-421c-912c-5f4bb2dfc59f
+header = "runs;repetition;fleet_size;learned_performance;other_cars"
+
+# ╔═╡ 1e34748a-20ee-4903-a9b2-a514de81b68a
+function to_csv(results_dir)
+	isdir(results_dir) || error("Not found: $results_dir")
+	result = String[header]
+	for f in glob("* Runs", results_dir)
+		runs = firstcapture(r"(\d+) Runs", f)
+		for g in glob("Repetition *", f)
+			repetition = firstcapture(r"Repetition (\d+)", g)
+			for h in glob("Query Results/Fleet of * Cars.txt", g)
+				fleet_size = firstcapture(r"Fleet of (\d+) Cars.txt", h)
+				fleet_size = parse(Int64, fleet_size)
+				query_results = extract_results(h |> read |> String)
+				if length(query_results) != fleet_size - 1 
+					@warn "Skipping file with unexpected number of query results" file=h expected=fleet_size - 1 actual=length(query_results)
+					continue
+				end
+				learned_performance = query_results[end]
+				other_cars = query_results[1:end - 1]
+				if length(other_cars) == 0
+					other_cars = "[]"
+				end
+				result ← "$runs;$repetition;$fleet_size;$learned_performance;$other_cars"
+			end
+		end
+	end
+	join(result, "\n")
+end
+
+# ╔═╡ b646f1e9-e216-44dc-9566-54fc077a9910
+#=╠═╡
+csv = to_csv(results_dir)
+  ╠═╡ =#
+
+# ╔═╡ c6fc0693-6f60-45a9-a2c4-58943a7d832d
+#=╠═╡
+csv |> multiline
+  ╠═╡ =#
+
+# ╔═╡ c3140c27-1234-4026-bb1d-efcde666f70e
+"/home/asger/Results/N-player CC/8000 Runs/Repetition 1/Query Results/Fleet of 6 Cars.txt" |> read |> String |> multiline
+
+# ╔═╡ 030b379f-72c9-426b-aa45-32be0220709b
+#=╠═╡
+let
+	buf = IOBuffer()
+	print(buf, csv)
+	DownloadButton(take!(buf), "Results.csv")
+end
+  ╠═╡ =#
+
 # ╔═╡ Cell order:
 # ╠═7d449a33-2530-44a0-9b9c-8c0ffe4ba475
 # ╟─b28d2e2a-1dc2-4287-8fc4-1e018628844a
@@ -390,12 +416,16 @@ end
 # ╠═c2b5971e-2257-402e-97a9-edac0e7534ad
 # ╠═ffeb8853-b48c-4244-8e87-cb1f1d84a146
 # ╠═926c21d4-29dc-43c0-8161-72b53692fe94
+# ╠═e900855f-6c9f-41d4-8f1e-9580190a92f8
+# ╠═5c625d7a-a646-4613-b8dd-b2c246ce0c22
 # ╠═7470f46c-e4cb-414e-8f02-21922e401201
 # ╟─5cd92a3f-90a4-4d0b-a476-0acf91f4af03
+# ╠═16f320a0-6b75-4760-86d0-bbbd19cab4a6
 # ╠═b44fec5b-1841-4e78-aaff-53fb5d667d5d
 # ╠═5e254378-b6dd-4b26-94ae-39840bf0e1d7
 # ╠═ebb81812-f7de-421c-912c-5f4bb2dfc59f
 # ╠═1e34748a-20ee-4903-a9b2-a514de81b68a
 # ╠═b646f1e9-e216-44dc-9566-54fc077a9910
-# ╠═e900855f-6c9f-41d4-8f1e-9580190a92f8
-# ╠═5c625d7a-a646-4613-b8dd-b2c246ce0c22
+# ╠═c6fc0693-6f60-45a9-a2c4-58943a7d832d
+# ╠═c3140c27-1234-4026-bb1d-efcde666f70e
+# ╠═030b379f-72c9-426b-aa45-32be0220709b

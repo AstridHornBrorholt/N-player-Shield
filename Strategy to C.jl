@@ -27,6 +27,46 @@ This Pluto notebook is also a valid julia-script which provides the following fu
 $(@doc strategy_to_c)
 """
 
+# ╔═╡ a63ee558-5b46-4827-ae1a-95fa633e30d5
+html"""
+<style>
+pluto-editor {
+	background-image: url("https://i.imgur.com/VqU9gsd.png");
+}
+pluto-notebook {
+	background: none;
+}
+
+pluto-output  {
+	border-radius: 4pt;
+	padding: 4pt;
+}
+
+pluto-input .cm-editor {
+	background: #fafafafa;
+}
+
+pluto-cell.code_differs .cm-editor .cm-gutters {
+	background: #c8dcfa;
+}
+
+body:not(.___) pluto-cell.code_differs > pluto-trafficlight {
+	background: #b4caed;
+	border-left-color: #b4caed;
+}
+
+body:not(.___) pluto-cell.errored > pluto-trafficlight {
+	background: #ffa18a;
+}
+
+body:not(.___) pluto-cell:focus-within > pluto-trafficlight {
+	background: #b4caed;
+}
+</style>
+
+<p>🎨 Custom style sheet loaded.</p>
+"""
+
 # ╔═╡ 3bb7e0de-5364-4a52-ab7d-7d5cb9273efa
 #=╠═╡
 @bind picked_file FilePicker()
@@ -45,7 +85,7 @@ json = JSON.parse(text)
 # ╔═╡ c78f40f4-945c-4ee0-ad4e-8b47a734f222
 #=╠═╡
 Markdown.parse("""
-!!! info "Actions"
+!!! info "Actions" 
 $(join(["    **$k** => $v" for (k,v) in sort(collect(json["actions"]), by=((k) -> k))], "\n\n"))
 """)
   ╠═╡ =#
@@ -54,7 +94,7 @@ $(join(["    **$k** => $v" for (k,v) in sort(collect(json["actions"]), by=((k) -
 #=╠═╡
 if !(occursin("NegativeAcc", json["actions"]["0"]) &&
 		occursin("PositiveAcc", json["actions"]["1"]) &&
-		occursin("NoAcc", json["actions"]["2"]))
+		occursin("No Acc", json["actions"]["2"]))
 	md"""
 	!!! danger "Discrepancy Detected"
 	See the conditional.
@@ -703,6 +743,7 @@ version = "17.4.0+0"
 # ╟─7161e853-49b1-468e-a4ba-949c34ef2da2
 # ╠═fc499f82-3c3c-11ee-109a-f534985c8341
 # ╠═5615668e-7020-43b2-9a97-07dbca4aa115
+# ╟─a63ee558-5b46-4827-ae1a-95fa633e30d5
 # ╠═3bb7e0de-5364-4a52-ab7d-7d5cb9273efa
 # ╠═451b36a9-9712-42ac-b53e-e2031c978ec2
 # ╠═46d36365-2146-4094-9bd7-15310269e746

@@ -8,10 +8,12 @@ using InteractiveUtils
 begin
 	using Pkg
 	Pkg.activate(".")
-	using JSON
-	using Glob
+	using CSV
+	using DataFrames
 	using Plots
-	include("Strategy to C.jl")
+	using Statistics
+	using StatsPlots
+	include("FlatUI Colors.jl")
 end;
 
 # ╔═╡ 61c15d44-75be-4613-8b60-484d94847b8a
@@ -291,133 +293,129 @@ end
 # ╔═╡ 26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 ← = push!
 
-# ╔═╡ 82da6cf2-7872-4021-8bfc-37b74000cd8f
+# ╔═╡ 1f3a2bee-2817-4314-901e-7dd3743fbab9
 #=╠═╡
-@bind subfolder Select(readdir("$(homedir())/Results/N-player CC/"))
+@bind results_csv FilePicker()
   ╠═╡ =#
 
-# ╔═╡ 8f12c790-0269-4626-a206-ba6066697d05
+# ╔═╡ 62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 #=╠═╡
-@bind folder TextField(80, default="$(homedir())/Results/N-player CC/$subfolder/Query Results")
+csv_string = results_csv["data"] |> String 
   ╠═╡ =#
 
-# ╔═╡ 5ac717ee-a3a9-4d03-9506-050173fc996b
+# ╔═╡ e1ddadeb-e9fd-4c37-a206-dff03363724e
 #=╠═╡
-isdir(folder)
+csv_string |> multiline
   ╠═╡ =#
 
-# ╔═╡ 531b8bda-8ecc-48f4-88de-9d148b4df5ef
-function read_files(folder::T) where T<:AbstractString
-	files = String[]
-	for file_path in glob("*", folder)
-		file = file_path |> read |> String
-		files ← file
-	end
-	files
-end
-
-# ╔═╡ 67e8b215-836e-41b5-a6e0-8a535f5ed585
+# ╔═╡ 7cd7f277-8388-413a-b993-9b81fdb495b8
 #=╠═╡
-files = read_files(folder)
+raw_results = CSV.read(IOBuffer(csv_string), DataFrame)
   ╠═╡ =#
 
-# ╔═╡ bb7d14c1-c609-4642-aa74-61ee233a7264
-#=╠═╡
-@bind 🐟 NumberField(1:length(files))
-  ╠═╡ =#
-
-# ╔═╡ 62aca942-8315-4212-b65f-4b2eeff54a91
-#=╠═╡
-multiline(files[🐟])
-  ╠═╡ =#
-
-# ╔═╡ 95e5cfb9-5de8-4bd6-b1e7-7315b8c619fa
-function extract_results(file)
-	re_mean = r"mean=(\d+\.\d+)"
-	result = [m[1] for m in eachmatch(re_mean, file)]
-	result = [parse(Float64, v) for v in result]
-end
-
-# ╔═╡ 4eba4ebc-e0eb-48a3-a835-3acb21747d64
-multiline
-
-# ╔═╡ f8b89f55-4667-45ab-aefc-30d1e41de4d5
-function safety_violation_occured(file)
-	re_safe = r"\(0/\d+ runs\)"
-	if occursin(re_safe, file)
-		return false
+# ╔═╡ db1720fb-1134-4d81-b0b0-7da700d38798
+# Avoid eval call
+function to_vector(str::T) where T<:AbstractString
+	🐟 = match(r"\[(.*)\]", str)[1]
+	if 🐟 == ""
+		return []
 	else
-		re_check = r"\(\d+/\d+ runs\)"
-		matches = match(re_check, file)
-		@warn "Didn't find a run showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." matches
-		return true
+		🎣 = split(🐟, ", ")
+	 	return [parse(Float64, 🍣) for 🍣 in 🎣]
 	end
 end
 
-# ╔═╡ 2194dd37-0bd1-4273-b9da-323401d8285e
-#=╠═╡
-safety_violation_occured(files[🐟])
-  ╠═╡ =#
+# ╔═╡ be64568d-f451-46f4-8336-bd94fff82471
+to_vector("[3377.35, 2655.58, 2868.0, 2781.98]")
 
-# ╔═╡ 2ed0bf96-9c36-49f9-aff0-ab6533b66f6d
+# ╔═╡ 5484bf48-11be-4ac7-9557-e6fa36802f1d
 #=╠═╡
-if any(safety_violation_occured(file) for file in files)
-	md"""
-	!!! danger "Possible Safety violation."
-		One of the files did not have a query showing 0 unsafe traces. Either this query didn't run, wasn't properly matched with regex, or it contains a safety violation. Check warnings in this file for the same message and a list of matches in that file.
-	"""
-else
-	md"""
-	!!! success "All safe"
-		Every file has a `(0/xxx runs)` entry, implying that the statistical query estimating the probablility of safety violation encountered no unsafe traces.
-	"""
+cleandata = let
+	cleandata = raw_results
+	cleandata = transform(cleandata, :other_cars => ByRow(to_vector) => :other_cars)
 end
   ╠═╡ =#
 
-# ╔═╡ dbe10e8e-ab43-403e-ac7d-687326ea6a0a
+# ╔═╡ 85871e02-b379-4306-a547-1d6239e61fc2
+function elementwise_mean(vec)
+	result = []
+	length(vec) > 0 || return result |> string
+	for (i, _) in enumerate(vec[1])
+		result ← mean([v[i] for v in vec])
+	end
+	result |> string
+end
+
+# ╔═╡ a675d6b9-0f2b-4023-af2a-1bb43303f6a7
 #=╠═╡
-extract_results(files[🐟])
+means = let
+	grouping =  groupby(cleandata, [:runs, :fleet_size])
+	
+	means = combine(grouping, 
+		:learned_performance => mean, :other_cars => (elementwise_mean), 
+		renamecols=false)
+	
+	means = transform(means, :other_cars => ByRow(to_vector), 
+		renamecols=false)
+end
   ╠═╡ =#
 
-# ╔═╡ 4680dcec-ae67-4a26-b61a-68ec18bee9c6
+# ╔═╡ ef7d9898-c2be-493b-913e-51a854d74c32
 #=╠═╡
-results = [extract_results(f) for f in files]
+@bind runs Select(means[!, :runs] |> unique)
   ╠═╡ =#
 
-# ╔═╡ dbae0f8e-e1cc-4299-90ff-e6a486e930f7
+# ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
+begin
+	function learned_performance_plot!(means::DataFrame, 
+			runs;
+			color=colors.POMEGRANATE)
+		
+		df = filter(:runs => (x -> x == runs), 
+			means)
+		fleet_sizes = df[!, :fleet_size]
+		fleet_min = min(fleet_sizes...)
+		fleet_max = max(fleet_sizes...)
+		
+		xticks = (collect(1:(fleet_max - 1)), ["car$x" for x in 1:(fleet_max - 1)])
+		
+		@df df plot!(:learned_performance, 
+			color=color,
+			linewidth=2,
+			xticks=xticks,
+			xlabel="learner",
+			ylabel="performance",
+			label="trained for $runs runs",
+			legend=:outertop)
+	
+		marker = (markercolor=color, markershape=:circle, markersize=6, markerstrokecolor=:white)
+		for f in fleet_min:fleet_max
+			df′ = filter(:fleet_size => (x -> x == f), df)
+			other_cars = df′[!, :other_cars]
+			scatter!(other_cars; marker..., label=nothing)
+		end
+		scatter!([]; marker..., label=nothing)
+	end
+	function learned_performance_plot(x...)
+		plot()
+		learned_performance_plot!(x...)
+	end
+end
+
+# ╔═╡ 3f04b408-1027-4c87-b138-35e63ab4697a
 #=╠═╡
-ylims = (min(2000, (results |> Iterators.flatten)...), max(3100, (results |> Iterators.flatten)...))
+learned_performance_plot(means, runs)
   ╠═╡ =#
 
-# ╔═╡ 171cb481-28e5-4c37-aeac-8cded87535d9
+# ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
 #=╠═╡
 begin
-	plot(legend=:outerright,
-		ylims=ylims)
-	
-	markers = [:circle, :utriangle, :square, :star]
-	for (i, vs) in enumerate(results)
-		plot!(vs, 
-			line=2,
-			label="Fleet of $(i+2) Cars",
-			marker=markers[1 + i%length(markers)],
-			markersize=8,
-			markerstrokecolor=:white)
+	plot(ylim=(1500, 4000))
+	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.WISTERIA, colors.CARROT]
+	for (i, r) in enumerate(means[!, :runs] |> unique)
+		learned_performance_plot!(means, r, color=c[i%length(c) + 1])
 	end
 	plot!()
-end
-  ╠═╡ =#
-
-# ╔═╡ a1d0165d-112b-4aee-a17a-3ce3a626b0a6
-#=╠═╡
-begin
-	plot([r[end] for r in results if length(r) > 0], 
-		label="Learned performance",
-		marker=:circle,
-		markersize=8,
-		markerstrokecolor=:white,
-		line=2,
-		ylims=ylims)
 end
   ╠═╡ =#
 
@@ -425,23 +423,19 @@ end
 # ╠═d0db8070-41a9-11ee-2b97-818668d7efa8
 # ╟─2bd47b9e-31e3-4ee1-aa87-60dfc40869a9
 # ╟─c9e1bc2c-a6f7-4b88-8038-51cf2ef2a008
-# ╠═95e38fbd-142d-4926-9291-27e69ddf7c75
+# ╟─95e38fbd-142d-4926-9291-27e69ddf7c75
 # ╠═61c15d44-75be-4613-8b60-484d94847b8a
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
-# ╠═82da6cf2-7872-4021-8bfc-37b74000cd8f
-# ╠═8f12c790-0269-4626-a206-ba6066697d05
-# ╠═5ac717ee-a3a9-4d03-9506-050173fc996b
-# ╠═531b8bda-8ecc-48f4-88de-9d148b4df5ef
-# ╠═67e8b215-836e-41b5-a6e0-8a535f5ed585
-# ╠═bb7d14c1-c609-4642-aa74-61ee233a7264
-# ╠═62aca942-8315-4212-b65f-4b2eeff54a91
-# ╠═95e5cfb9-5de8-4bd6-b1e7-7315b8c619fa
-# ╠═4eba4ebc-e0eb-48a3-a835-3acb21747d64
-# ╠═f8b89f55-4667-45ab-aefc-30d1e41de4d5
-# ╠═2194dd37-0bd1-4273-b9da-323401d8285e
-# ╟─2ed0bf96-9c36-49f9-aff0-ab6533b66f6d
-# ╠═dbe10e8e-ab43-403e-ac7d-687326ea6a0a
-# ╠═4680dcec-ae67-4a26-b61a-68ec18bee9c6
-# ╠═dbae0f8e-e1cc-4299-90ff-e6a486e930f7
-# ╠═171cb481-28e5-4c37-aeac-8cded87535d9
-# ╠═a1d0165d-112b-4aee-a17a-3ce3a626b0a6
+# ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
+# ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
+# ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
+# ╠═7cd7f277-8388-413a-b993-9b81fdb495b8
+# ╠═db1720fb-1134-4d81-b0b0-7da700d38798
+# ╠═be64568d-f451-46f4-8336-bd94fff82471
+# ╠═5484bf48-11be-4ac7-9557-e6fa36802f1d
+# ╠═85871e02-b379-4306-a547-1d6239e61fc2
+# ╠═a675d6b9-0f2b-4023-af2a-1bb43303f6a7
+# ╠═ef7d9898-c2be-493b-913e-51a854d74c32
+# ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
+# ╠═3f04b408-1027-4c87-b138-35e63ab4697a
+# ╠═f00c8154-36be-495e-b681-fd3c24f97561
