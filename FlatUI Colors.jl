@@ -26,3 +26,4 @@ colors =
 
 trans = [colorant"#FFFFFF", colorant"#5BCEFA", colorant"#F5A9B8"]
 enby =  [colorant"#FCF434", colorant"#FFFFFF", colorant"#9C59D1", colorant"#2C2C2C"]
+;
