@@ -15,26 +15,26 @@ do
 
     export runs=5000
     export checks=1000
-    ./run_single.sh
+    sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
 
     export runs=10000
     export checks=1000
-    ./run_single.sh
+    sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
 
     export runs=20000
     export checks=1000
-    ./run_single.sh
+    sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
 
     export runs=40000
     export checks=1000
-    ./run_single.sh
+    sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
 
     export runs=80000
     export checks=1000
-    ./run_single.sh
+    sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
 done
