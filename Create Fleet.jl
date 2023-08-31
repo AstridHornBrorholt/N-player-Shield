@@ -250,7 +250,7 @@ end
 
 # ╔═╡ 627b26ba-0479-41fd-9b0d-94df3c1d3ae0
 #=╠═╡
-@bind number_of_strategies NumberField(0:10)
+@bind number_of_strategies NumberField(0:10, default=2)
   ╠═╡ =#
 
 # ╔═╡ 18664fb8-d399-4fc0-ba01-96ffe552a8ce
@@ -266,7 +266,7 @@ function strategy_paths_input(number_of_strategies)
 		names = ["$i" for i in 1:number_of_strategies]
 		inputs = [
 			md""" $(name): $(
-				Child(name, TextField(70, default = "/home/asger/Results/N-player CC/1/Models/car" * name * ".json"))
+				Child(name, TextField(70, default = "/home/asger/Results/N-player CC/5000 Runs/Repetition 1/Models/car" * name * ".json"))
 			)"""
 			
 			for name in names
@@ -422,7 +422,8 @@ function system_declaration(number_of_strategies)
 	end
 	l = number_of_strategies + 1 # Learner index
 	result ← "Shield$l = Shield($l);"
-	result ← "Learner$l = Learner($l);"
+	# Breaking with convention by always calling it Learner1 so that strategies are interchangible
+	result ← "Learner1 = Learner($l);" 
 	
 	system = String[]
 	system ← "system Dynamics"
@@ -432,7 +433,7 @@ function system_declaration(number_of_strategies)
 		system ← "PreTrained$i"
 		system ← "Shield$i"
 	end
-	system ← "Learner$l"
+	system ← "Learner1"
 	system ← "Shield$l"
 	
 	result ← join(system, ", ") * ";"
@@ -473,9 +474,11 @@ These will be easiest to generate in the same swoop.
 # ╔═╡ c7baa1ea-5252-4319-adfd-d003aa8ee0df
 function queries(number_of_strategies, output_path; checks=1000, skip_training=false)
 	result = String[]
+	# Cross-checking outcomes of previous (c-compiled) strategies
 	for i in 0:number_of_strategies-1
 		result ← "E[<=100;$checks](max:D[$(i)])"
 	end
+	# Training or loading strategy
 	i = number_of_strategies + 1
 	if !skip_training
 		result ← "strategy car$i = minE(D[$(i - 1)]) [<=100] {}->{velocity[$i], velocity[$(i - 1)], distance[$(i - 1)]}: <> time >= 100"
@@ -483,6 +486,7 @@ function queries(number_of_strategies, output_path; checks=1000, skip_training=f
 	else
 		result ← "strategy car$i = loadStrategy{}->{velocity[$i], velocity[$(i - 1)], distance[$(i - 1)]} (\"$output_path/car1.json\")"
 	end
+	# Learned performance
 	result ← "E[<=100;$checks](max:D[$(i - 1)]) under car$i"
 	# Probability of safety violation
 	result ← "Pr[<=100;$checks](<> forall (i : int[0, fleetSize - 2]) (distance[i] < minDistance || distance[i] > maxDistance)) under car$i"
@@ -506,7 +510,7 @@ md"""
 
 # ╔═╡ fade61a9-8136-4a4c-99a2-dee9bf79fd32
 #=╠═╡
-@bind blueprint_path TextField(80, default="/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Fleet_blueprint.xml")
+@bind blueprint_path TextField(80, default="/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Fleet_blueprint.xml")
   ╠═╡ =#
 
 # ╔═╡ a0e02d1a-0355-4496-9b18-70f53c67a389
@@ -516,7 +520,7 @@ isfile(blueprint_path)
 
 # ╔═╡ dc00019b-ca42-49e8-a9e7-7c326b3082db
 #=╠═╡
-@bind destination TextField(80, default="/home/asger/Results/N-player CC")
+@bind destination TextField(80, default=mktempdir())
   ╠═╡ =#
 
 # ╔═╡ 4a634cea-cbe4-4454-aee0-1525b526b48a
