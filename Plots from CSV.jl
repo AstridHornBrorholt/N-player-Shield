@@ -13,13 +13,16 @@ begin
 	using Plots
 	using Statistics
 	using StatsPlots
-	include("FlatUI Colors.jl")
 end;
 
 # ╔═╡ 61c15d44-75be-4613-8b60-484d94847b8a
 # ╠═╡ skip_as_script = true
 #=╠═╡
-using PlutoUI
+begin
+	using PlutoUI
+	include("Results to CSV.jl")
+	include("FlatUI Colors.jl")
+end
   ╠═╡ =#
 
 # ╔═╡ 2bd47b9e-31e3-4ee1-aa87-60dfc40869a9
@@ -273,12 +276,36 @@ body:not(.___) pluto-cell.code_differs > pluto-trafficlight {
 }
 
 body:not(.___) pluto-cell.errored > pluto-trafficlight {
-	background: #ffa18a;
+	background: #EC8B8B;
 }
 
 body:not(.___) pluto-cell:focus-within > pluto-trafficlight {
 	background: #b4caed;
 }
+
+body:not(.___) pluto-cell.queued>pluto-trafficlight:after {
+  animation-duration:30s;
+  background:repeating-linear-gradient(-45deg,transparent,transparent 8px,var(--normal-cell-color) 8px,var(--normal-cell-color) 16px);
+  background-clip:padding-box;
+  background-size:4px var(--patternHeight);
+  opacity:.99
+}
+
+body:not(.___) pluto-cell.running>pluto-trafficlight:after {
+  background:repeating-linear-gradient(-45deg,var(--normal-cell-color),var(--normal-cell-color) 8px,var(--dark-normal-cell-color) 8px,var(--dark-normal-cell-color) 16px);
+  background-clip:content-box;
+  background-size:4px var(--patternHeight);
+  opacity:.99
+}
+
+body:not(.___) pluto-cell.queued.errored>pluto-trafficlight:after,
+body:not(.___) pluto-cell.running.errored>pluto-trafficlight:after {
+  background:repeating-linear-gradient(-45deg,#EC8B8B,#EC8B8B 8px,#CF8A8A 8px,#CF8A8A 16px);
+  background-clip:content-box;
+  background-size:4px var(--patternHeight);
+  opacity:.99
+}
+
 </style>
 
 <p>🎨 Custom style sheet loaded.</p>
@@ -296,14 +323,17 @@ end
 # ╔═╡ 26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 ← = push!
 
+# ╔═╡ ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
+⨝ = joinpath
+
 # ╔═╡ 1f3a2bee-2817-4314-901e-7dd3743fbab9
 #=╠═╡
-@bind results_csv FilePicker()
+@bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CC")
   ╠═╡ =#
 
 # ╔═╡ 62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 #=╠═╡
-csv_string = results_csv["data"] |> String 
+csv_string = to_csv(results_dir)
   ╠═╡ =#
 
 # ╔═╡ e1ddadeb-e9fd-4c37-a206-dff03363724e
@@ -336,6 +366,7 @@ to_vector("[3377.35, 2655.58, 2868.0, 2781.98]")
 cleandata = let
 	cleandata = raw_results
 	cleandata = transform(cleandata, :other_cars => ByRow(to_vector) => :other_cars)
+	cleandata = filter(:runs => (x -> x > 1000), cleandata)
 end
   ╠═╡ =#
 
@@ -373,12 +404,20 @@ end
 @info "Repetitions found: $(nrow(filter(:fleet_size => (x -> x == 2), filter(:runs => (x -> x == runs), cleandata))))"
   ╠═╡ =#
 
+# ╔═╡ 121a1235-4dd8-4282-8f01-b2d6b743286e
+#=╠═╡
+ylims=(
+	min(means[!, :learned_performance]...) - 200, 
+	max(means[!, :learned_performance]...) + 200)
+  ╠═╡ =#
+
 # ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
 begin
 	function learned_performance_plot!(means::DataFrame, 
 			runs;
 			color=colors.POMEGRANATE,
-			show_other_measurements=true)
+			show_other_measurements=true,
+			plotargs...)
 		
 		df = filter(:runs => (x -> x == runs), 
 			means)
@@ -386,43 +425,39 @@ begin
 		fleet_min = min(fleet_sizes...)
 		fleet_max = max(fleet_sizes...)
 		
-		xticks = (collect(1:(fleet_max - 1)), ["car$x" for x in 1:(fleet_max - 1)])
+		xticks = (collect(0:(fleet_max - 1)), ["car$x" for x in 0:(fleet_max - 1)])
+		xticks[2][1] = "car0\n(random)"
 		
 		@df df plot!(:learned_performance, 
 			color=color,
 			linewidth=2,
 			xticks=xticks,
+			xflip=true,
 			xlabel="learner",
 			ylabel="performance",
 			label="trained for $runs runs",
-			legend=:outertop)
+			legend=:outertop,
+			plotargs...)
 
 		if show_other_measurements
 			marker = (markercolor=color, markershape=:circle, markersize=6, markerstrokecolor=:white)
 			for f in fleet_min:fleet_max
 				df′ = filter(:fleet_size => (x -> x == f), df)
 				other_cars = df′[!, :other_cars]
-				scatter!(other_cars; marker..., label=nothing)
+				scatter!(other_cars, plotargs...; marker..., label=nothing)
 			end
 		end
-		plot!()
+		plot!([0], [0], label=nothing, plotargs...)
 	end
-	function learned_performance_plot(x...)
-		plot()
+	function learned_performance_plot(x...; plotargs...)
+		plot(;plotargs...)
 		learned_performance_plot!(x...)
 	end
 end
 
 # ╔═╡ 3f04b408-1027-4c87-b138-35e63ab4697a
 #=╠═╡
-learned_performance_plot(means, runs)
-  ╠═╡ =#
-
-# ╔═╡ 121a1235-4dd8-4282-8f01-b2d6b743286e
-#=╠═╡
-ylims=(
-	min(means[!, :learned_performance]...) - 200, 
-	max(means[!, :learned_performance]...) + 200)
+learned_performance_plot(means, runs; ylims=ylims)
   ╠═╡ =#
 
 # ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
@@ -446,6 +481,7 @@ end
 # ╟─95e38fbd-142d-4926-9291-27e69ddf7c75
 # ╠═61c15d44-75be-4613-8b60-484d94847b8a
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
+# ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
 # ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 # ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
@@ -457,7 +493,7 @@ end
 # ╠═a675d6b9-0f2b-4023-af2a-1bb43303f6a7
 # ╠═ef7d9898-c2be-493b-913e-51a854d74c32
 # ╠═8a8ad7a8-94cb-4f94-9e78-7684091272c8
+# ╠═121a1235-4dd8-4282-8f01-b2d6b743286e
 # ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
 # ╠═3f04b408-1027-4c87-b138-35e63ab4697a
-# ╠═121a1235-4dd8-4282-8f01-b2d6b743286e
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561

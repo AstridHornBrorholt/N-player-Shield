@@ -12,14 +12,15 @@ begin
 	using CSV
 	using Glob
 	using Plots
-	include("Strategy to C.jl")
-	include("FlatUI Colors.jl")
 end;
 
 # ╔═╡ 30662bc6-251c-4c7d-9386-9ecdbe52967d
 # ╠═╡ skip_as_script = true
 #=╠═╡
-using PlutoUI
+begin
+	using PlutoUI
+	include("FlatUI Colors.jl")
+end
   ╠═╡ =#
 
 # ╔═╡ b28d2e2a-1dc2-4287-8fc4-1e018628844a
@@ -273,12 +274,36 @@ body:not(.___) pluto-cell.code_differs > pluto-trafficlight {
 }
 
 body:not(.___) pluto-cell.errored > pluto-trafficlight {
-	background: #ffa18a;
+	background: #EC8B8B;
 }
 
 body:not(.___) pluto-cell:focus-within > pluto-trafficlight {
 	background: #b4caed;
 }
+
+body:not(.___) pluto-cell.queued>pluto-trafficlight:after {
+  animation-duration:30s;
+  background:repeating-linear-gradient(-45deg,transparent,transparent 8px,var(--normal-cell-color) 8px,var(--normal-cell-color) 16px);
+  background-clip:padding-box;
+  background-size:4px var(--patternHeight);
+  opacity:.99
+}
+
+body:not(.___) pluto-cell.running>pluto-trafficlight:after {
+  background:repeating-linear-gradient(-45deg,var(--normal-cell-color),var(--normal-cell-color) 8px,var(--dark-normal-cell-color) 8px,var(--dark-normal-cell-color) 16px);
+  background-clip:content-box;
+  background-size:4px var(--patternHeight);
+  opacity:.99
+}
+
+body:not(.___) pluto-cell.queued.errored>pluto-trafficlight:after,
+body:not(.___) pluto-cell.running.errored>pluto-trafficlight:after {
+  background:repeating-linear-gradient(-45deg,#EC8B8B,#EC8B8B 8px,#CF8A8A 8px,#CF8A8A 16px);
+  background-clip:content-box;
+  background-size:4px var(--patternHeight);
+  opacity:.99
+}
+
 </style>
 
 <p>🎨 Custom style sheet loaded.</p>
@@ -295,6 +320,9 @@ end
 
 # ╔═╡ c2b5971e-2257-402e-97a9-edac0e7534ad
 ← = push!
+
+# ╔═╡ 2257d50d-f93d-4347-855a-6adcc044ad88
+⨝ = joinpath
 
 # ╔═╡ ffeb8853-b48c-4244-8e87-cb1f1d84a146
 #=╠═╡
@@ -357,12 +385,10 @@ extract_results(results_dir ⨝ query_result_path |> read |> String)
 multiline(query_result_path |> read |> String)
   ╠═╡ =#
 
-# ╔═╡ ebb81812-f7de-421c-912c-5f4bb2dfc59f
-header = "runs;repetition;fleet_size;learned_performance;other_cars"
-
 # ╔═╡ 1e34748a-20ee-4903-a9b2-a514de81b68a
 function to_csv(results_dir)
 	isdir(results_dir) || error("Not found: $results_dir")
+	header = "runs;repetition;fleet_size;learned_performance;other_cars"
 	result = String[header]
 	for f in glob("* Runs", results_dir)
 		runs = firstcapture(r"(\d+) Runs", f)
@@ -381,7 +407,7 @@ function to_csv(results_dir)
 				if length(other_cars) == 0
 					other_cars = "[]"
 				end
-				result ← "$runs;$repetition;$fleet_size;$learned_performance;$other_cars"
+				push!(result, "$runs;$repetition;$fleet_size;$learned_performance;$other_cars")
 			end
 		end
 	end
@@ -399,7 +425,10 @@ csv |> multiline
   ╠═╡ =#
 
 # ╔═╡ c3140c27-1234-4026-bb1d-efcde666f70e
+# ╠═╡ skip_as_script = true
+#=╠═╡
 "/home/asger/Results/N-player CC/8000 Runs/Repetition 1/Query Results/Fleet of 6 Cars.txt" |> read |> String |> multiline
+  ╠═╡ =#
 
 # ╔═╡ 030b379f-72c9-426b-aa45-32be0220709b
 #=╠═╡
@@ -417,6 +446,7 @@ end
 # ╟─b33347bc-39e4-47f2-911f-288aaca162f7
 # ╠═30662bc6-251c-4c7d-9386-9ecdbe52967d
 # ╠═c2b5971e-2257-402e-97a9-edac0e7534ad
+# ╠═2257d50d-f93d-4347-855a-6adcc044ad88
 # ╠═ffeb8853-b48c-4244-8e87-cb1f1d84a146
 # ╠═926c21d4-29dc-43c0-8161-72b53692fe94
 # ╠═e900855f-6c9f-41d4-8f1e-9580190a92f8
@@ -426,7 +456,6 @@ end
 # ╠═16f320a0-6b75-4760-86d0-bbbd19cab4a6
 # ╠═b44fec5b-1841-4e78-aaff-53fb5d667d5d
 # ╠═5e254378-b6dd-4b26-94ae-39840bf0e1d7
-# ╠═ebb81812-f7de-421c-912c-5f4bb2dfc59f
 # ╠═1e34748a-20ee-4903-a9b2-a514de81b68a
 # ╠═b646f1e9-e216-44dc-9566-54fc077a9910
 # ╠═c6fc0693-6f60-45a9-a2c4-58943a7d832d
