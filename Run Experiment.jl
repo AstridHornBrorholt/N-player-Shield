@@ -40,7 +40,7 @@ begin
             default=pwd() ⨝ "Shield/libshield.so"
         "--skip-training"
             action=:store_true
-            help="Use car1.json for all cars in the fleets (must exist) without training any strategies."
+            help="MISNOMER: Use car1.json for all cars in the fleets (must exist) without training any strategies."
 	end
 end;
 

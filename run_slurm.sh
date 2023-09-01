@@ -13,6 +13,11 @@ for ((r=1; r<=$repetitions; r++))
 do
     export repetition=$r
 
+    export runs=2500
+    export checks=1000
+    sbatch $ARGS ./run_single.sh
+    echo "Job scheduled."
+
     export runs=5000
     export checks=1000
     sbatch $ARGS ./run_single.sh
@@ -24,16 +29,6 @@ do
     echo "Job scheduled."
 
     export runs=20000
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-
-    export runs=40000
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-
-    export runs=80000
     export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
