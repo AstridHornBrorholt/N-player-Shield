@@ -424,12 +424,6 @@ csv = to_csv(results_dir)
 csv |> multiline
   ╠═╡ =#
 
-# ╔═╡ c3140c27-1234-4026-bb1d-efcde666f70e
-# ╠═╡ skip_as_script = true
-#=╠═╡
-"/home/asger/Results/N-player CC/8000 Runs/Repetition 1/Query Results/Fleet of 6 Cars.txt" |> read |> String |> multiline
-  ╠═╡ =#
-
 # ╔═╡ 030b379f-72c9-426b-aa45-32be0220709b
 #=╠═╡
 let
@@ -459,5 +453,4 @@ end
 # ╠═1e34748a-20ee-4903-a9b2-a514de81b68a
 # ╠═b646f1e9-e216-44dc-9566-54fc077a9910
 # ╠═c6fc0693-6f60-45a9-a2c4-58943a7d832d
-# ╠═c3140c27-1234-4026-bb1d-efcde666f70e
 # ╠═030b379f-72c9-426b-aa45-32be0220709b

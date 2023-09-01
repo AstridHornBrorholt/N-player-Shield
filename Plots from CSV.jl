@@ -242,7 +242,7 @@ html"""
 </script>
 
 <marquee> uwu Purr eow mrow purr purr uwu owo meow purr owo uwu meow purr purr owo mrow uwu uwu meow purr mrow mew owo uwu owo uwu mrow mew purr owo uwu puirr mrow meow mew mmmeoww purr uwu owo mrow meow mew ow purr hsss *scratches you* mrow meow purr uwu purr uwu owo mrow mew ow purr meow uwu </marquee>
-"""
+"""; "🐈"
 
 # ╔═╡ c9e1bc2c-a6f7-4b88-8038-51cf2ef2a008
 html"""
@@ -331,9 +331,14 @@ end
 @bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CC")
   ╠═╡ =#
 
+# ╔═╡ 5d35a941-ea93-45ed-b309-98db9ad9fc47
+#=╠═╡
+@bind refresh_button CounterButton("Refresh")
+  ╠═╡ =#
+
 # ╔═╡ 62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 #=╠═╡
-csv_string = to_csv(results_dir)
+refresh_button; csv_string = to_csv(results_dir)
   ╠═╡ =#
 
 # ╔═╡ e1ddadeb-e9fd-4c37-a206-dff03363724e
@@ -366,7 +371,7 @@ to_vector("[3377.35, 2655.58, 2868.0, 2781.98]")
 cleandata = let
 	cleandata = raw_results
 	cleandata = transform(cleandata, :other_cars => ByRow(to_vector) => :other_cars)
-	cleandata = filter(:runs => (x -> x > 1000), cleandata)
+	#cleandata = filter(:runs => (x -> x > 1000), cleandata)
 end
   ╠═╡ =#
 
@@ -460,12 +465,22 @@ end
 learned_performance_plot(means, runs; ylims=ylims)
   ╠═╡ =#
 
+# ╔═╡ 5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
+#=╠═╡
+unique_runs = means[!, :runs] |> unique |> sort
+  ╠═╡ =#
+
+# ╔═╡ 977e914e-3995-463c-ab74-d8f256adec27
+#=╠═╡
+@bind selected_runs MultiSelect(unique_runs, default=[r for r in unique_runs if (r > 1000 && r%2==0)])
+  ╠═╡ =#
+
 # ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
 #=╠═╡
 let
 	plot(;ylims)
 	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.WISTERIA, colors.CARROT]
-	for (i, r) in enumerate(means[!, :runs] |> unique)
+	for (i, r) in enumerate(selected_runs)
 		learned_performance_plot!(means, r, 
 			color=c[i%length(c) + 1], 
 			show_other_measurements=false)
@@ -483,6 +498,7 @@ end
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
+# ╟─5d35a941-ea93-45ed-b309-98db9ad9fc47
 # ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 # ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
 # ╠═7cd7f277-8388-413a-b993-9b81fdb495b8
@@ -496,4 +512,6 @@ end
 # ╠═121a1235-4dd8-4282-8f01-b2d6b743286e
 # ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
 # ╠═3f04b408-1027-4c87-b138-35e63ab4697a
+# ╠═5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
+# ╠═977e914e-3995-463c-ab74-d8f256adec27
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
