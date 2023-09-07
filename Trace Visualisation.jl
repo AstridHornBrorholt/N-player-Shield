@@ -18,6 +18,8 @@ end
 begin
 	using PlutoUI
 	using Plots
+	import Gaston
+	gaston() # Gaston backend supports emoji
 end
 
 # ╔═╡ 692d84e0-9c3c-4e4f-b191-7ebcf6bd2c04
@@ -121,6 +123,9 @@ To avoid "lag" in trace. Full query example:
 # ╔═╡ d9e798d4-d1b4-4ac2-b462-10ba2427b7d5
 @bind basedir TextField(80, default="/home/asger/Results/N-player CC/1000 Runs/Repetition 1/Models")
 
+# ╔═╡ 165cd347-87f1-4cb6-b938-c89693281698
+isdir(basedir)
+
 # ╔═╡ 0a69ab62-9e67-4cdc-a3b3-7f8a808848e9
 # Size of time-step in animation
 @bind Δt NumberField(0:0.01:1, default=0.5)
@@ -139,10 +144,27 @@ end
 # ╔═╡ 9c079ac8-f773-458e-b288-c27c7c172d19
 model_file = basedir ⨝ "Fleet of 6 Cars.xml"
 
+# ╔═╡ 3bbf5c96-3ed9-4a40-83ae-6cc97e57e86e
+if isfile(query_file) && isfile(model_file)
+	output = Cmd([
+		"verifyta",
+		"--truncation-time-error", "0.01",
+		"--truncation-error", "0.01",
+		model_file,
+		query_file
+	]) |> read |> String
+end
+
 # ╔═╡ 45ee2a7e-1e54-4ce9-93ea-7d461208d91f
 # ╠═╡ disabled = true
 #=╠═╡
 @bind trace_file FilePicker()
+  ╠═╡ =#
+
+# ╔═╡ aac8519c-191a-4a60-acdf-332396ca03a7
+# ╠═╡ disabled = true
+#=╠═╡
+output = trace_file["data"] |> String
   ╠═╡ =#
 
 # ╔═╡ de5ffb24-d55a-47bc-a1df-fe03c2662856
@@ -237,7 +259,7 @@ at_regular_intervals(traces[0], Δt)[Int64(t/Δt) + 1]
 distances[0][Int64(t/Δt) + 1]
 
 # ╔═╡ 6822615e-3aa7-4488-ab3f-422267d4256f
-plot(distances[1], label="car1", linewidth=3, xlim=(200, 300))
+plot(distances[1], label="car1", linewidth=3)
 
 # ╔═╡ 5c0db83c-bb68-4a7b-b389-123186ccd319
 begin
@@ -257,19 +279,22 @@ velocities = at_regular_intervals(get_traces(output, "velocity")[0], Δt)
 function plot_cars(distances::T, time::Int64) where T <: Dict{Int64, Vector{Float64}}
 	sorted = sort(collect(distances), by=(x -> x[1]))
 	distances = [ d[time + 1] for (i, d) in sorted]
-	indices = [ 1 for (i, d) in sorted]
 	positions = [ sum(distances[1:i]) for (i, _) in enumerate(distances)]
-	
-	scatter([0, positions...], [1, indices...],
-		xflip=true,
+
+	# front
+	plot(
 		xlims=(-9, max(209, positions[end] + 09)),
 		ylims=(0, 2),
-		yticks=nothing,
+		#xflip=true,
+		yticks=[0],
 		legend=:outertop,
 		size=(600, 200),
-		label="cars")
+		label="cars",
+		xlabel="distance to front")
+	annotate!([(0, 1, "🚙", 10)])
+	annotate!([(p, 1, "🚗", 10) for p in positions])
 
-	scatter!([], label="time: $(round(time*Δt))", alpha=0)
+	scatter!([0], label="time: $(round(time*Δt))", alpha=0, marker=0)
 end
 
 # ╔═╡ f2cef7c7-2434-47d2-8a04-c6ac518399b2
@@ -281,15 +306,35 @@ end
 # ╔═╡ 92b59972-7c94-445d-8b04-216bbe1328b8
 t*Δt
 
+# ╔═╡ 54d59378-6e5a-4daa-b386-4f4057f9dde6
+@bind distance_covered NumberField(0:10000)
+
+# ╔═╡ 30a5d12f-490c-481b-8ab0-92f3c79c7ca7
+function plot_landscape(distance_covered)
+	annotate!([(distance_covered%418, 0.3, "🌻")])
+	annotate!([((distance_covered + 60)%418, 0.7, "🌳")])
+	annotate!([((distance_covered + 100)%418, 0.6, "🌳")])
+	annotate!([((distance_covered + 180)%418, 1.5, "🌲")])
+	annotate!([((distance_covered + 210)%418, 1.4, "🌳")])
+	annotate!([((distance_covered + 270)%418, 1.6, "🌳")])
+	annotate!([((distance_covered + 290)%418, 1.8, "⛺")])
+	annotate!([((distance_covered + 350)%418, 0.3, "🌳")])
+end
+
 # ╔═╡ ec3c9513-1f8d-4f7e-83ef-7d976ae19546
-plot_cars(distances, round(Int64, t))
+let
+	plot_cars(distances, round(Int64, t))
+	plot_landscape(distance_covered)
+end
 
 # ╔═╡ 2d67a7a2-6ea7-4bb1-aa87-b12e516f161b
 function animate_cars(distances, velocities)
 	t_max = length(distances[0]) - 1
+	distance_covered = 0
 	anim = @animate for t in 1:t_max
 		plot_cars(distances, t)
-		scatter!([], label="front velocity: $(velocities[t + 1])", alpha=0)
+		distance_covered += velocities[t + 1]*Δt # I don't remember why it was + 1
+		plot_landscape(distance_covered)
 	end
 	# Add a delay before reset
 	[frame(anim) for _ in 1:10]
@@ -297,32 +342,18 @@ function animate_cars(distances, velocities)
 end
 
 # ╔═╡ 30529eb4-b8a0-4b65-9098-e24ebe6655e0
-gif(animate_cars(distances, velocities), show_msg=:false, fps=5/Δt)
-
-# ╔═╡ 3bbf5c96-3ed9-4a40-83ae-6cc97e57e86e
-if isfile(query_file) && isfile(model_file)
-	output = Cmd([
-		"verifyta",
-		"--truncation-time-error", "0.1",
-		model_file,
-		query_file
-	]) |> read |> String
-end
-
-# ╔═╡ aac8519c-191a-4a60-acdf-332396ca03a7
-# ╠═╡ disabled = true
-#=╠═╡
-output = trace_file["data"] |> String
-  ╠═╡ =#
+gif(animate_cars(distances, velocities), show_msg=:false, fps=2/Δt)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+Gaston = "4b11ee91-296f-5714-9832-002c20994614"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 
 [compat]
-Plots = "~1.38.17"
+Gaston = "~1.1.0"
+Plots = "~1.39.0"
 PlutoUI = "~0.7.52"
 """
 
@@ -332,7 +363,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "5c169ad281cb1046e56b3bd2640ef1e7f6a40cd3"
+project_hash = "6e6a37d61e1b5484c38c59c8940c1f56e88cffba"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -536,6 +567,12 @@ git-tree-sha1 = "1596bab77f4f073a14c62424283e7ebff3072eca"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
 version = "0.72.9+1"
 
+[[deps.Gaston]]
+deps = ["ColorSchemes", "DelimitedFiles", "Random"]
+git-tree-sha1 = "843b5df546c02aa77880d8f9cfb65063a8938b0f"
+uuid = "4b11ee91-296f-5714-9832-002c20994614"
+version = "1.1.0"
+
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
 git-tree-sha1 = "9b02998aba7bf074d14de89f9d37ca24a1a0b046"
@@ -712,10 +749,10 @@ uuid = "7add5ba3-2f88-524e-9cd5-f83b8a55f7b8"
 version = "1.42.0+0"
 
 [[deps.Libiconv_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "c7cb1f5d892775ba13767a87c7ada0b980ea0a71"
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "f9557a255370125b405568f9767d6d195822a175"
 uuid = "94ce4f54-9a6c-5748-9c1c-f9c7231a4531"
-version = "1.16.1+2"
+version = "1.17.0+0"
 
 [[deps.Libmount_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -760,9 +797,9 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[deps.LoggingExtras]]
 deps = ["Dates", "Logging"]
-git-tree-sha1 = "a03c77519ab45eb9a34d3cfe2ca223d79c064323"
+git-tree-sha1 = "0d097476b6c381ab7906460ef1ef1638fbce1d91"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
-version = "1.0.1"
+version = "1.0.2"
 
 [[deps.MIMEs]]
 git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
@@ -898,9 +935,9 @@ version = "1.3.5"
 
 [[deps.Plots]]
 deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "PrecompileTools", "Preferences", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "UnitfulLatexify", "Unzip"]
-git-tree-sha1 = "9f8675a55b37a70aa23177ec110f6e3f4dd68466"
+git-tree-sha1 = "ccee59c6e48e6f2edf8a5b64dc817b6729f99eb5"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.38.17"
+version = "1.39.0"
 
     [deps.Plots.extensions]
     FileIOExt = "FileIO"
@@ -1127,10 +1164,10 @@ uuid = "2381bf8a-dfd0-557d-9999-79630e7b1b91"
 version = "1.25.0+0"
 
 [[deps.XML2_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "Zlib_jll"]
-git-tree-sha1 = "93c41695bc1c08c46c5899f4fe06d6ead504bb73"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
+git-tree-sha1 = "04a51d15436a572301b5abbb9d099713327e9fc4"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.10.3+0"
+version = "2.10.4+0"
 
 [[deps.XSLT_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "Pkg", "XML2_jll", "Zlib_jll"]
@@ -1358,6 +1395,7 @@ version = "1.4.1+0"
 # ╠═6878f912-1796-46c8-bb01-084905986d83
 # ╟─3ef552ba-6900-456c-bf30-4ba091df5976
 # ╠═d9e798d4-d1b4-4ac2-b462-10ba2427b7d5
+# ╠═165cd347-87f1-4cb6-b938-c89693281698
 # ╠═0a69ab62-9e67-4cdc-a3b3-7f8a808848e9
 # ╠═be837fbd-faea-45fd-950b-c473599756ce
 # ╠═6e56fdba-627a-4200-8e2e-25970f67e8b4
@@ -1390,7 +1428,9 @@ version = "1.4.1+0"
 # ╠═c00efc32-c7fe-4af8-acda-79725f83521b
 # ╠═f2cef7c7-2434-47d2-8a04-c6ac518399b2
 # ╠═92b59972-7c94-445d-8b04-216bbe1328b8
+# ╠═54d59378-6e5a-4daa-b386-4f4057f9dde6
 # ╠═ec3c9513-1f8d-4f7e-83ef-7d976ae19546
+# ╠═30a5d12f-490c-481b-8ab0-92f3c79c7ca7
 # ╠═2d67a7a2-6ea7-4bb1-aa87-b12e516f161b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
