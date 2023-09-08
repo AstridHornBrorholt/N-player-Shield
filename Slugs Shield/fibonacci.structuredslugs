@@ -1,0 +1,21 @@
+[INPUT]
+fib:0...1000
+aux:0...1000
+
+[OUTPUT]
+
+[ENV_INIT]
+fib=1
+aux=fib
+
+[SYS_INIT]
+
+[ENV_TRANS]
+fib' = fib + aux
+aux' = fib
+
+[SYS_TRANS]
+
+[ENV_LIVENESS]
+
+[SYS_LIVENESS]

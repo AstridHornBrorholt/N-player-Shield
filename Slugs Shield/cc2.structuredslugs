@@ -1,0 +1,36 @@
+[INPUT]
+v_ego:0...30
+v_front:0...30
+distance:0...200
+
+[OUTPUT]
+
+[ENV_INIT]
+v_ego = 10
+v_front = 10
+distance = 50
+
+[SYS_INIT]
+
+[ENV_TRANS]
+
+# Note that the ONLY operator allowed is +. How annoying. 
+# But we can get - from that.  Observe:
+#   v_ego' = v_ego - 2 <=> 
+#   v_ego' + 2 = v_ego
+
+v_ego' + 2 = v_ego \/ v_ego' = v_ego \/ v_ego' = v_ego + 2
+v_front' + 2 = v_front \/ v_front' = v_front \/ v_front' = v_front + 2
+
+#   distance' = distance + (v_front' - 10) - (v_ego' - 10) <=>
+#   distance' = distance + v_front' - v_ego'               <=> 
+distance' + v_ego' = distance + v_front'
+
+#violation <-> distance' > 5
+#! violation
+
+[SYS_TRANS]
+
+[ENV_LIVENESS]
+
+[SYS_LIVENESS]
