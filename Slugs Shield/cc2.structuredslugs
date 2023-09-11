@@ -2,6 +2,7 @@
 v_ego:0...30
 v_front:0...30
 distance:0...200
+violation
 
 [OUTPUT]
 
@@ -18,6 +19,7 @@ distance = 50
 # But we can get - from that.  Observe:
 #   v_ego' = v_ego - 2 <=> 
 #   v_ego' + 2 = v_ego
+# This is the first part of the following disjunction.
 
 v_ego' + 2 = v_ego \/ v_ego' = v_ego \/ v_ego' = v_ego + 2
 v_front' + 2 = v_front \/ v_front' = v_front \/ v_front' = v_front + 2
@@ -26,8 +28,8 @@ v_front' + 2 = v_front \/ v_front' = v_front \/ v_front' = v_front + 2
 #   distance' = distance + v_front' - v_ego'               <=> 
 distance' + v_ego' = distance + v_front'
 
-#violation <-> distance' > 5
-#! violation
+violation' <-> (distance < 5 /\ distance > 200)
+! violation
 
 [SYS_TRANS]
 
