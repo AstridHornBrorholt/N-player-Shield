@@ -1,3 +1,4 @@
+## Preface ##
 using Dates
 # The fruit is there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.
 🍎 = rand("🍇🍈🍉🍊🍋🍌🍍🥭🍎🍏🍐🍑🍒🍓🫐🥝🍅🫒🥥")
@@ -12,6 +13,7 @@ Pkg.activate(".")
 using ArgParse
 include("Create Fleet.jl")
 
+## Args and Constants ##
 ⨝ = joinpath
 ← = push!
 
@@ -55,33 +57,34 @@ verifyta_path = args["verifyta-path"]
 skip_training = args["skip-training"]
 status("Starting... (runs=$runs, max_cars=$max_cars, repetition=$repetition, skip_training=$skip_training)")
 
-isdir(results_dir) || mkdir(results_dir) # Provoke error if path is invalid
+isdir(results_dir) || mkdir(results_dir) # Error if path is invalid except if it is only the last folder missing.
 isfile(verifyta_path) || error("File verifyta not found at path $verifyta_path")
 
 verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs --total-runs $runs --runs-pr-state $runs"
-
-blueprint_path = args["blueprint-path"]
-shield_path = args["shield-path"]
-
-isfile(shield_path) || error("Shield file not found at $shield_path")
-
-shield_path′ = results_dir ⨝ basename(shield_path)
-cp(shield_path, shield_path′, force=true)
-shield_path = shield_path′
 
 verifyta_call = String[
     verifyta_path,
     split(verifyta_args, " ")...
 ]
 
-working_dir = results_dir ⨝ "$runs Runs"
-working_dir = working_dir ⨝ "Repetition $repetition"
-isdir(working_dir) || mkpath(working_dir)
-query_results_dir = working_dir ⨝ "Query Results"
-isdir(query_results_dir) || mkpath(query_results_dir)
-models_dir = working_dir ⨝ "Models"
-isdir(models_dir) || mkpath(models_dir)
+blueprint_path = args["blueprint-path"]
+shield_path = args["shield-path"]
 
+## Resolving Paths ##
+isfile(shield_path) || error("Shield file not found at $shield_path")
+
+shield_path′ = results_dir ⨝ basename(shield_path)
+cp(shield_path, shield_path′, force=true)
+shield_path = shield_path′
+
+working_dir = results_dir ⨝ "$runs Runs" ⨝ "Repetition $repetition"
+mkpath(working_dir)
+query_results_dir = working_dir ⨝ "Query Results"
+mkpath(query_results_dir)
+models_dir = working_dir ⨝ "Models"
+mkpath(models_dir)
+
+## Mainmatter ##
 strategy_paths = String[]
 for N in 2:max_cars
     status("Running Fleet of $N Cars...  (repetition=$repetition)")
