@@ -94,7 +94,7 @@ $(join(["    **$k** => $v" for (k,v) in sort(collect(json["actions"]), by=((k) -
 #=╠═╡
 if !(occursin("NegativeAcc", json["actions"]["0"]) &&
 		occursin("PositiveAcc", json["actions"]["1"]) &&
-		occursin("No Acc", json["actions"]["2"]))
+		occursin("NoAcc", json["actions"]["2"]))
 	md"""
 	!!! danger "Discrepancy Detected"
 	See the conditional.
