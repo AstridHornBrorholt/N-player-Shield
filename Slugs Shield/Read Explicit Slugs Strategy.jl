@@ -19,6 +19,7 @@ begin
 	using HttpCommon
 	using StaticArrays
 	using Plots
+	using PlutoLinks
 end
 
 # ╔═╡ c2e31a8a-507e-11ee-1015-f706d168a0df
@@ -60,11 +61,11 @@ pluto-log-dot pre, pluto-output pre {
 # ╔═╡ 99ea667d-722b-4533-8807-3862e8de3084
 ← = push!
 
-# ╔═╡ ef790e5d-1c2d-4cc7-8205-6dc1a1d1a1a8
-@bind es_file FilePicker()
+# ╔═╡ 9687ec64-1dce-4647-985f-87f646d4424e
+@bind filepath TextField(80, default="/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Slugs Shield/cc2.explicitstrategy")
 
 # ╔═╡ e61e9d59-1859-456b-be3b-7073cf13beb9
-raw_string = es_file["data"] |> String
+raw_string = @use_file(filepath)
 
 # ╔═╡ 51301b19-e31a-491d-86c8-dfbb5f6886a1
 function multiline(str)
@@ -78,46 +79,59 @@ end
 # ╔═╡ d05b69f1-5cb9-4a4c-b347-0b7e668ea2f8
 raw_string |> multiline
 
+# ╔═╡ 34c6beec-10e8-4fcf-8269-addee47c0d80
+@bind expand CheckBox(default=false)
+
 # ╔═╡ 3674f64e-cbe9-4d75-8694-816bd33bbae5
-md"""
-Each integer variable can be represented in binary format using one Boolean variable for each bit in the binary representation.
-The number of Boolean variables needed is logarithmic in the range of the integer variable, rounded to the smallest following integer.
+if expand
+	md"""
+	Each integer variable can be represented in binary format using one Boolean variable for each bit in the binary representation.
+	The number of Boolean variables needed is logarithmic in the range of the integer variable, rounded to the smallest following integer.
+	
+	To aid with the inversion of this mapping, the function `slugs.convert_to_slugsin` names the auxiliary Boolean variables according to the following convention.
+	The integer variable `b: 0...10` can take the values: `0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10`.
+	The smallest power of 2 that is larger than `max(b) = 10` is `2 ** 4 = 16`.
+	So variable `b` is stored in a bitfield of size 4.
+	Each bit of the bitfield is represented with a Boolean variable.
+	The names of the 4 Boolean variables needed are:
+	
+	```
+	b@0.0.10
+	b@1
+	b@2
+	b@3
+	```
+	
+	The convention is [little endian](https://en.wikipedia.org/wiki/Endianness#Little-endian):
+	
+	  - the [least significant bit](https://en.wikipedia.org/wiki/Least_significant_bit) is `"varname"'@0.'u'.'M`.
+	    It is numbered with 0 because of the little-endian convention, so this is the power of 2 it corresponds to.
+	    `u` is the maximal and `M` the minimal value in the integer variable's domain.
+	    In this example it is `b@0.0.10`
+	
+	  - the other bits are simply numbered by their position (equiv. corresponding power of 2): `"varname"'@'N`.
+	    In this example they are `b@1, b@2, b@3`.
+	
+	So the assignment:
+	
+	```
+	b@0.0.10 = 1
+	b@1 = 1
+	b@2 = 0
+	b@3 = 0
+	```
+	
+	is the number `3`.
+	"""
+else
+	md"""
+	Each integer variable can be represented in binary format using one Boolean variable for each bit in the binary representation.
 
-To aid with the inversion of this mapping, the function `slugs.convert_to_slugsin` names the auxiliary Boolean variables according to the following convention.
-The integer variable `b: 0...10` can take the values: `0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10`.
-The smallest power of 2 that is larger than `max(b) = 10` is `2 ** 4 = 16`.
-So variable `b` is stored in a bitfield of size 4.
-Each bit of the bitfield is represented with a Boolean variable.
-The names of the 4 Boolean variables needed are:
+	[...]
 
-```
-b@0.0.10
-b@1
-b@2
-b@3
-```
-
-The convention is [little endian](https://en.wikipedia.org/wiki/Endianness#Little-endian):
-
-  - the [least significant bit](https://en.wikipedia.org/wiki/Least_significant_bit) is `"varname"'@0.'u'.'M`.
-    It is numbered with 0 because of the little-endian convention, so this is the power of 2 it corresponds to.
-    `u` is the maximal and `M` the minimal value in the integer variable's domain.
-    In this example it is `b@0.0.10`
-
-  - the other bits are simply numbered by their position (equiv. corresponding power of 2): `"varname"'@'N`.
-    In this example they are `b@1, b@2, b@3`.
-
-So the assignment:
-
-```
-b@0.0.10 = 1
-b@1 = 1
-b@2 = 0
-b@3 = 0
-```
-
-is the number `3`.
-"""
+	(Check box below to expand)
+	"""
+end
 
 # ╔═╡ 5f569dfe-818b-4a62-9a71-eeca7c5ca7e4
 vars = "v_ego@0.0.30:0, v_ego@1:1, v_ego@2:0, v_ego@3:1, v_ego@4:0, v_front@0.0.30:0, v_front@1:1, v_front@2:0, v_front@3:1, v_front@4:0, distance@0.0.200:0, distance@1:1, distance@2:0, distance@3:0, distance@4:1, distance@5:1, distance@6:0, distance@7:0"
@@ -144,7 +158,7 @@ function get_integer_value(name::S, vars::T) where
 	end
 	bits = reverse(bits)
 	parse(Int64, bits, base=2)
-end;
+end
 
 # ╔═╡ dbd3c465-a61f-4e59-ba8e-755605fcaa12
 get_integer_value("distance", vars)
@@ -164,6 +178,9 @@ end
 
 # ╔═╡ b26ee46e-ba88-4b0a-9903-a8b957368e48
 get_integer_values(vars)
+
+# ╔═╡ 9e8e90dd-4a6b-4aad-8102-57b5304de076
+plot(n -> 15*(15*50)^n, xlim=(1, 3))
 
 # ╔═╡ 03c5c62c-ba4d-43fc-8eef-f78263b26e24
 let
@@ -187,6 +204,29 @@ let
 	end
 	result |> multiline
 end
+
+# ╔═╡ 74eec5b7-8abc-4ab5-819f-96304da0626f
+eachmatch(r"acc_ego=[^0]", let
+	re_state = r"State (?<state>\d+) with rank (?<rank>\d+) -> <(?<vars>.*)>"
+	re_successors = r"With successors : (?<successors>[0-9, ]+)"
+	result = ""
+	for l in split(raw_string[1:min(1000000, length(raw_string))], "\n")
+		m = match(re_state, l)
+		if !isnothing(m)
+			values = get_integer_values(m[:vars])
+			values = join(["$k=$v" for (k, v) in values], ", ")
+			result *= "State $(m[:state]) with rank $(m[:rank]) -> $values\n"
+			continue
+		end
+		m = match(re_successors, l)
+		if !isnothing(m)
+			result *= "$l\n"
+			continue
+		end
+		result *= "$l\n"
+	end
+	result
+end) |> collect
 
 # ╔═╡ 3103b4ab-fd7c-41f4-bdf9-4e54d01dec9b
 function get_successors(successors::T) where T<:AbstractString
@@ -265,11 +305,16 @@ explicit_strategy = read_strategy(raw_string)
 
 # ╔═╡ a42066b9-c8c5-435b-833f-638e948fa56a
 function get_state(explicit_strategy::ExplicitStrategy, vars)
-	explicit_strategy.var_indexed[vars[1] + 1, vars[2] + 1, vars[3] + 1]
+	try
+		explicit_strategy.var_indexed[vars[1] + 1, vars[2] + 1, vars[3] + 1]
+	catch e
+		@info vars
+		throw(e)
+	end
 end
 
 # ╔═╡ c6784f5a-d3d5-46d9-9df3-acc8775a2524
-state = get_state(explicit_strategy, (50, 8, 10))
+state = get_state(explicit_strategy, (50, 10, 10))
 
 # ╔═╡ d5095f57-1419-4dce-b252-9a5db37d4095
 function all_successors(explicit_strategy::ExplicitStrategy, state::State)
@@ -311,7 +356,7 @@ let
 			size=(1200, 400),
 			label="trace")
 		
-		hline!([0, 200], label="limits")
+		hline!([10, 180], label="limits")
 		frame(anim)
 	end
 	gif(anim, fps=100/60, show_msg=false)
@@ -322,12 +367,14 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 HttpCommon = "77172c1b-203f-54ac-aa54-3f1198fe9f90"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoLinks = "0ff47ea0-7a50-410d-8455-4348d5de0420"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 HttpCommon = "~0.5.0"
 Plots = "~1.39.0"
+PlutoLinks = "~0.1.6"
 PlutoUI = "~0.7.52"
 StaticArrays = "~1.6.2"
 """
@@ -338,7 +385,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "1b409474f1aefedce1b69af10679a00f9d3d6cff"
+project_hash = "4214ead286d5fdfe071464e9442a4ab27eadf36d"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -372,6 +419,12 @@ deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jl
 git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.16.1+1"
+
+[[deps.CodeTracking]]
+deps = ["InteractiveUtils", "UUIDs"]
+git-tree-sha1 = "a1296f0fe01a4c3f9bf0dc2934efbf4416f5db31"
+uuid = "da1fd8a2-8d9e-5ec2-8556-3022fb5608a2"
+version = "1.3.4"
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
@@ -455,6 +508,10 @@ deps = ["Mmap"]
 git-tree-sha1 = "9e2f36d3c96a820c678f2f1f1782582fcf685bae"
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 version = "1.9.1"
+
+[[deps.Distributed]]
+deps = ["Random", "Serialization", "Sockets"]
+uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
@@ -634,6 +691,12 @@ git-tree-sha1 = "6f2675ef130a300a112286de91973805fcc5ffbc"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "2.1.91+0"
 
+[[deps.JuliaInterpreter]]
+deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
+git-tree-sha1 = "81dc6aefcbe7421bd62cb6ca0e700779330acff8"
+uuid = "aa1ae85d-cabe-5617-a682-6adf51b2e16a"
+version = "0.9.25"
+
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "f6250b16881adf048549549fba48b1161acdac8c"
@@ -775,6 +838,12 @@ deps = ["Dates", "Logging"]
 git-tree-sha1 = "0d097476b6c381ab7906460ef1ef1638fbce1d91"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 version = "1.0.2"
+
+[[deps.LoweredCodeUtils]]
+deps = ["JuliaInterpreter"]
+git-tree-sha1 = "60168780555f3e663c536500aa790b6368adc02a"
+uuid = "6f1432cf-f94c-5a45-995e-cdbf5db27b0b"
+version = "2.3.0"
 
 [[deps.MIMEs]]
 git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
@@ -933,6 +1002,18 @@ version = "1.39.0"
     ImageInTerminal = "d8c32880-2388-543b-8c61-d9f865259254"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
+[[deps.PlutoHooks]]
+deps = ["InteractiveUtils", "Markdown", "UUIDs"]
+git-tree-sha1 = "072cdf20c9b0507fdd977d7d246d90030609674b"
+uuid = "0ff47ea0-7a50-410d-8455-4348d5de0774"
+version = "0.0.5"
+
+[[deps.PlutoLinks]]
+deps = ["FileWatching", "InteractiveUtils", "Markdown", "PlutoHooks", "Revise", "UUIDs"]
+git-tree-sha1 = "8f5fa7056e6dcfb23ac5211de38e6c03f6367794"
+uuid = "0ff47ea0-7a50-410d-8455-4348d5de0420"
+version = "0.1.6"
+
 [[deps.PlutoUI]]
 deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
 git-tree-sha1 = "e47cd150dbe0443c3a3651bc5b9cbd5576ab75b7"
@@ -997,6 +1078,12 @@ deps = ["UUIDs"]
 git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.3.0"
+
+[[deps.Revise]]
+deps = ["CodeTracking", "Distributed", "FileWatching", "JuliaInterpreter", "LibGit2", "LoweredCodeUtils", "OrderedCollections", "Pkg", "REPL", "Requires", "UUIDs", "Unicode"]
+git-tree-sha1 = "1e597b93700fa4045d7189afa7c004e0584ea548"
+uuid = "295af30f-e4ad-537b-8983-00126c2a3abe"
+version = "3.5.3"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -1395,32 +1482,35 @@ version = "1.4.1+0"
 # ╠═c2e31a8a-507e-11ee-1015-f706d168a0df
 # ╟─ecbf1e8f-2471-4edb-b212-f211d1b3dbca
 # ╠═99ea667d-722b-4533-8807-3862e8de3084
-# ╠═ef790e5d-1c2d-4cc7-8205-6dc1a1d1a1a8
 # ╠═e61e9d59-1859-456b-be3b-7073cf13beb9
+# ╠═9687ec64-1dce-4647-985f-87f646d4424e
 # ╟─51301b19-e31a-491d-86c8-dfbb5f6886a1
 # ╠═d05b69f1-5cb9-4a4c-b347-0b7e668ea2f8
 # ╟─3674f64e-cbe9-4d75-8694-816bd33bbae5
-# ╠═5f569dfe-818b-4a62-9a71-eeca7c5ca7e4
-# ╠═298b8636-88bb-4673-9f1f-aff35faf5e62
-# ╠═dbd3c465-a61f-4e59-ba8e-755605fcaa12
-# ╠═8ef51fda-737b-4241-9932-14c81b53d8d6
-# ╠═b26ee46e-ba88-4b0a-9903-a8b957368e48
-# ╠═03c5c62c-ba4d-43fc-8eef-f78263b26e24
-# ╠═3103b4ab-fd7c-41f4-bdf9-4e54d01dec9b
-# ╠═77e8fb80-1815-47b7-b2e2-30957a927ea9
-# ╠═c0e77bdd-2614-4fe2-b759-4aac292a7830
-# ╠═6f6a7f85-07c0-4b9f-bb19-422d71e53240
-# ╠═73faa06e-fe2f-48d4-87de-9ace1a59dc1f
+# ╠═34c6beec-10e8-4fcf-8269-addee47c0d80
+# ╟─5f569dfe-818b-4a62-9a71-eeca7c5ca7e4
+# ╟─298b8636-88bb-4673-9f1f-aff35faf5e62
+# ╟─dbd3c465-a61f-4e59-ba8e-755605fcaa12
+# ╟─8ef51fda-737b-4241-9932-14c81b53d8d6
+# ╟─b26ee46e-ba88-4b0a-9903-a8b957368e48
+# ╠═9e8e90dd-4a6b-4aad-8102-57b5304de076
+# ╟─03c5c62c-ba4d-43fc-8eef-f78263b26e24
+# ╟─74eec5b7-8abc-4ab5-819f-96304da0626f
+# ╟─3103b4ab-fd7c-41f4-bdf9-4e54d01dec9b
+# ╟─77e8fb80-1815-47b7-b2e2-30957a927ea9
+# ╟─c0e77bdd-2614-4fe2-b759-4aac292a7830
+# ╟─6f6a7f85-07c0-4b9f-bb19-422d71e53240
+# ╟─73faa06e-fe2f-48d4-87de-9ace1a59dc1f
 # ╠═f8e6e5e2-4a12-4efb-b6a4-9643e66280be
 # ╠═ca698d37-d978-4f84-9429-983eaeeb5ada
-# ╠═eb6da291-13ff-4e00-89d7-b9101cf9e1dd
-# ╠═8198654c-caaa-4d00-a305-422fb9fec122
-# ╠═a42066b9-c8c5-435b-833f-638e948fa56a
+# ╟─eb6da291-13ff-4e00-89d7-b9101cf9e1dd
+# ╟─8198654c-caaa-4d00-a305-422fb9fec122
+# ╟─a42066b9-c8c5-435b-833f-638e948fa56a
 # ╠═c6784f5a-d3d5-46d9-9df3-acc8775a2524
-# ╠═d5095f57-1419-4dce-b252-9a5db37d4095
+# ╟─d5095f57-1419-4dce-b252-9a5db37d4095
 # ╠═e7169e54-eb59-40e6-9788-2b9d4c55fd29
-# ╠═7f5bbe06-3f62-403b-9877-f8662a6ec177
+# ╟─7f5bbe06-3f62-403b-9877-f8662a6ec177
 # ╠═c15d6d20-627b-492d-930c-7226df9f8e4d
-# ╠═12e63d1a-3174-4e38-bff2-e9194363a160
+# ╟─12e63d1a-3174-4e38-bff2-e9194363a160
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

@@ -1,0 +1,41 @@
+# variable definitions
+
+[INPUT]
+a
+b:0...10
+
+[OUTPUT]
+c:2...8
+d
+
+
+# initial conditions
+
+[ENV_INIT]
+! a
+b = 1
+
+[SYS_INIT]
+d
+c = 4
+
+
+# safety formula [](...)
+
+[ENV_TRANS]
+a -> (a' <-> ! a)
+b < 10 -> b' = b + 1
+b = 10 -> b' = 0
+
+[SYS_TRANS]
+d -> (c' = 3)
+
+
+# conjunction of liveness formulas []<>(...)
+
+[ENV_LIVENESS]
+! a | (b = 3)
+
+[SYS_LIVENESS]
+d
+c = 2
