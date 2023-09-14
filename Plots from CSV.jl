@@ -4,6 +4,16 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ d0db8070-41a9-11ee-2b97-818668d7efa8
 begin
 	using Pkg
@@ -311,6 +321,34 @@ body:not(.___) pluto-cell.running.errored>pluto-trafficlight:after {
 <p>🎨 Custom style sheet loaded.</p>
 """
 
+# ╔═╡ 4362212e-0f0e-4425-bfb1-a6c3808ed808
+html"""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+<style>
+
+.cm-editor .cm-tooltip-autocomplete .cm-completionLabel, pluto-input .cm-editor .cm-content, pluto-input .cm-editor .cm-scroller {
+  font-family: 'Fira Code' !important;
+  font-size: .75rem;
+  font-variant-ligatures: common-ligatures;
+}
+pluto-log-dot pre, pluto-output pre {
+  display: inline-block;
+  font-family: 'Fira Code' !important;
+  font-size: .75rem;
+  font-variant-ligatures: common-ligatures;
+  margin: 0;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+</style>
+
+<pre>Fira Code Loaded. Ligature check: -> --> <> == === !==|> </pre>
+"""
+
 # ╔═╡ 95e38fbd-142d-4926-9291-27e69ddf7c75
 function multiline(str)
 	HTML("""
@@ -327,39 +365,35 @@ end
 ⨝ = joinpath
 
 # ╔═╡ 1f3a2bee-2817-4314-901e-7dd3743fbab9
-#=╠═╡
 @bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CC")
-  ╠═╡ =#
+
+# ╔═╡ 1f973cbe-a416-44fa-8e3b-e6392f6ddb16
+# Discard all experiment repetitions except the first
+# Essentially avoids taking the mean of the data
+# and just shows result for single run.
+@bind only_first_repetition CheckBox(default=false)
 
 # ╔═╡ 5d35a941-ea93-45ed-b309-98db9ad9fc47
-#=╠═╡
 @bind refresh_button CounterButton("Refresh")
-  ╠═╡ =#
 
 # ╔═╡ 62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
-#=╠═╡
 refresh_button; csv_string = to_csv(results_dir)
-  ╠═╡ =#
 
 # ╔═╡ e1ddadeb-e9fd-4c37-a206-dff03363724e
-#=╠═╡
 csv_string |> multiline
-  ╠═╡ =#
 
 # ╔═╡ 7cd7f277-8388-413a-b993-9b81fdb495b8
-#=╠═╡
 raw_results = CSV.read(IOBuffer(csv_string), DataFrame)
-  ╠═╡ =#
 
 # ╔═╡ db1720fb-1134-4d81-b0b0-7da700d38798
-# Avoid eval call
-function to_vector(str::T) where T<:AbstractString
+# String to vector
+function to_vector(str::T, element_type=Float64) where T<:AbstractString
 	🐟 = match(r"\[(.*)\]", str)[1]
 	if 🐟 == ""
 		return []
 	else
 		🎣 = split(🐟, ", ")
-	 	return [parse(Float64, 🍣) for 🍣 in 🎣]
+	 	return [parse(element_type, 🍣) for 🍣 in 🎣]
 	end
 end
 
@@ -367,13 +401,14 @@ end
 to_vector("[3377.35, 2655.58, 2868.0, 2781.98]")
 
 # ╔═╡ 5484bf48-11be-4ac7-9557-e6fa36802f1d
-#=╠═╡
 cleandata = let
 	cleandata = raw_results
 	cleandata = transform(cleandata, :other_cars => ByRow(to_vector) => :other_cars)
-	#cleandata = filter(:runs => (x -> x > 1000), cleandata)
+	if only_first_repetition
+		cleandata = filter(:repetition => (x -> x == 1), cleandata)
+	end
+	cleandata
 end
-  ╠═╡ =#
 
 # ╔═╡ 85871e02-b379-4306-a547-1d6239e61fc2
 function elementwise_mean(vec)
@@ -386,7 +421,6 @@ function elementwise_mean(vec)
 end
 
 # ╔═╡ a675d6b9-0f2b-4023-af2a-1bb43303f6a7
-#=╠═╡
 means = let
 	grouping =  groupby(cleandata, [:runs, :fleet_size])
 	
@@ -397,24 +431,24 @@ means = let
 	means = transform(means, :other_cars => ByRow(to_vector), 
 		renamecols=false)
 end
-  ╠═╡ =#
 
 # ╔═╡ ef7d9898-c2be-493b-913e-51a854d74c32
-#=╠═╡
 @bind runs Select(means[!, :runs] |> unique)
-  ╠═╡ =#
 
 # ╔═╡ 8a8ad7a8-94cb-4f94-9e78-7684091272c8
-#=╠═╡
 @info "Repetitions found: $(nrow(filter(:fleet_size => (x -> x == 2), filter(:runs => (x -> x == runs), cleandata))))"
-  ╠═╡ =#
 
 # ╔═╡ 121a1235-4dd8-4282-8f01-b2d6b743286e
-#=╠═╡
 ylims=(
-	min(means[!, :learned_performance]...) - 200, 
-	max(means[!, :learned_performance]...) + 200)
-  ╠═╡ =#
+	min(means[!, :learned_performance]..., 
+		Iterators.flatten(means[!, :other_cars])...) - 200,
+
+	max(means[!, :learned_performance]..., 
+		Iterators.flatten(means[!, :other_cars])...) + 200)
+
+# ╔═╡ 65b36dde-10b2-448b-8367-027a5b072d50
+filter(:runs => (x -> x == runs), 
+			means)
 
 # ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
 begin
@@ -432,27 +466,31 @@ begin
 		
 		xticks = (collect(0:(fleet_max - 1)), ["car$x" for x in 0:(fleet_max - 1)])
 		xticks[2][1] = "car0\n(random)"
+		xlims = (-1, fleet_max)
 		
-		@df df plot!(:learned_performance, 
+		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
+		
+		@df df plot!(:learned_performance;
 			color=color,
 			linewidth=2,
 			xticks=xticks,
+			xlims=xlims,
 			xflip=true,
 			xlabel="learner",
 			ylabel="performance",
 			label="trained for $runs runs",
 			legend=:outertop,
+			#marker...,
 			plotargs...)
 
 		if show_other_measurements
-			marker = (markercolor=color, markershape=:circle, markersize=6, markerstrokecolor=:white)
 			for f in fleet_min:fleet_max
 				df′ = filter(:fleet_size => (x -> x == f), df)
 				other_cars = df′[!, :other_cars]
 				scatter!(other_cars, plotargs...; marker..., label=nothing)
 			end
 		end
-		plot!([0], [0], label=nothing, plotargs...)
+		plot!(plotargs...)
 	end
 	function learned_performance_plot(x...; plotargs...)
 		plot(;plotargs...)
@@ -461,22 +499,49 @@ begin
 end
 
 # ╔═╡ 3f04b408-1027-4c87-b138-35e63ab4697a
-#=╠═╡
-learned_performance_plot(means, runs; ylims=ylims)
-  ╠═╡ =#
+learned_performance_plot(means, runs; ylims=(2500, 4000))
+
+# ╔═╡ af2912dc-4fdb-49ad-b22a-df877e2b845a
+let
+	df = filter(:runs => (x -> x == runs), 
+		means)
+	fleet_sizes = df[!, :fleet_size]
+	fleet_min = min(fleet_sizes...)
+	fleet_max = max(fleet_sizes...)
+	xticks = (collect(0:(fleet_max - 1)), ["car$x" for x in 0:(fleet_max - 1)])
+	xticks[2][1] = "car0\n(random)"
+	xlims = (-1, fleet_max)
+	
+	plot(;xticks,
+		xlims,
+		xflip=true,
+		xlabel="learner",
+		ylabel="performance",)
+	
+	for (i, row) in enumerate(eachrow(df))
+		label = "Fleet size $(row[:fleet_size])"
+		color = colors[i%length(colors)]
+		
+		plot!([row[:other_cars]..., row[:learned_performance]];
+			label,
+			ylims,
+			color,
+			linewidth=2,
+			markershape=:circle,
+			markerstrokecolor=:white,
+			markersize=3,
+			legend=:outerright)
+	end
+	plot!()
+end
 
 # ╔═╡ 5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
-#=╠═╡
 unique_runs = means[!, :runs] |> unique |> sort
-  ╠═╡ =#
 
 # ╔═╡ 977e914e-3995-463c-ab74-d8f256adec27
-#=╠═╡
 @bind selected_runs MultiSelect(unique_runs, default=[r for r in unique_runs if (r > 1000 && r%2==0)])
-  ╠═╡ =#
 
 # ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
-#=╠═╡
 let
 	plot(;ylims)
 	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.WISTERIA, colors.CARROT]
@@ -487,17 +552,18 @@ let
 	end
 	plot!()
 end
-  ╠═╡ =#
 
 # ╔═╡ Cell order:
 # ╠═d0db8070-41a9-11ee-2b97-818668d7efa8
 # ╟─2bd47b9e-31e3-4ee1-aa87-60dfc40869a9
 # ╟─c9e1bc2c-a6f7-4b88-8038-51cf2ef2a008
+# ╟─4362212e-0f0e-4425-bfb1-a6c3808ed808
 # ╟─95e38fbd-142d-4926-9291-27e69ddf7c75
 # ╠═61c15d44-75be-4613-8b60-484d94847b8a
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
+# ╠═1f973cbe-a416-44fa-8e3b-e6392f6ddb16
 # ╟─5d35a941-ea93-45ed-b309-98db9ad9fc47
 # ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 # ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
@@ -510,8 +576,10 @@ end
 # ╠═ef7d9898-c2be-493b-913e-51a854d74c32
 # ╠═8a8ad7a8-94cb-4f94-9e78-7684091272c8
 # ╠═121a1235-4dd8-4282-8f01-b2d6b743286e
-# ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
+# ╠═65b36dde-10b2-448b-8367-027a5b072d50
+# ╟─2cc917ff-7098-4c32-a1f8-e75360c37e2c
 # ╠═3f04b408-1027-4c87-b138-35e63ab4697a
+# ╠═af2912dc-4fdb-49ad-b22a-df877e2b845a
 # ╠═5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
 # ╠═977e914e-3995-463c-ab74-d8f256adec27
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
