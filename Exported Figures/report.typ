@@ -1,16 +1,12 @@
-= First batch of results
+= Learned Performance -- Default Setup
 
-@Learned-Performance are results which have been trained for a set amount of runs. 
-Performance is accumulated distance over 100 seconds. The x-axis represents the performance of each car, so that the data-point at "car1" represents the accumulated distance between car1 and car0. Note that car0 is a random agent.
+@Learned-Performance shows results which have been trained for a set amount of runs. 
+Performance is accumulated distance over 100 seconds. #footnote[It might be better to report this as average distance over these 100 seconds.] The x-axis represents the performance of each car, so that the data-point at "car1" represents the accumulated distance between car1 and car0. Note that car0 is a random agent.
 
 The learned performance of car1 is compiled into the model when training and evaluating car2 and so on.
 
-#figure(
-    image("./Learned Performance.svg"),
-    caption: "Learned Performance"
-) <Learned-Performance>
 
-It is interesting to note that performance drops with the number of cars added to the chain. This could be due to the real fenomonon of congestion forming even without obstacles. (https://www.youtube.com/watch?v=7wm-pZp_mi0)
+It is interesting to note that performance drops with the number of cars added to the chain. This could be due to the real fenomenon of congestion forming even without obstacles. (https://www.youtube.com/watch?v=7wm-pZp_mi0)
 
 = Comparison to non-specialized model
 
@@ -18,33 +14,47 @@ It is interesting to see whether training specific agents for each car in the fl
 
 In @non-specialized-5k, @non-specialized-10k and @non-specialized-20k,  the blue lines represent the results from @Learned-Performance. The teal(?) line is the corresponding setup evaluated using only the strategy of car1. 
 
-#figure(
-    image("./Compared to non-specialized 5k.svg"),
-    caption: "Compared to non-specialized 5k"
-) <non-specialized-5k>
-#figure(
-    image("./Compared to non-specialized 10k.svg"),
-    caption: "Compared to non-specialized 10k"
-) <non-specialized-10k>
-#figure(
-    image("./Compared to non-specialized 20k.svg"),
-    caption: "Compared to non-specialized 20k"
-) <non-specialized-20k>
+#grid(columns:(1fr, 1fr),
+
+    [#figure(
+        image("./Learned Performance.svg", width:100%),
+        caption: "Learned Performance"
+    ) <Learned-Performance>],
+    [#figure(
+        image("./Compared to non-specialized 5k.svg", width:100%),
+        caption: "Compared to non-specialized 5k"
+    ) <non-specialized-5k>],
+    [#figure(
+        image("./Compared to non-specialized 10k.svg", width:100%),
+        caption: "Compared to non-specialized 10k"
+    ) <non-specialized-10k>],
+    [#figure(
+        image("./Compared to non-specialized 20k.svg", width:100%),
+        caption: "Compared to non-specialized 20k"
+    ) <non-specialized-20k>]
+)
 
 = Centralized strategy
 
-It would be interesting to see if a centralized strategy can help the cars to achieve a better coherent performance, compared to the default setup. 
+It would be interesting to see if a centralized strategy can help the cars to achieve a better coherent performance, compared to the default setup. Though the challenge is a much bigger state space has to be learned.
 
-This does not seem to be the case at least for the same amount of training time. Using just 1000 episodes, training a fleet of 3 cars with a centralized strategy for both car1 and car2 (car0 being random), the strategy learned a performance of *3724* for car1 and *4822* for car2. In comparison, the default training method achieved an accumulated distance of *2721* for car1, and *3028* for car2. See @Centralized-Strategy-1k.
+@centralized-controller shows the learning outcomes on a per-car basis for different fleet sizes. Every centralized controller was trained for 20000 runs.
 
-#figure(
-    image("./Centralized Strategy 1k.png"),
-    caption: "UPPAAL Query result for Centralized Strategy 1k"
-) <Centralized-Strategy-1k>
+It can be seen that when the fleet size is 2 (only car1 being controlled by the learner) this car has the same performance as is observed in previous figures. Already when two cars are under the learner's control (fleet size 3) it seems that the first car is performing slightly worse.
 
-For 5000 training runs, this was *3093* and *3186* for cars 1 and 2, compared to *2722* and *2730* in the default setup. See @Centralized-Strategy-5k.
+And then of course there is a dramatic shift when it has to manage three cars or more. 
 
-#figure(
-    image("./Centralized Strategy 5k.png"),
-    caption: "UPPAAL Query result for Centralized Strategy 5k"
-) <Centralized-Strategy-5k>
+There seems to be a slight trend of the backmost cars performing better in each case, but overall the performance is far worse than the non-centralized agents.
+
+@centralized-controller-mean-performance shows instead just the mean performance of each centralized agents, taken over all the cars in its control. This illustrates perhaps better how much of a performance hike occurs before it levels out. I ask myself if 8000 isn't the performance of a random agent. Or maybe that was 12000.
+
+#grid(columns:(1fr, 1fr),
+    [#figure(
+        image("./Centralized controller.svg", width:100%),
+        caption: "Centralized controller"
+    ) <centralized-controller>],
+    [#figure(
+        image("./Centralized controller mean performance.svg", width:60%),
+        caption: "Centralized controller mean performance"
+    ) <centralized-controller-mean-performance>],
+)
