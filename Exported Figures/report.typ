@@ -12,7 +12,7 @@ It is interesting to note that performance drops with the number of cars added t
 
 It is interesting to see whether training specific agents for each car in the fleet actually results in better performance, or if using the same policy for all cars gives a similar result. In fact it is better to train a specialized policy for each position in the fleet.
 
-In @non-specialized-5k, @non-specialized-10k and @non-specialized-20k,  the blue lines represent the results from @Learned-Performance. The teal(?) line is the corresponding setup evaluated using only the strategy of car1. 
+In  @non-specialized-20k,  the blue lines represent the results from @Learned-Performance. The teal(?) line is the corresponding setup evaluated using only the strategy of car1. 
 
 #grid(columns:(1fr, 1fr),
 
@@ -21,16 +21,8 @@ In @non-specialized-5k, @non-specialized-10k and @non-specialized-20k,  the blue
         caption: "Learned Performance"
     ) <Learned-Performance>],
     [#figure(
-        image("./Compared to non-specialized 5k.svg", width:100%),
-        caption: "Compared to non-specialized 5k"
-    ) <non-specialized-5k>],
-    [#figure(
-        image("./Compared to non-specialized 10k.svg", width:100%),
-        caption: "Compared to non-specialized 10k"
-    ) <non-specialized-10k>],
-    [#figure(
         image("./Compared to non-specialized 20k.svg", width:100%),
-        caption: "Compared to non-specialized 20k"
+        caption: "Obs: Old data. Non-specialized 20k and (regular) specialized 20k"
     ) <non-specialized-20k>]
 )
 
