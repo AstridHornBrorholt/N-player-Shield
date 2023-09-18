@@ -103,23 +103,6 @@ function multiline(str)
 	""")
 end
 
-# ╔═╡ 3ef552ba-6900-456c-bf30-4ba091df5976
-md"""
-## Query 
-
-	simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3]}
-
-Note that the last car will be untrained. This is for the 6-car fleet, and the query omits the 6th car.
-
-## Run with 
-
-	verifyta --truncation-time-error 0.1
-
-To avoid "lag" in trace. Full query example:
-
-	verifyta --truncation-time-error 0.1 Fleet\ of\ 6\ Cars.xml Fleet\ of\ 6\ Cars\ \(trace\).q > Fleet\ of\ 6\ Cars.trace
-"""
-
 # ╔═╡ d9e798d4-d1b4-4ac2-b462-10ba2427b7d5
 @bind basedir TextField(80, default="/home/asger/Results/N-player CC/1000 Runs/Repetition 1/Models")
 
@@ -133,12 +116,15 @@ isdir(basedir)
 # ╔═╡ be837fbd-faea-45fd-950b-c473599756ce
 ⨝ = joinpath
 
+# ╔═╡ d18a9ac3-9cc8-45f3-9e86-3509a743eb78
+query = "simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3]}"
+
 # ╔═╡ 6e56fdba-627a-4200-8e2e-25970f67e8b4
 query_file = basedir ⨝ "Fleet of 6 Cars (trace).q"
 
 # ╔═╡ d2f942c1-647f-408e-a100-12c6399811b8
 open(query_file, "w") do f
-	println(f, "simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3]}")
+	println(f, query)
 end
 
 # ╔═╡ 9c079ac8-f773-458e-b288-c27c7c172d19
@@ -148,24 +134,12 @@ model_file = basedir ⨝ "Fleet of 6 Cars.xml"
 if isfile(query_file) && isfile(model_file)
 	output = Cmd([
 		"verifyta",
-		"--truncation-time-error", "0.01",
-		"--truncation-error", "0.01",
+		"--truncation-time-error", "0.01",  # Get less "lag" or "skips"
+		"--truncation-error", "0.01", 		# Get less "lag" or "skips"
 		model_file,
 		query_file
 	]) |> read |> String
 end
-
-# ╔═╡ 45ee2a7e-1e54-4ce9-93ea-7d461208d91f
-# ╠═╡ disabled = true
-#=╠═╡
-@bind trace_file FilePicker()
-  ╠═╡ =#
-
-# ╔═╡ aac8519c-191a-4a60-acdf-332396ca03a7
-# ╠═╡ disabled = true
-#=╠═╡
-output = trace_file["data"] |> String
-  ╠═╡ =#
 
 # ╔═╡ de5ffb24-d55a-47bc-a1df-fe03c2662856
 output |> multiline
@@ -275,6 +249,9 @@ end
 # ╔═╡ 16816e06-3c40-4972-84bf-2832c197706c
 velocities = at_regular_intervals(get_traces(output, "velocity")[0], Δt)
 
+# ╔═╡ 0e0d6c1f-f04b-47bd-b352-a7bdb3fa5692
+get_traces(output, "velocity")
+
 # ╔═╡ c00efc32-c7fe-4af8-acda-79725f83521b
 function plot_cars(distances::T, time::Int64) where T <: Dict{Int64, Vector{Float64}}
 	sorted = sort(collect(distances), by=(x -> x[1]))
@@ -328,6 +305,12 @@ let
 end
 
 # ╔═╡ 2d67a7a2-6ea7-4bb1-aa87-b12e516f161b
+"""
+	animate_cars(distances, velocities)
+
+ - `distances` Distances for each car
+ - `velocities` Velocity of front car only
+"""
 function animate_cars(distances, velocities)
 	t_max = length(distances[0]) - 1
 	distance_covered = 0
@@ -339,7 +322,7 @@ function animate_cars(distances, velocities)
 	# Add a delay before reset
 	[frame(anim) for _ in 1:10]
 	anim
-end
+end;
 
 # ╔═╡ 30529eb4-b8a0-4b65-9098-e24ebe6655e0
 gif(animate_cars(distances, velocities), show_msg=:false, fps=2/Δt)
@@ -1393,11 +1376,11 @@ version = "1.4.1+0"
 # ╟─c6bf0a48-48b2-11ee-2c66-055e8980c114
 # ╠═264a2aa5-1a5d-44ab-8d6b-d39ed1d2bdb1
 # ╠═6878f912-1796-46c8-bb01-084905986d83
-# ╟─3ef552ba-6900-456c-bf30-4ba091df5976
 # ╠═d9e798d4-d1b4-4ac2-b462-10ba2427b7d5
 # ╠═165cd347-87f1-4cb6-b938-c89693281698
 # ╠═0a69ab62-9e67-4cdc-a3b3-7f8a808848e9
 # ╠═be837fbd-faea-45fd-950b-c473599756ce
+# ╠═d18a9ac3-9cc8-45f3-9e86-3509a743eb78
 # ╠═6e56fdba-627a-4200-8e2e-25970f67e8b4
 # ╠═d2f942c1-647f-408e-a100-12c6399811b8
 # ╠═9c079ac8-f773-458e-b288-c27c7c172d19
@@ -1425,6 +1408,7 @@ version = "1.4.1+0"
 # ╠═6822615e-3aa7-4488-ab3f-422267d4256f
 # ╠═5c0db83c-bb68-4a7b-b389-123186ccd319
 # ╠═16816e06-3c40-4972-84bf-2832c197706c
+# ╠═0e0d6c1f-f04b-47bd-b352-a7bdb3fa5692
 # ╠═c00efc32-c7fe-4af8-acda-79725f83521b
 # ╠═f2cef7c7-2434-47d2-8a04-c6ac518399b2
 # ╠═92b59972-7c94-445d-8b04-216bbe1328b8
