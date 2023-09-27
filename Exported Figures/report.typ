@@ -22,7 +22,7 @@ In  @non-specialized-20k,  the blue lines represent the results from @Learned-Pe
     ) <Learned-Performance>],
     [#figure(
         image("./Compared to non-specialized 20k.svg", width:100%),
-        caption: "Obs: Old data. Non-specialized 20k and (regular) specialized 20k"
+        caption: "Non-specialized 20k and (regular) specialized 20k"
     ) <non-specialized-20k>]
 )
 

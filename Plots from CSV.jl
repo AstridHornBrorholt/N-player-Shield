@@ -4,16 +4,6 @@
 using Markdown
 using InteractiveUtils
 
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
-        el
-    end
-end
-
 # ╔═╡ d0db8070-41a9-11ee-2b97-818668d7efa8
 begin
 	using Pkg
@@ -358,6 +348,9 @@ function multiline(str)
 	""")
 end
 
+# ╔═╡ 15f0808f-8424-4d27-9247-274c7751bf8e
+Plots.default(fontfamily="serif-roman") 
+
 # ╔═╡ 26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 ← = push!
 
@@ -395,6 +388,7 @@ begin
 			runs;
 			color=colors.POMEGRANATE,
 			show_other_measurements=true,
+			label=nothing,
 			plotargs...)
 		
 		df = filter(:runs => (x -> x == runs), 
@@ -404,8 +398,9 @@ begin
 		fleet_min = min(fleet_sizes...)
 		fleet_max = max(fleet_sizes...)
 		
-		xticks = (collect(1:(fleet_max)), ["car$x" for x in 0:(fleet_max - 1)])
-		xticks[2][1] = "car0\n(random)"
+		xticks = (collect(1:(fleet_max)), ["$x" for x in 0:(fleet_max - 1)])
+		#xticks = (collect(1:(fleet_max)), ["car$x" for x in 0:(fleet_max - 1)])
+		#xticks[2][1] = "car0\n(random)"
 		xlims = (0, fleet_max + 1)
 		
 		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
@@ -416,9 +411,9 @@ begin
 			xflip=true,
 			xticks,
 			xlims,
-			xlabel="learner",
-			ylabel="performance",
-			label="trained for $runs runs",
+			xlabel="Car number",
+			ylabel="Performance",
+			label=something(label, "Trained for $runs runs each"),
 			legend=:outertop,
 			#marker...,
 			plotargs...)
@@ -431,7 +426,7 @@ begin
 				scatter!(2:length(other_cars), other_cars, plotargs...; marker..., label=nothing)
 			end
 		end
-		plot!(plotargs...)
+		plot!(;plotargs...)
 	end
 	function learned_performance_plot(x...; plotargs...)
 		plot(;plotargs...)
@@ -439,28 +434,52 @@ begin
 	end
 end
 
+# ╔═╡ 24408d9e-de30-4e1e-805b-07ee138371e0
+md"""
+### NB
+
+I have been using x001 as a shorthand for "non-specialized variant of the experiment that was trained for x000 runs." 
+
+If there is a readme in the root of the folder, it will be displayed in the below cell.
+
+This is because I don't support labels for the experiments beyond the number of runs used. This is a bit of a mess. Other values like x003 and x004 have no set definitions. I don't remember what those are.
+"""
+
 # ╔═╡ 5d35a941-ea93-45ed-b309-98db9ad9fc47
+#=╠═╡
 @bind refresh_button CounterButton("Refresh")
+  ╠═╡ =#
 
 # ╔═╡ 1f973cbe-a416-44fa-8e3b-e6392f6ddb16
+#=╠═╡
 # Discard all experiment repetitions except the first
 # Essentially avoids taking the mean of the data
 # and just shows result for single run.
 @bind only_first_repetition CheckBox(default=false)
+  ╠═╡ =#
 
 # ╔═╡ 1f3a2bee-2817-4314-901e-7dd3743fbab9
+#=╠═╡
 @bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CC")
+  ╠═╡ =#
 
 # ╔═╡ 62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
+#=╠═╡
 refresh_button; csv_string = to_csv(results_dir)
+  ╠═╡ =#
 
 # ╔═╡ e1ddadeb-e9fd-4c37-a206-dff03363724e
+#=╠═╡
 csv_string |> multiline
+  ╠═╡ =#
 
 # ╔═╡ 7cd7f277-8388-413a-b993-9b81fdb495b8
+#=╠═╡
 raw_results = CSV.read(IOBuffer(csv_string), DataFrame)
+  ╠═╡ =#
 
 # ╔═╡ 5484bf48-11be-4ac7-9557-e6fa36802f1d
+#=╠═╡
 cleandata = let
 	cleandata = raw_results
 	cleandata = transform(cleandata, :other_cars => ByRow(to_vector) => :other_cars)
@@ -469,8 +488,10 @@ cleandata = let
 	end
 	cleandata
 end
+  ╠═╡ =#
 
 # ╔═╡ a675d6b9-0f2b-4023-af2a-1bb43303f6a7
+#=╠═╡
 means = let
 	grouping =  groupby(cleandata, [:runs, :fleet_size])
 	
@@ -481,65 +502,156 @@ means = let
 	means = transform(means, :other_cars => ByRow(to_vector), 
 		renamecols=false)
 end
-
-# ╔═╡ ef7d9898-c2be-493b-913e-51a854d74c32
-@bind runs Select(means[!, :runs] |> unique)
-
-# ╔═╡ 65b36dde-10b2-448b-8367-027a5b072d50
-filter(:runs => (x -> x == runs), 
-			means)
-
-# ╔═╡ 8a8ad7a8-94cb-4f94-9e78-7684091272c8
-@info "Repetitions found: $(nrow(filter(:fleet_size => (x -> x == 2), filter(:runs => (x -> x == runs), cleandata))))"
+  ╠═╡ =#
 
 # ╔═╡ 9a298f2a-5194-41c9-813d-afbf56ef92eb
 md"""
 ## Performance compared to when it is imported
 """
 
-# ╔═╡ 3f04b408-1027-4c87-b138-35e63ab4697a
-let
-	df = filter((x -> x[:runs] == runs), means)
-	
-	ylims=(
-		200,
-		max(df[!, :learned_performance]..., 
-			Iterators.flatten(df[!, :other_cars])...) + 200)
-	
-	learned_performance_plot(means, runs; ylims=ylims)
+# ╔═╡ ef7d9898-c2be-493b-913e-51a854d74c32
+#=╠═╡
+@bind runs Select(means[!, :runs] |> unique)
+  ╠═╡ =#
+
+# ╔═╡ 8a8ad7a8-94cb-4f94-9e78-7684091272c8
+#=╠═╡
+@info "Repetitions found: $(nrow(filter(:fleet_size => (x -> x == 2), filter(:runs => (x -> x == runs), cleandata))))"
+  ╠═╡ =#
+
+# ╔═╡ 65b36dde-10b2-448b-8367-027a5b072d50
+#=╠═╡
+filter(:runs => (x -> x == runs), 
+			means)
+  ╠═╡ =#
+
+# ╔═╡ 33d2e7c5-f272-4ecd-93cb-c927ceb735ab
+#=╠═╡
+let 
+	readme = results_dir ⨝ "$runs Runs" ⨝ "readme.txt"
+	if isfile(readme)
+		md"""
+		!!! info "`Readme` found"
+		
+		at $(readme)
+		
+		$(readme |> read |> String |> multiline)
+		"""
+	end
 end
+  ╠═╡ =#
 
 # ╔═╡ 5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
+#=╠═╡
 unique_runs = means[!, :runs] |> unique |> sort
+  ╠═╡ =#
 
 # ╔═╡ 977e914e-3995-463c-ab74-d8f256adec27
+#=╠═╡
 @bind selected_runs MultiSelect(unique_runs, 
 		default=[r for r in unique_runs if (r > 1000 && r%100==0)])
+  ╠═╡ =#
 
 # ╔═╡ 7909f497-55cd-4f9d-b34d-515a80241873
 md"""
 ## Performance for different numbers of runs
 """
 
+# ╔═╡ 734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
+#=╠═╡
+begin
+	default_y_min = min(means[!, :learned_performance]..., 
+		Iterators.flatten(means[!, :other_cars])...) - 200
+	
+	default_y_max = max(means[!, :learned_performance]..., 
+		Iterators.flatten(means[!, :other_cars])...) + 200
+end;
+  ╠═╡ =#
+
+# ╔═╡ 64921a92-ce9a-4a79-9349-445c8eb4fe15
+#=╠═╡
+md"""
+`y_min` = $(@bind y_min NumberField(0:50:typemax(Int64), default=default_y_min))
+
+`y_max` = $(@bind y_max NumberField(0:50:typemax(Int64), default=default_y_max))
+"""
+  ╠═╡ =#
+
+# ╔═╡ 2b5eb5be-3e34-4eca-84c9-18a32aacdfab
+#=╠═╡
+ylims = (y_min, y_max)
+  ╠═╡ =#
+
+# ╔═╡ b1090c8e-9f46-429a-93a7-42cedba24188
+#=╠═╡
+md"""
+`width` = $(@bind width NumberField(0:10:typemax(Int64), default=600))
+
+`height` = $(@bind height NumberField(0:10:typemax(Int64), default=400))
+"""
+  ╠═╡ =#
+
+# ╔═╡ 8ff26541-30b4-42bb-85a0-1d08e1c8d2aa
+#=╠═╡
+size = (width, height)
+  ╠═╡ =#
+
+# ╔═╡ 3f04b408-1027-4c87-b138-35e63ab4697a
+#=╠═╡
+let
+	df = filter((x -> x[:runs] == runs), means)
+	
+	learned_performance_plot(means, runs; ylims, size)
+end
+  ╠═╡ =#
+
 # ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
+#=╠═╡
 let
 	df = filter((x -> x[:runs] ∈ selected_runs), means)
 	
-	ylims=(
-		min(df[!, :learned_performance]..., 
-			Iterators.flatten(df[!, :other_cars])...) - 200,
-		max(df[!, :learned_performance]..., 
-			Iterators.flatten(df[!, :other_cars])...) + 200)
+	plot(;ylims, size)
+
+	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.CARROT, colors.WISTERIA, colors.EMERALD, colors.SUNFLOWER, colors.PETER_RIVER]
 	
-	plot(;ylims)
-	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.CARROT, colors.WISTERIA, ]
+	strokes = [:dashdot, :dash, :dot, :solid, ]
+	
 	for (i, r) in enumerate(selected_runs)
 		learned_performance_plot!(means, r, 
-			color=c[i%length(c) + 1], 
+			color=c[1 + (i - 1)%length(c)],
+			line=strokes[1 + (i - 1)%length(strokes)],
+			markerstrokecolor=:white,
 			show_other_measurements=false)
 	end
 	plot!()
 end
+  ╠═╡ =#
+
+# ╔═╡ ff362535-2cc2-4784-88b8-1b3ae48d6293
+md"""
+## Compared to non-specialized run
+
+The specialized and non-specialized have been hard-coded to 20k and 20k+1 respectively.
+"""
+
+# ╔═╡ 7e493642-9343-4c21-9100-093c9e8e11f2
+#=╠═╡
+let
+	specialized = 20000
+	non_specialized = 20001
+	plot(;ylims, size)
+	learned_performance_plot!(means, non_specialized,
+		color=colors.SUNFLOWER, 
+		linestyle=:dash,
+		label="Trained for $specialized once and re-used",
+		show_other_measurements=false)
+	
+	learned_performance_plot!(means, specialized,
+		color=colors.WISTERIA, 
+		label="Trained for $specialized runs each",
+		show_other_measurements=false)
+end
+  ╠═╡ =#
 
 # ╔═╡ f267c827-7e5d-466c-9ad0-bfdb004befe3
 md"""
@@ -547,44 +659,49 @@ md"""
 """
 
 # ╔═╡ af2912dc-4fdb-49ad-b22a-df877e2b845a
+#=╠═╡
 let	
 	df = filter(:runs => (x -> x == runs), means)
-	
-	ylims=(
-		min(df[!, :learned_performance]..., 
-			Iterators.flatten(df[!, :other_cars])...) - 200,
-		max(df[!, :learned_performance]..., 
-			Iterators.flatten(df[!, :other_cars])...) + 200)
+	df = sort(df, :fleet_size, rev=true)
 	
 	fleet_sizes = df[!, :fleet_size]
 	fleet_min = min(fleet_sizes...)
 	fleet_max = max(fleet_sizes...)
-	xticks = (collect(0:(fleet_max - 1)), ["car$x" for x in 0:(fleet_max - 1)])
-	xticks[2][1] = "car0\n(random)"
+	xticks = (collect(0:(fleet_max - 1)), ["$x" for x in 0:(fleet_max - 1)])
+	#xticks = (collect(0:(fleet_max - 1)), ["car$x" for x in 0:(fleet_max - 1)])
+	#xticks[2][1] = "car0\n(random)"
 	xlims = (-1, fleet_max)
 	
 	plot(;xticks,
 		xlims,
 		xflip=true,
-		xlabel="learner",
-		ylabel="performance")
+		xlabel="Car number",
+		ylabel="Performance")
+
+	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.CARROT, colors.WISTERIA, colors.EMERALD, colors.SUNFLOWER, colors.PETER_RIVER]
+	markers = [(4, :pentagon), (4, :square), (4, :utriangle), (5, :star4), (5, :star), (4, :circle),]
 	
 	for (i, row) in enumerate(eachrow(df))
 		label = "Fleet size $(row[:fleet_size])"
-		color = colors[i%length(colors)]
+		color = c[1 + (i - 1)%length(c)]
+		marker = markers[1 + (i - 1)%length(markers)]
+		linealpha = length(row[:other_cars]) > 0 ? 1 : 0
 		
 		plot!([row[:other_cars]..., row[:learned_performance]];
 			label,
 			ylims,
+			size,
 			color,
+			marker,
+			linealpha,
 			linewidth=2,
-			markershape=:circle,
 			markerstrokecolor=:white,
-			markersize=3,
+			markersize=4,
 			legend=:outerright)
 	end
 	plot!()
 end
+  ╠═╡ =#
 
 # ╔═╡ efabb8a3-ef0b-412a-aa6d-ea9d6a3c36cf
 md"""
@@ -592,14 +709,9 @@ md"""
 """
 
 # ╔═╡ 8ad6aacf-2e18-4e20-ab90-a1f36a2256cf
+#=╠═╡
 let	
 	df = filter(:runs => (x -> x == runs), means)
-	
-	ylims=(
-		min(df[!, :learned_performance]..., 
-			Iterators.flatten(df[!, :other_cars])...) - 200,
-		max(df[!, :learned_performance]..., 
-			Iterators.flatten(df[!, :other_cars])...) + 200)
 	
 	fleet_sizes = df[!, :fleet_size]
 	fleet_min = min(fleet_sizes...)
@@ -607,12 +719,14 @@ let
 	xticks = (fleet_min:fleet_max |> collect)
 	xlims = (1, fleet_max + 1)
 	
-	plot(;xticks,
+	plot(;
+		ylims,
+		size,
+		xticks,
 		xlims,
 		xflip=false,
 		xlabel="fleet size",
-		ylabel="mean performance",
-		size=(400,200))
+		ylabel="mean performance")
 
 	
 	fleet_size = []
@@ -628,6 +742,7 @@ let
 		bar=3,
 		color=colors.WET_ASPHALT)
 end
+  ╠═╡ =#
 
 # ╔═╡ Cell order:
 # ╠═d0db8070-41a9-11ee-2b97-818668d7efa8
@@ -636,6 +751,7 @@ end
 # ╟─4362212e-0f0e-4425-bfb1-a6c3808ed808
 # ╟─95e38fbd-142d-4926-9291-27e69ddf7c75
 # ╠═61c15d44-75be-4613-8b60-484d94847b8a
+# ╠═15f0808f-8424-4d27-9247-274c7751bf8e
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
@@ -649,17 +765,26 @@ end
 # ╠═8a8ad7a8-94cb-4f94-9e78-7684091272c8
 # ╠═65b36dde-10b2-448b-8367-027a5b072d50
 # ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
-# ╠═ef7d9898-c2be-493b-913e-51a854d74c32
+# ╟─24408d9e-de30-4e1e-805b-07ee138371e0
 # ╠═5d35a941-ea93-45ed-b309-98db9ad9fc47
 # ╠═1f973cbe-a416-44fa-8e3b-e6392f6ddb16
 # ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
 # ╟─9a298f2a-5194-41c9-813d-afbf56ef92eb
+# ╠═ef7d9898-c2be-493b-913e-51a854d74c32
+# ╟─33d2e7c5-f272-4ecd-93cb-c927ceb735ab
 # ╟─3f04b408-1027-4c87-b138-35e63ab4697a
 # ╠═5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
 # ╠═977e914e-3995-463c-ab74-d8f256adec27
 # ╟─7909f497-55cd-4f9d-b34d-515a80241873
-# ╟─f00c8154-36be-495e-b681-fd3c24f97561
+# ╟─734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
+# ╟─64921a92-ce9a-4a79-9349-445c8eb4fe15
+# ╟─2b5eb5be-3e34-4eca-84c9-18a32aacdfab
+# ╟─b1090c8e-9f46-429a-93a7-42cedba24188
+# ╠═8ff26541-30b4-42bb-85a0-1d08e1c8d2aa
+# ╠═f00c8154-36be-495e-b681-fd3c24f97561
+# ╟─ff362535-2cc2-4784-88b8-1b3ae48d6293
+# ╠═7e493642-9343-4c21-9100-093c9e8e11f2
 # ╟─f267c827-7e5d-466c-9ad0-bfdb004befe3
-# ╟─af2912dc-4fdb-49ad-b22a-df877e2b845a
+# ╠═af2912dc-4fdb-49ad-b22a-df877e2b845a
 # ╟─efabb8a3-ef0b-412a-aa6d-ea9d6a3c36cf
-# ╠═8ad6aacf-2e18-4e20-ab90-a1f36a2256cf
+# ╟─8ad6aacf-2e18-4e20-ab90-a1f36a2256cf
