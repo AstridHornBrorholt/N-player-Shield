@@ -286,15 +286,18 @@ The grid is defined by the upper and lower bounds on the state space, and some `
 `granularity_distance =` $(@bind granularity_distance NumberField(0.001:0.001:1, default=1))
 """
 
+# ╔═╡ 52e5763e-213e-4b39-952f-60a612846cbe
+outer_bounds = Bounds(
+	Float64[m.v_ego_min, m.v_front_min, m.distance_min],
+		Float64[m.v_ego_max + granularity_v_ego,
+			m.v_front_max + granularity_v_front,
+			m.distance_max + granularity_distance])
+
 # ╔═╡ 82cb8845-5eb9-4dac-bab2-47a5e9761bee
 begin
 	granularity = [granularity_v_ego, granularity_v_front, granularity_distance]
 
-	grid = Grid(granularity, 
-		(m.v_ego_min, m.v_front_min, m.distance_min ),
-		(m.v_ego_max + granularity_v_ego,
-			m.v_front_max + granularity_v_front,
-			m.distance_max + granularity_distance ))
+	grid = Grid(granularity, outer_bounds)
 
 	initialize!(grid, x -> is_safe(x) ? any_action : no_action)
 
@@ -382,6 +385,9 @@ if max_steps_reached
 		The method reached a maximum iteration steps of $max_steps before a fixed point was reached. The strategy is only safe for a finite horizon of $max_steps steps.""")
 end
 
+# ╔═╡ 99aabe32-7c65-4a9d-9397-ba2db2ca5cab
+@bind action Select([backwards, neutral, forwards])
+
 # ╔═╡ 1537138d-1e9a-4c2e-a1ce-0e3b696d5c8d
 md"""
 
@@ -417,9 +423,6 @@ end
 
 # ╔═╡ c403ff95-26db-4d72-87a2-a00d4ea3a77e
 SupportingPoints(model.samples_per_axis, box(grid, v_ego, v_front, distance)) |> collect
-
-# ╔═╡ 99aabe32-7c65-4a9d-9397-ba2db2ca5cab
-@bind action Select([backwards, neutral, forwards])
 
 # ╔═╡ b7d66268-8a40-499d-aaca-d6e59f0ee14f
 partition = box(shield, v_ego, v_front, distance)
@@ -513,23 +516,9 @@ end
 
 # ╔═╡ 298dadf8-41a4-443d-90c9-9dba1a87145c
 let
-	buf = IOBuffer()
-	str = get_c_library_header(shield, "CC samples_per_axis=$samples_per_axis, granularity=$granularity")
-	print(buf, str)
-	DownloadButton(take!(buf), "shield_dump.c")
+	libshield_so = get_libshield(shield)
+	DownloadButton(libshield_so |> read, "libshield.so")
 end
-
-# ╔═╡ 55852049-5765-4be4-9f40-351d5bfb6d51
-m.v_ego_min
-
-# ╔═╡ fecc0e61-d45f-4241-a13d-3764c423a1bf
-@bind actual NumberField(0:2:20)
-
-# ╔═╡ 3f65e438-7384-4c4a-86aa-2ac0a64db603
-20 - actual
-
-# ╔═╡ c96fc0fd-00a1-488d-b2b4-efb4efb8775b
-actual - 0
 
 # ╔═╡ Cell order:
 # ╟─1e159603-fc61-45f8-9595-f75e55318344
@@ -558,9 +547,10 @@ actual - 0
 # ╟─32d19beb-b4cb-4767-a094-22d7952d9be8
 # ╠═07645bb8-9f8d-4b0e-90ec-34466a966786
 # ╟─270796fb-2c5b-4fb1-b27c-58d354c87e36
+# ╠═52e5763e-213e-4b39-952f-60a612846cbe
 # ╠═82cb8845-5eb9-4dac-bab2-47a5e9761bee
 # ╟─e3d5c8b9-0e93-42b1-ad7b-e66e61ff842a
-# ╟─05305c4a-a1e6-40b4-bb94-e15e77929ef3
+# ╠═05305c4a-a1e6-40b4-bb94-e15e77929ef3
 # ╟─b3e8b012-57c0-48f1-86a8-cd06b8971d46
 # ╠═52cee5fe-75ac-42bc-b422-8235108e9d8d
 # ╟─b4a84cfd-13a3-4c00-81e2-b28d288b23d2
@@ -574,11 +564,11 @@ actual - 0
 # ╠═dfc8cb50-b08f-4006-8e6f-de058ee0bf98
 # ╠═0f5ee444-afe5-4314-ab8e-a7dfff02964d
 # ╟─85e07e50-a0fc-42bb-813c-8d0ab6af2b4c
-# ╟─1537138d-1e9a-4c2e-a1ce-0e3b696d5c8d
 # ╠═99aabe32-7c65-4a9d-9397-ba2db2ca5cab
 # ╠═b7d66268-8a40-499d-aaca-d6e59f0ee14f
 # ╠═0018900a-03ed-437f-a4ce-b1e967269ac3
 # ╠═5b3b198d-f0df-4991-8eb7-f208418b0be0
+# ╟─1537138d-1e9a-4c2e-a1ce-0e3b696d5c8d
 # ╠═28f000ec-9538-4c9c-afbc-ece4af32d3af
 # ╟─0382588a-ac96-4528-9fee-67ab93d4a1f8
 # ╠═107b960f-1a75-41f9-9cb9-195877ad6184
@@ -587,7 +577,3 @@ actual - 0
 # ╟─b4eea529-3c88-4e9d-b1b1-99fe2f9c4f94
 # ╟─db29fb3a-0e95-44f6-b324-5238ac02427c
 # ╠═298dadf8-41a4-443d-90c9-9dba1a87145c
-# ╠═55852049-5765-4be4-9f40-351d5bfb6d51
-# ╠═fecc0e61-d45f-4241-a13d-3764c423a1bf
-# ╠═3f65e438-7384-4c4a-86aa-2ac0a64db603
-# ╠═c96fc0fd-00a1-488d-b2b4-efb4efb8775b
