@@ -12,7 +12,7 @@ repetitions=10
 for ((r=1; r<=$repetitions; r++))
 do
 
-    for ((f=2; f<=$max_cars; f++))
+    for ((f=8; f<=$max_cars; f++))
     do
         export repetition=$r
         export fleet_size=$f
