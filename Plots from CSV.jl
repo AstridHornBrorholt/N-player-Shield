@@ -348,6 +348,11 @@ function multiline(str)
 	""")
 end
 
+# ╔═╡ 4b3789f9-759d-405b-a369-fb50a4a5a42a
+#=╠═╡
+TableOfContents()
+  ╠═╡ =#
+
 # ╔═╡ 15f0808f-8424-4d27-9247-274c7751bf8e
 Plots.default(fontfamily="serif-roman") 
 
@@ -398,21 +403,19 @@ begin
 		fleet_min = min(fleet_sizes...)
 		fleet_max = max(fleet_sizes...)
 		
-		xticks = (collect(1:(fleet_max)), ["$x" for x in 0:(fleet_max - 1)])
-		#xticks = (collect(1:(fleet_max)), ["car$x" for x in 0:(fleet_max - 1)])
-		#xticks[2][1] = "car0\n(random)"
-		xlims = (0, fleet_max + 1)
+		xticks = (collect(2:(fleet_max)), ["$x" for x in 1:(fleet_max)])
+		xlims = (1, fleet_max + 1)
 		
 		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
 		
-		@df df plot!(:fleet_size, :learned_performance;
+		@df df plot!(:fleet_size, :reward;
 			color=color,
 			linewidth=2,
 			xflip=true,
 			xticks,
 			xlims,
 			xlabel="Car number",
-			ylabel="Performance",
+			ylabel="Reward",
 			label=something(label, "Trained for $runs runs each"),
 			legend=:outertop,
 			#marker...,
@@ -421,7 +424,7 @@ begin
 		if show_other_measurements
 			for f in fleet_min:fleet_max
 				df′ = filter(:fleet_size => (x -> x == f), df)
-				other_cars = df′[!, :other_cars]
+				other_cars = df′[!, :other_cars_reward]
 				other_cars = get(other_cars, 1, [])
 				scatter!(2:length(other_cars), other_cars, plotargs...; marker..., label=nothing)
 			end
@@ -482,10 +485,22 @@ raw_results = CSV.read(IOBuffer(csv_string), DataFrame)
 #=╠═╡
 cleandata = let
 	cleandata = raw_results
-	cleandata = transform(cleandata, :other_cars => ByRow(to_vector) => :other_cars)
+	
+	cleandata = transform(cleandata, 
+		:other_cars => ByRow(to_vector) => :other_cars_performance)
+	
 	if only_first_repetition
 		cleandata = filter(:repetition => (x -> x == 1), cleandata)
 	end
+	
+	episode_length = 100
+	
+	cleandata = transform(cleandata, 
+		:learned_performance => ByRow(p -> -p/episode_length) => :reward)
+	
+	cleandata = transform(cleandata, 
+		:other_cars_performance => ByRow(v -> [-p/episode_length for p in v]) => :other_cars_reward)
+	
 	cleandata
 end
   ╠═╡ =#
@@ -496,10 +511,16 @@ means = let
 	grouping =  groupby(cleandata, [:runs, :fleet_size])
 	
 	means = combine(grouping, 
-		:learned_performance => mean, :other_cars => (elementwise_mean), 
+		:learned_performance => mean, 
+		:other_cars_performance => (elementwise_mean), 
+		:other_cars_reward => (elementwise_mean), 
+		:reward => mean,
 		renamecols=false)
-	
-	means = transform(means, :other_cars => ByRow(to_vector), 
+
+	# elementwise_mean returns a string because otherwise it creates a row for each element in returned vector
+	means = transform(means, 
+		:other_cars_reward => ByRow(to_vector), 
+		:other_cars_performance => ByRow(to_vector), 
 		renamecols=false)
 end
   ╠═╡ =#
@@ -560,20 +581,22 @@ md"""
 # ╔═╡ 734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
 #=╠═╡
 begin
-	default_y_min = min(means[!, :learned_performance]..., 
-		Iterators.flatten(means[!, :other_cars])...) - 200
+	default_y_min = min(means[!, :reward]..., 
+		Iterators.flatten(means[!, :other_cars_reward])...) - 2
 	
-	default_y_max = max(means[!, :learned_performance]..., 
-		Iterators.flatten(means[!, :other_cars])...) + 200
-end;
+	default_y_max = max(means[!, :reward]..., 
+		Iterators.flatten(means[!, :other_cars_reward])...) + 2
+	
+	(;default_y_min, default_y_max)
+end
   ╠═╡ =#
 
 # ╔═╡ 64921a92-ce9a-4a79-9349-445c8eb4fe15
 #=╠═╡
 md"""
-`y_min` = $(@bind y_min NumberField(0:50:typemax(Int64), default=default_y_min))
+`y_min` = $(@bind y_min NumberField(-100000.:1.:100000., default=default_y_min))
 
-`y_max` = $(@bind y_max NumberField(0:50:typemax(Int64), default=default_y_max))
+`y_max` = $(@bind y_max NumberField(-100000.:1.:100000., default=default_y_max))
 """
   ╠═╡ =#
 
@@ -642,12 +665,12 @@ let
 	plot(;ylims, size)
 	learned_performance_plot!(means, non_specialized,
 		color=colors.SUNFLOWER, 
-		linestyle=:dash,
-		label="Trained for $specialized once and re-used",
+		linestyle=:dashdotdot,
+		label="Trained for $specialized runs once and re-used",
 		show_other_measurements=false)
 	
 	learned_performance_plot!(means, specialized,
-		color=colors.WISTERIA, 
+		color=colors.CARROT, 
 		label="Trained for $specialized runs each",
 		show_other_measurements=false)
 end
@@ -676,7 +699,7 @@ let
 		xlims,
 		xflip=true,
 		xlabel="Car number",
-		ylabel="Performance")
+		ylabel="Reward")
 
 	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.CARROT, colors.WISTERIA, colors.EMERALD, colors.SUNFLOWER, colors.PETER_RIVER]
 	markers = [(4, :pentagon), (4, :square), (4, :utriangle), (5, :star4), (5, :star), (4, :circle),]
@@ -685,9 +708,9 @@ let
 		label = "Fleet size $(row[:fleet_size])"
 		color = c[1 + (i - 1)%length(c)]
 		marker = markers[1 + (i - 1)%length(markers)]
-		linealpha = length(row[:other_cars]) > 0 ? 1 : 0
+		linealpha = length(row[:other_cars_reward]) > 0 ? 1 : 0
 		
-		plot!([row[:other_cars]..., row[:learned_performance]];
+		plot!([row[:other_cars_reward]..., row[:reward]];
 			label,
 			ylims,
 			size,
@@ -725,8 +748,8 @@ let
 		xticks,
 		xlims,
 		xflip=false,
-		xlabel="fleet size",
-		ylabel="mean performance")
+		xlabel="Fleet size",
+		ylabel="Mean reward")
 
 	
 	fleet_size = []
@@ -734,7 +757,7 @@ let
 
 	for row in eachrow(df)
 		fleet_size ← row[:fleet_size]
-		mean_performance ← [row[:learned_performance], row[:other_cars]...] |> mean
+		mean_performance ← [row[:reward], row[:other_cars_reward]...] |> mean
 	end
 	bar!(fleet_size, mean_performance, 
 		label=nothing,
@@ -751,6 +774,7 @@ end
 # ╟─4362212e-0f0e-4425-bfb1-a6c3808ed808
 # ╟─95e38fbd-142d-4926-9291-27e69ddf7c75
 # ╠═61c15d44-75be-4613-8b60-484d94847b8a
+# ╠═4b3789f9-759d-405b-a369-fb50a4a5a42a
 # ╠═15f0808f-8424-4d27-9247-274c7751bf8e
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
@@ -772,7 +796,7 @@ end
 # ╟─9a298f2a-5194-41c9-813d-afbf56ef92eb
 # ╠═ef7d9898-c2be-493b-913e-51a854d74c32
 # ╟─33d2e7c5-f272-4ecd-93cb-c927ceb735ab
-# ╟─3f04b408-1027-4c87-b138-35e63ab4697a
+# ╠═3f04b408-1027-4c87-b138-35e63ab4697a
 # ╠═5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
 # ╠═977e914e-3995-463c-ab74-d8f256adec27
 # ╟─7909f497-55cd-4f9d-b34d-515a80241873
@@ -787,4 +811,4 @@ end
 # ╟─f267c827-7e5d-466c-9ad0-bfdb004befe3
 # ╠═af2912dc-4fdb-49ad-b22a-df877e2b845a
 # ╟─efabb8a3-ef0b-412a-aa6d-ea9d6a3c36cf
-# ╟─8ad6aacf-2e18-4e20-ab90-a1f36a2256cf
+# ╠═8ad6aacf-2e18-4e20-ab90-a1f36a2256cf
