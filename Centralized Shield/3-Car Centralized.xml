@@ -151,6 +151,15 @@ typedef struct {
 
 int debugUnsafeState = 0;
 
+int speedLimit(int i) {
+    if (velocity[i] &lt;= minVelocity &amp;&amp; acceleration[i] &lt; 0)
+        return 0;
+    else if (velocity[i] &gt;= maxVelocity &amp;&amp; acceleration [i] &gt; 0)
+        return 0;
+    else
+        return acceleration[i];
+}
+
 int backup_policy(allowedActions allowed) {
     if (allowed.forwards)
         return 2;
@@ -165,14 +174,15 @@ int backup_policy(allowedActions allowed) {
 allowedActions debug1;
 allowedJointActions debug2;
 int debug3;
-
 // Note that Decisions has been modified to apply the shields sequentially
 void apply_shield(int i) {
-	double v0 = velocity[0]+0.0;
-	double v1 = velocity[1]+0.0;
-	double v2 = velocity[2]+0.0;
-	double d0 = distance[0]+0.0;
-	double d1 = distance[1]+0.0;
+    // HACK: UPPAAL approximation is slightly imprecise. And since the states are always right at the boundary of each partition in the shield,
+    // the state values are rounded to avoid going under the threshold by some tiny amount.
+	double v0 = round(velocity[0]+0.0);
+	double v1 = round(velocity[1]+0.0);
+	double v2 = round(velocity[2]+0.0);
+	double d0 = round(distance[0]+0.0);
+	double d1 = round(distance[1]+0.0);
 
     int bitarray = get_value(v0, v1, v2, d0, d1);
     allowedJointActions jointAllowed = intToJointActions(bitarray);
@@ -199,6 +209,7 @@ void apply_shield(int i) {
         acceleration[i] == -2 &amp;&amp; !allowed.backwards) {
         acceleration[i] = backup_policy(allowed);
 	}
+    acceleration[i] = speedLimit(i);
     debug1 = allowed;
 }
 </declaration>
@@ -270,6 +281,7 @@ that time reversing.</label>
 		<name>Shield</name>
 		<parameter>int i</parameter>
 		<location id="id10" x="-17" y="-8">
+			<name x="-42" y="8">Shield</name>
 		</location>
 		<init ref="id10"/>
 		<transition id="id11" controllable="false">
@@ -376,6 +388,7 @@ that time reversing.</label>
 		<declaration>clock timer;
 int[0, fleetSize] i = 0; </declaration>
 		<location id="id28" x="-110" y="-272">
+			<name x="-93" y="-280">Shielding</name>
 			<urgent/>
 		</location>
 		<location id="id29" x="-238" y="-187">
@@ -383,6 +396,7 @@ int[0, fleetSize] i = 0; </declaration>
 			<label kind="invariant" x="-272" y="-153">timer &lt;= 1</label>
 		</location>
 		<location id="id30" x="-340" y="-272">
+			<name x="-433" y="-280">Choosing</name>
 			<urgent/>
 		</location>
 		<init ref="id30"/>
@@ -443,14 +457,20 @@ PreTrained2 = PreTrained(2);
 Random0 = Random(0);
 system Dynamics, Decisions, Shield2, Learner2, Shield1, Learner1, Random0;</system>
 	<simulator type="concrete">
+		<plot-widget title="velocity">
+			<expression>velocity[1]</expression>
+			<expression>velocity[0]</expression>
+			<expression>velocity[2]</expression>
+		</plot-widget>
 		<plot-widget title="distance[0]">
 			<expression>distance[0]</expression>
 			<expression>distance[1]</expression>
 		</plot-widget>
 	</simulator>
 	<queries>
+		<option key="--diagnostic" value="0"/>
 		<query>
-			<formula>strategy car2 = minE(D[1]) [&lt;=105] {}-&gt;{velocity[2], velocity[1], distance[1]}: &lt;&gt; time &gt;= 100</formula>
+			<formula>strategy bothCars = minE(D[0] + D[1]) [&lt;=105] {}-&gt;{velocity[0], velocity[1], velocity[2], distance[0], distance[1]}: &lt;&gt; time &gt;= 100</formula>
 			<comment/>
 		</query>
 		<query>
@@ -462,6 +482,14 @@ system Dynamics, Decisions, Shield2, Learner2, Shield1, Learner1, Random0;</syst
 			<comment/>
 		</query>
 		<query>
+			<formula>E[&lt;=100;1000](max:D[0]) under bothCars</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[&lt;=100;1000](max:D[1]) under bothCars</formula>
+			<comment/>
+		</query>
+		<query>
 			<formula>simulate[&lt;=100;100] {distance[0]}</formula>
 			<comment/>
 		</query>
@@ -470,7 +498,7 @@ system Dynamics, Decisions, Shield2, Learner2, Shield1, Learner1, Random0;</syst
 			<comment/>
 		</query>
 		<query>
-			<formula/>
+			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance)) under bothCars</formula>
 			<comment/>
 		</query>
 		<query>
@@ -482,7 +510,11 @@ system Dynamics, Decisions, Shield2, Learner2, Shield1, Learner1, Random0;</syst
 			<comment/>
 		</query>
 		<query>
-			<formula>simulate[&lt;=100;1] {velocity[0], velocity[1], velocity[2]}</formula>
+			<formula/>
+			<comment/>
+		</query>
+		<query>
+			<formula>simulate[&lt;=100;100] {velocity[0], velocity[1], velocity[2]}</formula>
 			<comment/>
 		</query>
 		<query>
@@ -494,7 +526,7 @@ system Dynamics, Decisions, Shield2, Learner2, Shield1, Learner1, Random0;</syst
 			<comment/>
 		</query>
 		<query>
-			<formula/>
+			<formula>Pr[&lt;=100;1000](&lt;&gt; exists (i : int[0, fleetSize - 1]) (velocity[i] &lt; minVelocity || velocity[i] &gt; maxVelocity))</formula>
 			<comment/>
 		</query>
 		<query>

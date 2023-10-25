@@ -107,6 +107,15 @@ allowedActions intToActions(int bitarray) {
 
 int debugUnsafeState = 0;
 
+int speedLimit(int i) {
+    if (velocity[i] &lt;= minVelocity &amp;&amp; acceleration[i] &lt; 0)
+        return 0;
+    else if (velocity[i] &gt;= maxVelocity &amp;&amp; acceleration [i] &gt; 0)
+        return 0;
+    else
+        return acceleration[i];
+}
+
 int backup_policy(allowedActions allowed) {
     if (allowed.forwards)
         return 2;
@@ -131,6 +140,7 @@ void apply_shield(int i) {
         acceleration[i] == -2 &amp;&amp; !allowed.backwards) {
         acceleration[i] = backup_policy(allowed);
     }
+    acceleration[i] = speedLimit(i);
 }</declaration>
 	<template>
 		<name>Learner</name>
@@ -348,5 +358,9 @@ forall (j : int[0, fleetSize - 2]) D[j]' == distance[j]</label>
 	</template>
 	<system>%system declaration%</system>
 	<queries>
+		<query>
+			<formula/>
+			<comment/>
+		</query>
 	</queries>
 </nta>

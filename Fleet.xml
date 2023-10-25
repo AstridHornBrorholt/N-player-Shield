@@ -104,7 +104,7 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
-import "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Shield/libshield.so"
+import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Shield/libshield.so"
 {
     int get_value(double velocity, double velocityFront, double distance);
 };
@@ -125,6 +125,15 @@ allowedActions intToActions(int bitarray) {
 }
 
 int debugUnsafeState = 0;
+
+int speedLimit(int i) {
+    if (velocity[i] &lt;= minVelocity &amp;&amp; acceleration[i] &lt; 0)
+        return 0;
+    else if (velocity[i] &gt;= maxVelocity &amp;&amp; acceleration [i] &gt; 0)
+        return 0;
+    else
+        return acceleration[i];
+}
 
 int backup_policy(allowedActions allowed) {
     if (allowed.forwards)
@@ -150,6 +159,7 @@ void apply_shield(int i) {
         acceleration[i] == -2 &amp;&amp; !allowed.backwards) {
         acceleration[i] = backup_policy(allowed);
     }
+    acceleration[i] = speedLimit(i);
 }</declaration>
 	<template>
 		<name>Learner</name>
@@ -477,7 +487,7 @@ system Dynamics, Decisions, Shield1, Learner1, Random0;</system>
 			<comment/>
 		</query>
 		<query>
-			<formula/>
+			<formula>Pr[&lt;=100;1000](&lt;&gt; exists (i : int[0, fleetSize - 1]) (velocity[i] &lt; minVelocity || velocity[i] &gt; maxVelocity))</formula>
 			<comment/>
 		</query>
 		<query>
