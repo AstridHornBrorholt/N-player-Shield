@@ -3,7 +3,7 @@ using Dates
 # The fruit is there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.
 🍎 = rand("🍇🍈🍉🍊🍋🍌🍍🥭🍎🍏🍐🍑🍒🍓🫐🥝🍅🫒🥥")
 function status(str) 
-    time = Dates.Time(Dates.now())
+    time = Dates.format(Dates.now(), "dd/mm HH:MM")
     println("$time $🍎 $str")
     flush(stdout)
 end

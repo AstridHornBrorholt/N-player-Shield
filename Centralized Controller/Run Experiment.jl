@@ -3,7 +3,7 @@ using Dates
 emoji = "🌈🌟✨🌌🌍💧⛅🌊🌞🌛"
 🌈🌞 = join(rand(emoji, 2), "")
 function status(str) 
-    time = Dates.Time(Dates.now())
+    time = Dates.format(Dates.now(), "dd/mm HH:MM")
     println("$time $🌈🌞 $str")
     flush(stdout)
 end
