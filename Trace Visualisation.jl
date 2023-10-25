@@ -20,7 +20,7 @@ begin
 	using Plots
 	import Gaston
 	gaston() # Gaston backend supports emoji
-end
+end;
 
 # ╔═╡ 692d84e0-9c3c-4e4f-b191-7ebcf6bd2c04
 md"""
@@ -103,50 +103,54 @@ function multiline(str)
 	""")
 end
 
-# ╔═╡ d9e798d4-d1b4-4ac2-b462-10ba2427b7d5
-@bind basedir TextField(80, default="/home/asger/Results/N-player CC/1000 Runs/Repetition 1/Models")
-
-# ╔═╡ 165cd347-87f1-4cb6-b938-c89693281698
-isdir(basedir)
+# ╔═╡ 478bdb89-41df-48b8-8aad-2486f92923db
+@bind playback_speed NumberField(0.1:0.1:10, default=2)
 
 # ╔═╡ 0a69ab62-9e67-4cdc-a3b3-7f8a808848e9
-# Size of time-step in animation
-@bind Δt NumberField(0:0.01:1, default=0.5)
+# Number of frames per model tick (per second not accounting for playback speed)
+@bind Δt NumberField(0:0.01:1, default=0.2)
 
 # ╔═╡ be837fbd-faea-45fd-950b-c473599756ce
 ⨝ = joinpath
 
+# ╔═╡ d9e798d4-d1b4-4ac2-b462-10ba2427b7d5
+@bind basedir TextField(80, default=homedir() ⨝ "Results/N-player CC/5000 Runs/Repetition 1/Models")
+
+# ╔═╡ 165cd347-87f1-4cb6-b938-c89693281698
+isdir(basedir)
+
+# ╔═╡ 6f7987f0-74b4-4374-bf18-80e6a3efe30c
+readdir(basedir)
+
+# ╔═╡ 9c079ac8-f773-458e-b288-c27c7c172d19
+@bind model_file TextField(80, basedir ⨝ "Fleet of 10 Cars.xml")
+
 # ╔═╡ d18a9ac3-9cc8-45f3-9e86-3509a743eb78
-query = "simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3]}"
+# Needs the velocity of the front car to render the moving landscape
+# Cars will be drawn according to number of distance vectors.
+# NB: The last car in the model will not be following a preset strategy, so that one should be omitted since it will be exhibiting random behaviour.
+query = "simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3], distance[4], distance[5], distance[6], distance[7]}"
 
 # ╔═╡ 6e56fdba-627a-4200-8e2e-25970f67e8b4
-query_file = basedir ⨝ "Fleet of 6 Cars (trace).q"
+query; query_file = tempdir() ⨝ "temp_query.q"
 
 # ╔═╡ d2f942c1-647f-408e-a100-12c6399811b8
 open(query_file, "w") do f
 	println(f, query)
 end
 
-# ╔═╡ 9c079ac8-f773-458e-b288-c27c7c172d19
-model_file = basedir ⨝ "Fleet of 6 Cars.xml"
-
 # ╔═╡ 3bbf5c96-3ed9-4a40-83ae-6cc97e57e86e
 if isfile(query_file) && isfile(model_file)
 	output = Cmd([
 		"verifyta",
-		"--truncation-time-error", "0.01",  # Get less "lag" or "skips"
-		"--truncation-error", "0.01", 		# Get less "lag" or "skips"
+		"-s",
 		model_file,
 		query_file
 	]) |> read |> String
-end
+end;
 
 # ╔═╡ de5ffb24-d55a-47bc-a1df-fe03c2662856
-output |> multiline
-
-# ╔═╡ 7ecd3f98-b0e4-4c98-b655-b5dd1acd61a1
-function read_uppaal_trace()
-end
+output[1:min(length(output), 10000)] |> multiline
 
 # ╔═╡ 43b20469-4693-4f5f-a8b3-d5c6158f6d71
 function parse_pair(str)
@@ -189,15 +193,18 @@ traces = get_traces(output, "distance")
 # ╔═╡ 7c861d18-c3cb-4a30-a694-5ffce41ad6fc
 function value_at_time(trace::T, time::S) where T <: AbstractVector{Tuple{Float64, Float64}} where S <: Number
 	
-	t, v = trace[1]
-	result = v
-	for (t, v) in trace
-		if t <= time
-			result = v
-		else
-			return result
-		end
+	time_before, value_before = last([(t, v) 
+		for (t, v) in trace if t <= time])
+
+	time_after, value_after = first([(t, v) 
+		for (t, v) in trace if t >= time])
+
+	Δt = time_after - time_before
+	if Δt == 0 # Happens if there is an exact match
+		return value_after
 	end
+	fraction = (time - time_before)/Δt
+	return value_before + fraction*(value_after - value_before)
 end
 
 # ╔═╡ ada53620-e674-4543-a161-471d7683c662
@@ -256,11 +263,14 @@ get_traces(output, "velocity")
 function plot_cars(distances::T, time::Int64) where T <: Dict{Int64, Vector{Float64}}
 	sorted = sort(collect(distances), by=(x -> x[1]))
 	distances = [ d[time + 1] for (i, d) in sorted]
-	positions = [ sum(distances[1:i]) for (i, _) in enumerate(distances)]
+	# Distance is bumper to bumper
+	car_width = 8 
+	
+	positions = [ sum(distances[1:i]) + car_width*i 
+		for (i, _) in enumerate(distances)]
 
-	# front
 	plot(
-		xlims=(-9, max(209, positions[end] + 09)),
+		xlims=(-9, length(distances)*50),
 		ylims=(0, 2),
 		#xflip=true,
 		yticks=[0],
@@ -268,6 +278,7 @@ function plot_cars(distances::T, time::Int64) where T <: Dict{Int64, Vector{Floa
 		size=(600, 200),
 		label="cars",
 		xlabel="distance to front")
+	
 	annotate!([(0, 1, "🚙", 10)])
 	annotate!([(p, 1, "🚗", 10) for p in positions])
 
@@ -287,21 +298,23 @@ t*Δt
 @bind distance_covered NumberField(0:10000)
 
 # ╔═╡ 30a5d12f-490c-481b-8ab0-92f3c79c7ca7
-function plot_landscape(distance_covered)
-	annotate!([(distance_covered%418, 0.3, "🌻")])
-	annotate!([((distance_covered + 60)%418, 0.7, "🌳")])
-	annotate!([((distance_covered + 100)%418, 0.6, "🌳")])
-	annotate!([((distance_covered + 180)%418, 1.5, "🌲")])
-	annotate!([((distance_covered + 210)%418, 1.4, "🌳")])
-	annotate!([((distance_covered + 270)%418, 1.6, "🌳")])
-	annotate!([((distance_covered + 290)%418, 1.8, "⛺")])
-	annotate!([((distance_covered + 350)%418, 0.3, "🌳")])
+function plot_landscape(distance_covered, ncars)
+	draw_limit = ncars*50
+	x = 2*draw_limit
+	annotate!([((distance_covered + x*0.03)%x, 0.3, "🌻")])
+	annotate!([((distance_covered + x*0.14)%x, 0.7, "🌳")])
+	annotate!([((distance_covered + x*0.23)%x, 0.6, "🌳")])
+	annotate!([((distance_covered + x*0.43)%x, 1.5, "🌲")])
+	annotate!([((distance_covered + x*0.50)%x, 1.4, "🌳")])
+	annotate!([((distance_covered + x*0.64)%x, 1.6, "🌳")])
+	annotate!([((distance_covered + x*0.69)%x, 1.8, "⛺")])
+	annotate!([((distance_covered + x*0.83)%x, 0.3, "🌳")])
 end
 
 # ╔═╡ ec3c9513-1f8d-4f7e-83ef-7d976ae19546
 let
 	plot_cars(distances, round(Int64, t))
-	plot_landscape(distance_covered)
+	plot_landscape(distance_covered, length(distances))
 end
 
 # ╔═╡ 2d67a7a2-6ea7-4bb1-aa87-b12e516f161b
@@ -317,7 +330,7 @@ function animate_cars(distances, velocities)
 	anim = @animate for t in 1:t_max
 		plot_cars(distances, t)
 		distance_covered += velocities[t + 1]*Δt # I don't remember why it was + 1
-		plot_landscape(distance_covered)
+		plot_landscape(distance_covered, length(distances))
 	end
 	# Add a delay before reset
 	[frame(anim) for _ in 1:10]
@@ -325,7 +338,7 @@ function animate_cars(distances, velocities)
 end;
 
 # ╔═╡ 30529eb4-b8a0-4b65-9098-e24ebe6655e0
-gif(animate_cars(distances, velocities), show_msg=:false, fps=2/Δt)
+gif(animate_cars(distances, velocities), show_msg=:false, fps=playback_speed/Δt)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -474,6 +487,12 @@ version = "0.9.3"
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 version = "1.6.0"
+
+[[deps.EpollShim_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "8e9441ee83492030ace98f9789a654a6d0b1f643"
+uuid = "2702e6a9-849d-5ed8-8c21-79e8b8f9ee43"
+version = "0.0.20230411+0"
 
 [[deps.ExceptionUnwrapping]]
 deps = ["Test"]
@@ -1135,7 +1154,7 @@ uuid = "41fe7b60-77ed-43a1-b4f0-825fd5a5650d"
 version = "0.2.0"
 
 [[deps.Wayland_jll]]
-deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
+deps = ["Artifacts", "EpollShim_jll", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
 git-tree-sha1 = "ed8d92d9774b077c53e1da50fd81a36af3744c1c"
 uuid = "a2964d1f-97da-50d4-b82a-358c7fce9d89"
 version = "1.21.0+0"
@@ -1373,23 +1392,22 @@ version = "1.4.1+0"
 
 # ╔═╡ Cell order:
 # ╟─692d84e0-9c3c-4e4f-b191-7ebcf6bd2c04
-# ╟─c6bf0a48-48b2-11ee-2c66-055e8980c114
-# ╠═264a2aa5-1a5d-44ab-8d6b-d39ed1d2bdb1
 # ╠═6878f912-1796-46c8-bb01-084905986d83
+# ╟─c6bf0a48-48b2-11ee-2c66-055e8980c114
+# ╟─264a2aa5-1a5d-44ab-8d6b-d39ed1d2bdb1
 # ╠═d9e798d4-d1b4-4ac2-b462-10ba2427b7d5
 # ╠═165cd347-87f1-4cb6-b938-c89693281698
+# ╠═6f7987f0-74b4-4374-bf18-80e6a3efe30c
+# ╠═478bdb89-41df-48b8-8aad-2486f92923db
 # ╠═0a69ab62-9e67-4cdc-a3b3-7f8a808848e9
 # ╠═be837fbd-faea-45fd-950b-c473599756ce
+# ╠═9c079ac8-f773-458e-b288-c27c7c172d19
 # ╠═d18a9ac3-9cc8-45f3-9e86-3509a743eb78
 # ╠═6e56fdba-627a-4200-8e2e-25970f67e8b4
 # ╠═d2f942c1-647f-408e-a100-12c6399811b8
-# ╠═9c079ac8-f773-458e-b288-c27c7c172d19
 # ╠═3bbf5c96-3ed9-4a40-83ae-6cc97e57e86e
-# ╠═45ee2a7e-1e54-4ce9-93ea-7d461208d91f
-# ╠═aac8519c-191a-4a60-acdf-332396ca03a7
-# ╠═30529eb4-b8a0-4b65-9098-e24ebe6655e0
 # ╠═de5ffb24-d55a-47bc-a1df-fe03c2662856
-# ╠═7ecd3f98-b0e4-4c98-b655-b5dd1acd61a1
+# ╠═30529eb4-b8a0-4b65-9098-e24ebe6655e0
 # ╠═43b20469-4693-4f5f-a8b3-d5c6158f6d71
 # ╠═92661e39-5b6e-456f-bd70-1c80b9a18cec
 # ╠═baff0b44-299f-4481-a0a5-df8c38fadc0e
