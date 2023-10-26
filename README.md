@@ -22,4 +22,4 @@ Check that `Run Experiment.jl` interprets the `--skip-training` flag as copying 
 
 ### Centralized Shield
 
-Still a work in progress at the time of writing. It will also get its own folder.
+Still a work in progress at the time of writing. It also has its own folder. For now I am going to say that a centralized shield will also necessitate a centralized controller.
