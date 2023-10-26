@@ -32,7 +32,7 @@ begin
             arg_type=Int
             required=true
 		"--results-dir"
-			default=homedir() ⨝ "Results/N-player CC Centralized"
+			default=homedir() ⨝ "Results/N-player CC Centralized Controller"
         "--verifyta-path"
             default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta.sh"
         "--blueprint-path"  
