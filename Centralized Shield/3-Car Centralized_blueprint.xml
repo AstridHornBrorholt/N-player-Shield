@@ -97,7 +97,7 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Centralized Shield/3-car.so"
+import %shield path%
 {
     int get_value(double v0, double v1, double v2, double d0, double d1);
 };
@@ -468,94 +468,6 @@ system Dynamics, Decisions, Shield2, Learner2, Shield1, Learner1, Random0;</syst
 		</plot-widget>
 	</simulator>
 	<queries>
-		<query>
-			<formula>strategy bothCars = minE(D[0] + D[1]) [&lt;=105] {}-&gt;{velocity[0], velocity[1], velocity[2], distance[0], distance[1]}: &lt;&gt; time &gt;= 100</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>E[&lt;=100;1000](max:D[0])</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>E[&lt;=100;1000](max:D[1])</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>E[&lt;=100;1000](max:D[0]) under bothCars</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>E[&lt;=100;1000](max:D[1]) under bothCars</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>simulate[&lt;=100;100] {distance[0]}</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance))</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance)) under bothCars</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
-			<formula>simulate[&lt;=100;100] {velocity[0], velocity[1], velocity[2]}</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>simulate[&lt;=100;1] {distance[0], distance[1]}</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>simulate[&lt;=100;1] {distance[0], distance[1]} under bothCars</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
-			<formula>Pr[&lt;=100;1000](&lt;&gt; exists (i : int[0, fleetSize - 1]) (velocity[i] &lt; minVelocity || velocity[i] &gt; maxVelocity))</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
-		</query>
 		<query>
 			<formula/>
 			<comment/>
