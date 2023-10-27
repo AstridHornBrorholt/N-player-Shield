@@ -113,23 +113,38 @@ end
 # ╔═╡ be837fbd-faea-45fd-950b-c473599756ce
 ⨝ = joinpath
 
-# ╔═╡ d9e798d4-d1b4-4ac2-b462-10ba2427b7d5
-@bind basedir TextField(80, default=homedir() ⨝ "Results/N-player CC/5000 Runs/Repetition 1/Models")
-
-# ╔═╡ 165cd347-87f1-4cb6-b938-c89693281698
-isdir(basedir)
-
-# ╔═╡ 6f7987f0-74b4-4374-bf18-80e6a3efe30c
-readdir(basedir)
-
 # ╔═╡ 9c079ac8-f773-458e-b288-c27c7c172d19
-@bind model_file TextField(80, basedir ⨝ "Fleet of 10 Cars.xml")
+@bind model_file TextField(80,homedir() ⨝ "Results/N-player CC/5000 Runs/Repetition 1/Models/Fleet of 10 Cars.xml")
 
 # ╔═╡ d18a9ac3-9cc8-45f3-9e86-3509a743eb78
 # Needs the velocity of the front car to render the moving landscape
 # Cars will be drawn according to number of distance vectors.
 # NB: The last car in the model will not be following a preset strategy, so that one should be omitted since it will be exhibiting random behaviour.
-query = "simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3], distance[4], distance[5], distance[6], distance[7]}"
+@bind query TextField((80, 4), default="simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3], distance[4], distance[5], distance[6], distance[7]}")
+
+# ╔═╡ 5f09b9ed-8218-4a34-a12d-f4ec65e382c4
+"""
+Presets:
+===
+
+default:
+
+simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3], distance[4], distance[5], distance[6], distance[7]}
+
+
+three cars:
+
+simulate[<=100;1] {velocity[0], distance[0], distance[1]}
+
+
+centralized shield:
+
+strategy bothCars = loadStrategy {}->{velocity[0], velocity[1], velocity[2], distance[0], distance[1]} ("/home/asger/Results/N-player CC Centralized Shield/500 Runs/Repetition 1/Models/3-Car.json")
+
+simulate[<=100;1] {velocity[0], velocity[1], velocity[2], distance[0], distance[1] } under bothCars
+
+
+""" |> multiline
 
 # ╔═╡ 6e56fdba-627a-4200-8e2e-25970f67e8b4
 query; query_file = tempdir() ⨝ "temp_query.q"
@@ -1395,14 +1410,12 @@ version = "1.4.1+0"
 # ╠═6878f912-1796-46c8-bb01-084905986d83
 # ╟─c6bf0a48-48b2-11ee-2c66-055e8980c114
 # ╟─264a2aa5-1a5d-44ab-8d6b-d39ed1d2bdb1
-# ╠═d9e798d4-d1b4-4ac2-b462-10ba2427b7d5
-# ╠═165cd347-87f1-4cb6-b938-c89693281698
-# ╠═6f7987f0-74b4-4374-bf18-80e6a3efe30c
 # ╠═478bdb89-41df-48b8-8aad-2486f92923db
 # ╠═0a69ab62-9e67-4cdc-a3b3-7f8a808848e9
 # ╠═be837fbd-faea-45fd-950b-c473599756ce
 # ╠═9c079ac8-f773-458e-b288-c27c7c172d19
 # ╠═d18a9ac3-9cc8-45f3-9e86-3509a743eb78
+# ╟─5f09b9ed-8218-4a34-a12d-f4ec65e382c4
 # ╠═6e56fdba-627a-4200-8e2e-25970f67e8b4
 # ╠═d2f942c1-647f-408e-a100-12c6399811b8
 # ╠═3bbf5c96-3ed9-4a40-83ae-6cc97e57e86e
