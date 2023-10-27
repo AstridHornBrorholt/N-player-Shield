@@ -14,50 +14,50 @@ do
     
 
     export blueprint_path="$(pwd)/3-Car Centralized_blueprint.xml"
-    export runs=250
-    export checks=100
+    export runs=2500
+    export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
 
     export blueprint_path="$(pwd)/3-Car Centralized_blueprint.xml"
-    export runs=500
-    export checks=100
+    export runs=5000
+    export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
     
     export blueprint_path="$(pwd)/3-Car Centralized_blueprint.xml"
-    export runs=100
-    export checks=100
+    export runs=10000
+    export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
     
     export blueprint_path="$(pwd)/3-Car Centralized_blueprint.xml"
-    export runs=200
-    export checks=100
+    export runs=20000
+    export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
 
     export blueprint_path="$(pwd)/3-Car_blueprint.xml"
-    export runs=250
-    export checks=100
+    export runs=2500
+    export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
 
     export blueprint_path="$(pwd)/3-Car_blueprint.xml"
-    export runs=500
-    export checks=100
+    export runs=5000
+    export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
     
     export blueprint_path="$(pwd)/3-Car_blueprint.xml"
-    export runs=100
-    export checks=100
+    export runs=10000
+    export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
     
     export blueprint_path="$(pwd)/3-Car_blueprint.xml"
-    export runs=200
-    export checks=100
+    export runs=20000
+    export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
 done
