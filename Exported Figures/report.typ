@@ -26,9 +26,9 @@ In  @non-specialized-20k,  the blue lines represent the results from @Learned-Pe
     ) <non-specialized-20k>]
 )
 
-= Centralized strategy
+= Centralized Controller
 
-It would be interesting to see if a centralized strategy can help the cars to achieve a better coherent performance, compared to the default setup. Though the challenge is a much bigger state space has to be learned.
+It would be interesting to see if a Centralized Controller can help the cars to achieve a better coherent performance, compared to the default setup. Though the challenge is a much bigger state space has to be learned.
 
 @centralized-controller shows the learning outcomes on a per-car basis for different fleet sizes. Every centralized controller was trained for 20000 runs.
 
