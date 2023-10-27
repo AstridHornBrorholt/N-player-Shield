@@ -281,7 +281,7 @@ The grid is defined by the upper and lower bounds on the state space, and some `
 
 `granularity_v_ego =` $(@bind granularity_v_ego NumberField(0.001:0.001:4, default=2))
 
-`granularity_v_front =` $(@bind granularity_v_front NumberField(0.001:0.001:4, default=1))
+`granularity_v_front =` $(@bind granularity_v_front NumberField(0.001:0.001:4, default=2))
 
 `granularity_distance =` $(@bind granularity_distance NumberField(0.001:0.001:1, default=1))
 """
@@ -343,7 +343,7 @@ reachability_function = get_barbaric_reachability_function(model)
 
 # ╔═╡ da8a843d-b5c7-4155-b90c-3df160996c13
 md"""
-### Time to make the shield!
+## Time to make the shield!
 """
 
 # ╔═╡ 1f9b85b7-43f8-4cf6-90b1-581694f4a8f2
@@ -384,6 +384,11 @@ if max_steps_reached
 	!!! warning "Max steps reached"
 		The method reached a maximum iteration steps of $max_steps before a fixed point was reached. The strategy is only safe for a finite horizon of $max_steps steps.""")
 end
+
+# ╔═╡ 2418bf90-b0ec-4cb9-b3fd-bf2b91d2ff33
+md"""
+### Inspect Result
+"""
 
 # ╔═╡ 99aabe32-7c65-4a9d-9397-ba2db2ca5cab
 @bind action Select([backwards, neutral, forwards])
@@ -483,6 +488,11 @@ end
 # ╔═╡ 93741008-85f5-479c-908e-27a3716ef25f
 traces, safety_violations, example_of_unsafe_trace = evaluate(m, shielded_random)
 
+# ╔═╡ db29fb3a-0e95-44f6-b324-5238ac02427c
+if !isnothing(example_of_unsafe_trace)
+	plot_sequence(example_of_unsafe_trace..., title="Example of Unsafe Trace", legend=:topleft)
+end
+
 # ╔═╡ b4eea529-3c88-4e9d-b1b1-99fe2f9c4f94
 if safety_violations > 0 let
 	first_unsafe = nothing
@@ -493,25 +503,40 @@ if safety_violations > 0 let
 			break
 		end
 	end
-	Markdown.parse("""
-	!!! danger "Unsafe trace found"
-		Shielded random agent was found to be unsafe.
 
-		Out of $traces traces, $safety_violations were found to be unsafe.
-
-		First unsafe sate reached: 
-		
-			$(states[first_unsafe])
-		
-		The state before that: 
-		
-			$(states[first_unsafe - 1])
-	""")
+	if first_unsafe == 1
+		Markdown.parse("""
+		!!! danger "Initial state unsafe"
+			Initial state: $(states[first_unsafe])
+		""")
+	else
+		Markdown.parse("""
+		!!! danger "Unsafe trace found"
+			Shielded random agent was found to be unsafe.
+	
+			Out of $traces traces, $safety_violations were found to be unsafe.
+	
+			First unsafe sate reached: 
+			
+				$(states[first_unsafe])
+			
+			The state before that: 
+			
+				$(states[first_unsafe - 1])
+		""")
+	end
 end end
 
-# ╔═╡ db29fb3a-0e95-44f6-b324-5238ac02427c
-if !isnothing(example_of_unsafe_trace)
-	plot_sequence(example_of_unsafe_trace..., title="Example of Unsafe Trace", legend=:topleft)
+# ╔═╡ 4e9bc749-dcd6-481b-89a2-98ddad587291
+md"""
+### Download result
+"""
+
+# ╔═╡ 8a119778-d498-44af-95cc-18513c836b4f
+let
+	buffer = IOBuffer()
+	robust_grid_serialization(buffer, shield)
+	DownloadButton(buffer, "Cruise Control.shield")
 end
 
 # ╔═╡ 298dadf8-41a4-443d-90c9-9dba1a87145c
@@ -564,6 +589,7 @@ end
 # ╠═dfc8cb50-b08f-4006-8e6f-de058ee0bf98
 # ╠═0f5ee444-afe5-4314-ab8e-a7dfff02964d
 # ╟─85e07e50-a0fc-42bb-813c-8d0ab6af2b4c
+# ╟─2418bf90-b0ec-4cb9-b3fd-bf2b91d2ff33
 # ╠═99aabe32-7c65-4a9d-9397-ba2db2ca5cab
 # ╠═b7d66268-8a40-499d-aaca-d6e59f0ee14f
 # ╠═0018900a-03ed-437f-a4ce-b1e967269ac3
@@ -574,6 +600,8 @@ end
 # ╠═107b960f-1a75-41f9-9cb9-195877ad6184
 # ╠═c971bbe4-bc6b-49dd-940d-3277017e99bc
 # ╠═93741008-85f5-479c-908e-27a3716ef25f
-# ╟─b4eea529-3c88-4e9d-b1b1-99fe2f9c4f94
 # ╟─db29fb3a-0e95-44f6-b324-5238ac02427c
-# ╠═298dadf8-41a4-443d-90c9-9dba1a87145c
+# ╟─b4eea529-3c88-4e9d-b1b1-99fe2f9c4f94
+# ╟─4e9bc749-dcd6-481b-89a2-98ddad587291
+# ╟─8a119778-d498-44af-95cc-18513c836b4f
+# ╟─298dadf8-41a4-443d-90c9-9dba1a87145c
