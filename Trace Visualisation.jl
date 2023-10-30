@@ -116,6 +116,12 @@ end
 # ╔═╡ 9c079ac8-f773-458e-b288-c27c7c172d19
 @bind model_file TextField(80,homedir() ⨝ "Results/N-player CC/5000 Runs/Repetition 1/Models/Fleet of 10 Cars.xml")
 
+# ╔═╡ cb30806f-3438-4c28-9b55-7966dd24ee64
+isfile(model_file)
+
+# ╔═╡ 4828fc73-d59a-4797-bbc0-a3d91448ec07
+readdir(dirname(model_file))
+
 # ╔═╡ d18a9ac3-9cc8-45f3-9e86-3509a743eb78
 # Needs the velocity of the front car to render the moving landscape
 # Cars will be drawn according to number of distance vectors.
@@ -1414,6 +1420,8 @@ version = "1.4.1+0"
 # ╠═0a69ab62-9e67-4cdc-a3b3-7f8a808848e9
 # ╠═be837fbd-faea-45fd-950b-c473599756ce
 # ╠═9c079ac8-f773-458e-b288-c27c7c172d19
+# ╠═cb30806f-3438-4c28-9b55-7966dd24ee64
+# ╠═4828fc73-d59a-4797-bbc0-a3d91448ec07
 # ╠═d18a9ac3-9cc8-45f3-9e86-3509a743eb78
 # ╟─5f09b9ed-8218-4a34-a12d-f4ec65e382c4
 # ╠═6e56fdba-627a-4200-8e2e-25970f67e8b4

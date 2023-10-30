@@ -71,8 +71,14 @@ struct CCMechanics
 	v_front_max::Number
 end
 
+# ╔═╡ 5421689c-e2bb-424f-bdae-da373c12e05f
+@bind distance_max NumberField(0:1000, default = 200)
+
 # ╔═╡ 0fedc544-3a81-45b3-b8b0-94c86d291f1b
-m = CCMechanics(1, 0, 200, -10, 20, -10, 20)
+m = CCMechanics(1, 0, distance_max, -10, 20, -10, 20)
+
+# ╔═╡ 6134ef59-6377-466b-952d-bee90e421b80
+s0 = (0, 0, (m.distance_max > 50 ? 50 : 20))
 
 # ╔═╡ f8a8834e-b8fe-4dc8-8528-4b72148fda6f
 function random_front_behaviour(mechanics::CCMechanics, point, random_variable)
@@ -463,7 +469,7 @@ end
 if make_shield_button > 0 let
 	animation = @animate for i in 1:10
 		
-		trace = simulate_sequence(m, 120, (0, 0, 50), shielded_random)
+		trace = simulate_sequence(m, 120, s0, shielded_random)
 	
 		plot_sequence(trace..., title="Shielded Trace", legend=:topleft)
 	end
@@ -475,7 +481,7 @@ function evaluate(m::CCMechanics, policy; episode_length=120, traces=1000)
 	example_of_unsafe_trace = nothing
 	safety_violations = 0
 	for i in 1:traces
-		trace = simulate_sequence(m, episode_length, (0, 0, 50), policy)
+		trace = simulate_sequence(m, episode_length, s0, policy)
 		sequence, times = trace
 		if any(!is_safe(s) for s in sequence)
 			example_of_unsafe_trace = trace
@@ -536,7 +542,7 @@ md"""
 let
 	buffer = IOBuffer()
 	robust_grid_serialization(buffer, shield)
-	DownloadButton(buffer, "Cruise Control.shield")
+	DownloadButton(take!(buffer), "Cruise Control.shield")
 end
 
 # ╔═╡ 298dadf8-41a4-443d-90c9-9dba1a87145c
@@ -554,11 +560,13 @@ end
 # ╠═f7233b81-e182-4b23-aa31-409ee53daf77
 # ╠═7ba18477-7d3a-4004-b422-46e7c850fc23
 # ╠═7dd403fc-878d-45d3-9976-655f10dfd8bc
+# ╠═5421689c-e2bb-424f-bdae-da373c12e05f
 # ╠═0fedc544-3a81-45b3-b8b0-94c86d291f1b
+# ╠═6134ef59-6377-466b-952d-bee90e421b80
 # ╠═f8a8834e-b8fe-4dc8-8528-4b72148fda6f
 # ╠═f30f1c2f-14a9-4f47-8abe-7d6a73017e3e
 # ╠═0fba5442-bba5-4a82-9821-77068368227e
-# ╟─1431a6cc-1a91-4357-b624-8ed77311a426
+# ╠═1431a6cc-1a91-4357-b624-8ed77311a426
 # ╠═d5a28ba8-70fe-4fb2-a9b6-a151ec52fd8b
 # ╟─62e0bad2-9a11-473a-a36f-5ab977df2c44
 # ╟─5db3cdc1-c8ec-4053-a058-b1ed03d2b95e
@@ -595,7 +603,7 @@ end
 # ╠═0018900a-03ed-437f-a4ce-b1e967269ac3
 # ╠═5b3b198d-f0df-4991-8eb7-f208418b0be0
 # ╟─1537138d-1e9a-4c2e-a1ce-0e3b696d5c8d
-# ╠═28f000ec-9538-4c9c-afbc-ece4af32d3af
+# ╟─28f000ec-9538-4c9c-afbc-ece4af32d3af
 # ╟─0382588a-ac96-4528-9fee-67ab93d4a1f8
 # ╠═107b960f-1a75-41f9-9cb9-195877ad6184
 # ╠═c971bbe4-bc6b-49dd-940d-3277017e99bc
