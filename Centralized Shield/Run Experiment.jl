@@ -60,7 +60,9 @@ shield_path = args["shield-path"]
 isfile(shield_path) || error("Shield file not found at $shield_path")
 
 shield_path′ = results_dir ⨝ basename(shield_path)
-cp(shield_path, shield_path′, force=true)
+if !isfile(shield_path′) # All of a sudden it seems the tasks get sad when they overwrite each others' shield files
+    cp(shield_path, shield_path′, force=true)
+end
 shield_path = shield_path′
 
 working_dir = results_dir ⨝ "$runs Runs"
