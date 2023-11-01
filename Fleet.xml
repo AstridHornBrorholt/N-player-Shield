@@ -148,9 +148,9 @@ int backup_policy(allowedActions allowed) {
 }
 
 void apply_shield(int i) {
-    double v = velocity[i]+0.0;
-    double vFront = velocity[i - 1]+0.0;
-    double d = distance[i - 1]+0.0;
+    double v = round(velocity[i]+0.0);
+    double vFront = round(velocity[i - 1]+0.0);
+    double d = round(distance[i - 1]+0.0);
     allowedActions allowed = intToActions(get_value(v, vFront, d));
     if (!allowed.forwards &amp;&amp; !allowed.neutral &amp;&amp; !allowed.backwards)
         return;
