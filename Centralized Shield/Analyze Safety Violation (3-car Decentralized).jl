@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -731,7 +731,7 @@ simulation_query = my_parse(
 		(velocity[i] < minVelocity || velocity[i] > maxVelocity)
 	)
 	
-	simulate[<=100;10000] {
+	simulate[<=100;1000] {
 		velocity[0], velocity[1], velocity[2], distance[0], distance[1],
 		acceleration[0], acceleration[1], acceleration[2]
 	}
@@ -1326,7 +1326,7 @@ end
 # ╟─13982ef7-9b60-44f4-a622-dde716b13d5a
 # ╟─0913ea9c-8c98-47bc-985b-89780c83b2cd
 # ╠═47d9eeaa-cd33-4174-9808-4b44a50461d8
-# ╟─ef68fd08-65f4-436d-8b02-f6db9c957a48
+# ╠═ef68fd08-65f4-436d-8b02-f6db9c957a48
 # ╠═cb1ce596-69a5-491f-abae-c15a4a094753
 # ╠═5ec9aa5a-a020-4049-9067-a5d7f195a36d
 # ╠═83faaf3f-e158-4370-ab16-cba20323ef54
