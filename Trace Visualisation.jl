@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -280,6 +280,10 @@ velocities = at_regular_intervals(get_traces(output, "velocity")[0], Δt)
 # ╔═╡ 0e0d6c1f-f04b-47bd-b352-a7bdb3fa5692
 get_traces(output, "velocity")
 
+# ╔═╡ 3c4af598-02a0-4b87-9625-d805cb44f8be
+# x-axis will be this number multiplied with number of cars
+@bind distance_per_car NumberField(10:1000, default=50)
+
 # ╔═╡ c00efc32-c7fe-4af8-acda-79725f83521b
 function plot_cars(distances::T, time::Int64) where T <: Dict{Int64, Vector{Float64}}
 	sorted = sort(collect(distances), by=(x -> x[1]))
@@ -291,7 +295,7 @@ function plot_cars(distances::T, time::Int64) where T <: Dict{Int64, Vector{Floa
 		for (i, _) in enumerate(distances)]
 
 	plot(
-		xlims=(-9, length(distances)*50),
+		xlims=(-9, length(distances)*distance_per_car),
 		ylims=(0, 2),
 		#xflip=true,
 		yticks=[0],
@@ -320,7 +324,7 @@ t*Δt
 
 # ╔═╡ 30a5d12f-490c-481b-8ab0-92f3c79c7ca7
 function plot_landscape(distance_covered, ncars)
-	draw_limit = ncars*50
+	draw_limit = ncars*distance_per_car
 	x = 2*draw_limit
 	annotate!([((distance_covered + x*0.03)%x, 0.3, "🌻")])
 	annotate!([((distance_covered + x*0.14)%x, 0.7, "🌳")])
@@ -1448,6 +1452,7 @@ version = "1.4.1+0"
 # ╠═5c0db83c-bb68-4a7b-b389-123186ccd319
 # ╠═16816e06-3c40-4972-84bf-2832c197706c
 # ╠═0e0d6c1f-f04b-47bd-b352-a7bdb3fa5692
+# ╠═3c4af598-02a0-4b87-9625-d805cb44f8be
 # ╠═c00efc32-c7fe-4af8-acda-79725f83521b
 # ╠═f2cef7c7-2434-47d2-8a04-c6ac518399b2
 # ╠═92b59972-7c94-445d-8b04-216bbe1328b8

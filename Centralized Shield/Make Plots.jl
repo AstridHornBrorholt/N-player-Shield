@@ -22,10 +22,12 @@ begin
 	using CSV
 	using Glob
 	using Plots
+	Plots.default(fontfamily="serif-roman")
 	using PlutoUI
 	using DataFrames
 	using Statistics
 	using StatsPlots
+	include("../FlatUI Colors.jl")
 end;
 
 # ╔═╡ 6a2ada61-1cf9-4e1d-a69f-ec49897fc133
@@ -138,9 +140,14 @@ raw_data = DataFrame(CSV.File(IOBuffer(csv_string)))
 # ╔═╡ ff7d843d-1426-4cf3-8407-531e97e1960d
 cleandata = let
 	cleandata = raw_data
+	
 	cleandata = transform(cleandata, :centralized => (
 		xs -> [x ? "Centralized" : "Not Centralized" for x in xs]
 	) => :centralized)
+	
+	cleandata = transform(cleandata, :reward => (
+		xs -> [-x/100 for x in xs]
+	) => :reward)
 end
 
 # ╔═╡ aea564f9-6fc5-4f1d-8699-1ce77be3a38d
@@ -164,10 +171,42 @@ end
 # ╔═╡ d4e45474-6def-4e02-9fe2-43e6f4fb1bb2
 @bind runs Select(unique(means[!, :runs]))
 
+# ╔═╡ 207c5c24-8d48-4beb-b703-83ba13fd3697
+
+
+# ╔═╡ 1962f0d8-be1f-490f-b377-ff2019625f4d
+md"""
+`width` = $(@bind width NumberField(0:10:typemax(Int64), default=300))
+
+`height` = $(@bind height NumberField(0:10:typemax(Int64), default=250))
+"""
+
+# ╔═╡ 337afbf0-cf51-4068-b3ea-6f759c76a5ce
+size = (width, height)
+
 # ╔═╡ 7f059d13-41f5-4d6c-8468-1de130d66901
 let
 	df = filter(:runs => r -> r == runs, means)
-	@df df groupedbar(:car, :reward, group=:centralized)
+	
+	df = transform(df, :car => (
+		xs -> ["car $x" for x in xs]
+	) => :car)
+	
+	@df df groupedbar(:centralized, :reward, group=:car,
+		bar_width=0.6,
+		color=[colors.TURQUOISE colors.CARROT],
+		linewidth=4,
+		linecolor=:white)
+	
+	ylim = (min(df[!, :reward]...) - 5, 0)
+	
+	plot!(;
+		size,
+		ylim,
+		legend=:topright,
+		xlabel="car",
+		ylabel="reward",
+	)
 end
 
 # ╔═╡ Cell order:
@@ -186,4 +225,7 @@ end
 # ╠═aea564f9-6fc5-4f1d-8699-1ce77be3a38d
 # ╠═1bf14dff-08e3-4a32-9e5e-dba6438bc670
 # ╠═d4e45474-6def-4e02-9fe2-43e6f4fb1bb2
+# ╠═207c5c24-8d48-4beb-b703-83ba13fd3697
+# ╠═1962f0d8-be1f-490f-b377-ff2019625f4d
+# ╠═337afbf0-cf51-4068-b3ea-6f759c76a5ce
 # ╠═7f059d13-41f5-4d6c-8468-1de130d66901

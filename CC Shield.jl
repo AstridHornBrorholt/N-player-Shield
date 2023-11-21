@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -25,6 +25,7 @@ begin
 	using Unzip
 	using Distributions
 	using Combinatorics
+	using Measures
 end
 
 # ╔═╡ d2204fe6-a71e-4131-a568-349572ce28d4
@@ -273,7 +274,7 @@ The cars should not crash, so the distance between cars should always be greater
 
 # ╔═╡ 07645bb8-9f8d-4b0e-90ec-34466a966786
 begin
-	is_safe(point) = m.distance_max > point[3] > m.distance_min
+	is_safe(point) = point[3] > m.distance_min
 	
 	is_safe(bounds::Bounds) = 
 			is_safe((nothing, nothing, bounds.lower[3])) &&
@@ -444,11 +445,19 @@ get_value(partition)
 # ╔═╡ 5b3b198d-f0df-4991-8eb7-f208418b0be0
 possible_outcomes(model, partition, action)
 
+# ╔═╡ fa369c7d-ba1b-4aa0-bd83-2e2d4b8486f4
+@bind show_point CheckBox(default=true)
+
 # ╔═╡ 28f000ec-9538-4c9c-afbc-ece4af32d3af
 let
 	draw′(shield)
+	plot!(margin=3mm)
 	slice = [box(grid, v_ego, v_front, distance).indices[1], :, :]
-	draw_barbaric_transition!(model, partition, action, slice)
+	if show_point
+		draw_barbaric_transition!(model, partition, action, slice)
+	else
+		plot!()
+	end
 end
 
 # ╔═╡ 107b960f-1a75-41f9-9cb9-195877ad6184
@@ -603,7 +612,8 @@ end
 # ╠═0018900a-03ed-437f-a4ce-b1e967269ac3
 # ╠═5b3b198d-f0df-4991-8eb7-f208418b0be0
 # ╟─1537138d-1e9a-4c2e-a1ce-0e3b696d5c8d
-# ╟─28f000ec-9538-4c9c-afbc-ece4af32d3af
+# ╠═fa369c7d-ba1b-4aa0-bd83-2e2d4b8486f4
+# ╠═28f000ec-9538-4c9c-afbc-ece4af32d3af
 # ╟─0382588a-ac96-4528-9fee-67ab93d4a1f8
 # ╠═107b960f-1a75-41f9-9cb9-195877ad6184
 # ╠═c971bbe4-bc6b-49dd-940d-3277017e99bc

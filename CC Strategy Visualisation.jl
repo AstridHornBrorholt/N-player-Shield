@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -383,7 +383,7 @@ GridShielding.draw(policy_2d::Function, bounds::Bounds, G;
 end
 
 # ╔═╡ 8fcb8611-e58c-4830-81e1-9541ddeb2780
-bounds = Bounds(Float64[-10, 0], Float64[20, 200])
+bounds = Bounds(Float64[0, -10], Float64[200, 20])
 
 # ╔═╡ c2983ccd-9c9e-4bca-937a-32afd11c35c7
 begin
@@ -454,14 +454,18 @@ shielded_policy([0, 0, 20])
 # ╔═╡ aa7545c2-c313-4b9f-aebe-5e68cbe2d1fc
 # There is no good place to convert between UPPAAL's action IDs and the internal ones, so I do it here.
 function policy_2d(x, y)
-	action = policy((v_ego, x, y))
+	action = policy((v_ego, y, x))
 	action = strategy_action_to_CCAction(action)
 	action = Int(action)
 	return action
 end
 
 # ╔═╡ e540ed8c-d752-4870-8487-2cd0ea0ea6ba
-draw(policy_2d, bounds, [1, 0.5], colors=action_colors, color_labels=action_labels)
+draw(policy_2d, bounds, [1, 0.5], 
+	colors=action_colors, 
+	color_labels=action_labels,
+	xlabel="distance",
+	ylabel="v_front")
 
 # ╔═╡ 0856b055-2c75-47d6-8bfb-db2d4a2cf885
 let
@@ -478,7 +482,7 @@ let
 end
 
 # ╔═╡ 545132b9-ba7c-40dc-ae44-8551113c18dd
-shielded_policy_2d(x, y) = Int(shielded_policy((v_ego, x, y)))
+shielded_policy_2d(x, y) = Int(shielded_policy((v_ego, y, x)))
 
 # ╔═╡ d689f140-a352-4a98-b489-48e81896f915
 draw(shielded_policy_2d, bounds, [1, 0.5], 
@@ -486,8 +490,8 @@ draw(shielded_policy_2d, bounds, [1, 0.5],
 	color_labels=["<unsafe>", action_labels...],
 	legend=:outerright,
 	size=(800, 400),
-	xlabel="v_front",
-	ylabel="distance",
+	ylabel="v_front",
+	xlabel="distance",
 	margin=3mm)
 
 # ╔═╡ 21bde71c-da6d-4eb9-acfe-8f3ffb2398ad
@@ -523,7 +527,7 @@ function plot_cars(distance, time)
 	annotate!([(0, 1, car, 8)])
 	annotate!([(p, 1, car, 8)])
 
-	scatter!([0], label="time: $time", alpha=0, marker=0)
+	#scatter!([0], label="time: $time", alpha=0, marker=0)
 end
 
 # ╔═╡ b451a816-417b-490e-8e2c-08a2ef2592fb
@@ -552,26 +556,28 @@ end
 # ╔═╡ fc6281ab-aeba-48b5-a0b0-f6decc94b9e6
 function draw_policy_with_state(policy, bounds, state, G)
 	v_ego, v_front, distance = state
-	policy_2d(x, y) = Int(policy((v_ego, x, y)))
+	policy_2d(x, y) = Int(policy((v_ego, y, x)))
 	draw(policy_2d, bounds, G; 
 		colors=[colorant"#2C2C2C", action_colors...], 
 		color_labels=["<unsafe>", action_labels...],
-		xlabel="v_front",
-		ylabel="distance",
+		ylabel="v_front",
+		xlabel="distance",
 		legend=:outerright,
 		margin=3mm)
 	
-	scatter!([v_front], [distance], 
+	scatter!([distance], [v_front],
 		marker=:x, 
 		markersize=8,
 		markerstrokewidth=6,
 		markercolor=colors.SUNFLOWER,
 		label="state")
+
+	scatter!([], [], markeralpha=0, label="\nv_ego=$v_ego")
 end
 
 # ╔═╡ 9ff16d40-a249-4195-9bb8-2fa50955495e
 let
-	p1 = draw_policy_with_state(shielded_policy, bounds, [0, 0, 20], [1, 0.5])
+	p1 = draw_policy_with_state(shielded_policy, bounds, [0, 30, 10], [1, 0.5])
 	p2 = plot_cars(5, 10)
 	plot_landscape(0)
 	plot(p1, p2, layout=(2, 1), size=(800, 600))
@@ -608,8 +614,7 @@ function animate_trace_with_shielded_policy(trace)
 		distance_covered += v_front*Δt
 		plot_landscape(distance_covered)
 
-		plot(p1, p2, layout=(2, 1), size=(800, 600))
-		
+		plot(p1, p2, layout=(2, 1), size=(800, 700))
 	end
 	# Add a delay before reset
 	[frame(anim) for _ in 1:10]
