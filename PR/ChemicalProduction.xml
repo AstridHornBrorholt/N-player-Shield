@@ -1,0 +1,624 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
+<nta>
+	<declaration>/**
+Every production unit has two outputs which feed into other production units or to outlets.
+If a production unit doesn't receive output from another unit, it receives it from an intake that delivers material according to a cyclic pattern.
+*/
+clock time;    // Used as exit condition for the strategy queries
+const int N = 4; // Number of rows of units
+const int M = 3; // Production units per row
+const int LEFT = 0;    // Constant to add if this is a left output
+const int RIGHT = N*M; // Constant to add if this is a right output
+typedef int[0, N*M - 1] UnitID;
+typedef int[0, N*M*2 - 1] OutputID;
+
+const double MIN_STORED = 1;       // Unit: L
+const double MAX_STORED = 11;      // Unit: L
+const double PRODUCTION_RATE = 1;  // Unit: L/h
+
+clock stored[N*M];     // Material stored in each tank. Unit: L
+double output[N*M*2];   // Outputs of production unit. Left outputs are indexed by unit_id+LEFT = unit_id, right outputs by unit_id+RIGHT. Unit: L/h
+</declaration>
+	<template>
+		<name x="5" y="5">Intake</name>
+		<parameter>UnitID id, double t0, double t1, double t2, double t3, double t4</parameter>
+		<declaration>// Place local declarations here.
+clock x;</declaration>
+		<location id="id0" x="-433" y="-289">
+			<label kind="invariant" x="-443" y="-272">x &lt;= 1 &amp;&amp;
+stored[id]' == 0</label>
+		</location>
+		<location id="id1" x="-204" y="-289">
+			<label kind="invariant" x="-214" y="-272">x &lt;= 1 &amp;&amp;
+stored[id]' == 0</label>
+		</location>
+		<location id="id2" x="17" y="-289">
+			<label kind="invariant" x="7" y="-272">x &lt;= 1  &amp;&amp;
+stored[id]' == 0</label>
+		</location>
+		<location id="id3" x="238" y="-289">
+			<label kind="invariant" x="228" y="-272">x &lt;= 1  &amp;&amp;
+stored[id]' == 0</label>
+		</location>
+		<location id="id4" x="425" y="-289">
+			<label kind="invariant" x="415" y="-272">x &lt;= 1  &amp;&amp;
+stored[id]' == 0</label>
+		</location>
+		<init ref="id0"/>
+		<transition id="id5" controllable="false">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-392" y="-348">x&gt;=1</label>
+			<label kind="assignment" x="-416" y="-331">output[id+LEFT]=t0,
+x=0</label>
+		</transition>
+		<transition id="id6" controllable="false">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-163" y="-348">x&gt;=1</label>
+			<label kind="assignment" x="-187" y="-331">output[id+LEFT]=t1,
+x=0</label>
+		</transition>
+		<transition id="id7" controllable="false">
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="guard" x="58" y="-348">x&gt;=1</label>
+			<label kind="assignment" x="34" y="-331">output[id+LEFT]=t2,
+x=0</label>
+		</transition>
+		<transition id="id8" controllable="false">
+			<source ref="id3"/>
+			<target ref="id4"/>
+			<label kind="guard" x="279" y="-348">x&gt;=1</label>
+			<label kind="assignment" x="255" y="-331">output[id+LEFT]=t3,
+x=0</label>
+		</transition>
+		<transition id="id9" controllable="false">
+			<source ref="id4"/>
+			<target ref="id0"/>
+			<label kind="guard" x="450" y="-306">x&gt;=1</label>
+			<label kind="assignment" x="-34" y="-221">output[id+LEFT]=t4,
+x=0</label>
+			<nail x="382" y="-221"/>
+			<nail x="-391" y="-221"/>
+		</transition>
+	</template>
+	<template>
+		<name>ProductionUnit</name>
+		<parameter>UnitID id, OutputID supplier1, OutputID supplier2</parameter>
+		<declaration>clock x;</declaration>
+		<location id="id10" x="0" y="-68">
+			<urgent/>
+		</location>
+		<location id="id11" x="0" y="0">
+			<label kind="invariant" x="-136" y="17">x &lt;= 1 &amp;&amp;
+stored[id]' == (output[supplier1] 
+              + output[supplier2]
+              - output[id + LEFT]
+              - output[id + RIGHT])</label>
+		</location>
+		<init ref="id11"/>
+		<transition id="id12">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="68" y="-161">stored[id] &gt;= MIN_STORED+PRODUCTION_RATE &amp;&amp;
+stored[id] &lt;= MAX_STORED-PRODUCTION_RATE</label>
+			<label kind="assignment" x="68" y="-128">output[id+LEFT]=0,
+output[id+RIGHT]=PRODUCTION_RATE</label>
+			<nail x="68" y="-128"/>
+			<nail x="68" y="0"/>
+		</transition>
+		<transition id="id13">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-450" y="-144">stored[id] &gt;= MIN_STORED+2*PRODUCTION_RATE</label>
+			<label kind="assignment" x="-357" y="-127">output[id+LEFT]=PRODUCTION_RATE,
+output[id+RIGHT]=PRODUCTION_RATE</label>
+			<nail x="-68" y="-127"/>
+			<nail x="-68" y="0"/>
+		</transition>
+		<transition id="id14">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="85" y="-68">stored[id] &gt;= MIN_STORED+PRODUCTION_RATE &amp;&amp;
+stored[id] &lt;= MAX_STORED-PRODUCTION_RATE</label>
+			<label kind="assignment" x="85" y="-34">output[id+LEFT]=PRODUCTION_RATE,
+output[id+RIGHT]=0</label>
+			<nail x="85" y="-68"/>
+			<nail x="85" y="0"/>
+		</transition>
+		<transition id="id15">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-467" y="-51">stored[id] &lt;= MAX_STORED-2*PRODUCTION_RATE</label>
+			<label kind="assignment" x="-246" y="-34">output[id+LEFT]=0,
+output[id+RIGHT]=0</label>
+			<nail x="-85" y="-68"/>
+			<nail x="-85" y="0"/>
+		</transition>
+		<transition id="id16" controllable="false">
+			<source ref="id11"/>
+			<target ref="id10"/>
+			<label kind="guard" x="0" y="-43">x &gt;= 1</label>
+			<label kind="assignment" x="0" y="-30">x=0</label>
+		</transition>
+	</template>
+	<template>
+		<name>Outlet</name>
+		<parameter>double profit_rate, OutputID supplier1, OutputID supplier2</parameter>
+		<declaration>clock profit = 0;</declaration>
+		<location id="id17" x="0" y="0">
+			<label kind="invariant" x="-10" y="17">profit' == profit_rate*(output[supplier1] + output[supplier2])</label>
+		</location>
+		<init ref="id17"/>
+	</template>
+	<system>// Row 0 - Intakes
+I00 = Intake(0*M+0, 0.0, 2.0, 2.0, 1.0, 0.0);
+I01 = Intake(0*M+1, 1.0, 1.0, 0.0, 2.0, 1.0);
+I02 = Intake(0*M+2, 1.0, 1.0, 1.0, 0.0, 1.0);
+
+// Row 1 - first row of production units
+U10 = ProductionUnit(1*M+0, 0*M+0 + LEFT, 0*M+0 + RIGHT);
+U11 = ProductionUnit(1*M+1, 0*M+1 + LEFT, 0*M+1 + RIGHT);
+U12 = ProductionUnit(1*M+2, 0*M+2 + LEFT, 0*M+2 + RIGHT);
+
+// Row 2
+U20 = ProductionUnit(2*M+0, 1*M+0 + LEFT,  1*M+1 + LEFT);
+U21 = ProductionUnit(2*M+1, 1*M+0 + RIGHT, 1*M+2 + LEFT);
+U22 = ProductionUnit(2*M+2, 1*M+1 + RIGHT, 1*M+2 + RIGHT);
+
+// Row 3
+U30 = ProductionUnit(3*M+0, 2*M+0 + LEFT,  2*M+1 + LEFT);
+U31 = ProductionUnit(3*M+1, 2*M+0 + RIGHT, 2*M+2 + LEFT);
+U32 = ProductionUnit(3*M+2, 2*M+1 + RIGHT, 2*M+2 + RIGHT);
+
+// Row N+1 - Outlets (Outlets don't have an ID)
+O0 = Outlet( 1.0, 2*M+0 + LEFT,  2*M+1 + LEFT); 
+O1 = Outlet( 0.5, 2*M+0 + RIGHT, 2*M+2 + LEFT);
+O2 = Outlet(-1, 2*M+1 + RIGHT, 2*M+2 + RIGHT);
+system I00, I01, I02, U10, U11, U12, U20, U21, U22, U30, U31, U32, O0, O1, O2;
+
+
+/** Layout: Lines show pipes providing material to next layer
+
+ [0, 0] [0, 1]  [0, 2] Intakes
+  |   \ /     \ /   |
+  |    x       x    |
+  |   / \     / \   |
+ [1, 0] [1, 1]  [1, 2] Row 1
+  |   \ /     \ /   |
+  |    x       x    |
+  |   / \     / \   |
+ [2, 0] [2, 1]  [2, 2] Row 2 
+  |   \ /     \ /   |
+  |    x       x    |
+  |   / \     / \   |
+ [3, 0] [3, 1]  [3, 2] Row 3
+  |   \ /     \ /   |
+  |    x       x    |
+  |   / \     / \   |
+ [ O0 ] [ O1 ] [ O2 ] Outlets
+
+*/ </system>
+	<queries>
+		<query>
+			<formula>simulate[&lt;=10;1] {throughput[0]}</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2023-11-28 12:53:08 +0100">
+				<plot title="Simulations (1)" xaxis="time" yaxis="value">
+					<series title="throughput[0]" type="l" color="0xff0000" encoding="csv">0.0,0.0
+2.0,0.0
+2.0,2.0
+3.0,2.0
+3.0,0.0
+4.0,0.0
+4.0,2.0
+6.0,2.0
+6.0,0.0
+7.0,0.0
+7.0,2.0
+8.0,2.0
+8.0,0.0
+9.0,0.0
+9.0,2.0
+10.000002,2.0
+					</series>
+					<comment/>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>simulate[&lt;=10;1] {
+    stored[0],
+    stored[1],
+    stored[2],
+    stored[3],
+    stored[4],
+    stored[5],
+    stored[6],
+    stored[7],
+    stored[8]
+    }</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2023-11-30 11:41:32 +0100">
+				<plot title="Simulations (1)" xaxis="time" yaxis="value">
+					<series title="stored[0]" type="l" color="0xff0000" encoding="csv">0.0,0.0
+10.000002,0.0
+					</series>
+					<series title="stored[1]" type="l" color="0xffaa00" encoding="csv">0.0,0.0
+10.000002,0.0
+					</series>
+					<series title="stored[2]" type="l" color="0xaaff00" encoding="csv">0.0,0.0
+10.000002,0.0
+					</series>
+					<series title="stored[3]" type="l" color="0x00ff00" encoding="csv">0.0,0.0
+2.0,0.0
+4.0,4.0
+5.0,4.0
+6.0,3.0
+7.0,1.0
+8.0,3.0
+10.0,5.0
+10.000002,5.0
+					</series>
+					<series title="stored[4]" type="l" color="0x00ffaa" encoding="csv">0.0,0.0
+1.0,0.0
+3.0,2.0
+4.0,1.0
+5.0,3.0
+8.0,3.0
+9.0,2.0
+10.0,3.0
+10.000002,2.999998
+					</series>
+					<series title="stored[5]" type="l" color="0x00aaff" encoding="csv">0.0,0.0
+1.0,0.0
+3.0,2.0
+4.0,2.0
+5.0,1.0
+6.0,2.0
+7.0,2.0
+8.0,3.0
+9.0,3.0
+10.0,2.0
+10.000002,2.0
+					</series>
+					<series title="stored[6]" type="l" color="0x0000ff" encoding="csv">0.0,0.0
+3.0,0.0
+6.0,3.0
+7.0,5.0
+8.0,4.0
+10.000002,6.000002
+					</series>
+					<series title="stored[7]" type="l" color="0xaa00ff" encoding="csv">0.0,0.0
+4.0,0.0
+6.0,2.0
+7.0,2.0
+8.0,1.0
+9.0,2.0
+10.000002,2.0
+					</series>
+					<series title="stored[8]" type="l" color="0xff00aa" encoding="csv">0.0,0.0
+3.0,0.0
+4.0,1.0
+6.0,1.0
+7.0,2.0
+8.0,1.0
+10.000002,3.000002
+					</series>
+					<comment/>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>simulate[&lt;=100;1] { O0.profit + O1.profit + O2.profit } </formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2023-11-30 12:51:40 +0100">
+				<plot title="Simulations (1)" xaxis="time" yaxis="value">
+					<series title="O0.profit + O1.profit + O2.profit" type="l" color="0xff0000" encoding="csv">0.0,0.0
+5.0,0.0
+6.0,1.0
+7.0,1.5
+8.0,0.5
+9.0,2.0
+10.0,1.0
+11.0,-1.0
+12.0,-2.0
+13.0,-3.5
+14.0,-4.0
+15.0,-3.0
+16.0,-3.5
+17.0,-3.5
+18.0,-3.0
+19.0,-2.0
+20.0,-3.0
+21.0,-2.0
+22.0,-1.5
+23.0,0.5
+24.0,1.5
+25.0,1.5
+26.0,2.5
+28.0,5.5
+29.0,5.0
+30.0,5.5
+32.0,7.5
+34.0,8.5
+36.0,10.5
+37.0,9.0
+38.0,8.0
+39.0,7.5
+40.0,6.5
+41.0,7.0
+42.0,7.0
+43.0,7.5
+44.0,6.5
+45.0,6.0
+47.0,8.0
+48.0,7.5
+49.0,8.5
+50.0,8.0
+51.0,9.5
+52.0,8.5
+54.0,10.5
+55.0,9.0
+56.0,11.0
+58.0,12.0
+59.0,14.0
+61.0,15.0
+62.0,16.5
+63.0,15.5
+64.0,15.5
+65.0,17.0
+66.0,17.5
+67.0,19.0
+68.0,19.5
+69.0,21.0
+70.0,20.5
+71.0,20.5
+72.0,22.0
+73.0,21.5
+74.0,19.5
+75.0,21.0
+76.0,23.5
+77.0,25.0
+78.0,25.5
+79.0,26.5
+80.0,29.0
+81.0,30.5
+82.0,29.0
+83.0,29.0
+84.0,29.5
+85.0,28.0
+86.0,27.0
+87.0,28.0
+88.0,27.5
+90.0,27.5
+91.0,29.0
+92.0,29.5
+93.0,31.5
+94.0,31.0
+96.0,34.0
+97.0,35.0
+99.0,34.0
+100.0,35.5
+100.000002,35.500001999999995
+					</series>
+					<comment/>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>E[&lt;=100;100] (max:O0.profit + O1.profit + O2.profit)</formula>
+			<comment/>
+			<result outcome="success" type="quantity" value="45.915 ± 1.80187 (95% CI)" timestamp="2023-11-30 12:51:23 +0100">
+				<details>45.915 ± 1.80187 (95% CI)</details>
+				<plot title="Probability Density Distribution" xaxis="max: O0.profit + O1.profit + O2.profit" yaxis="probability density">
+					<series title="density" type="b(4.400000)" color="0x0000ff" encoding="csv">23.0,0.0022727272727272726
+27.4,0.015909090909090907
+31.8,0.013636363636363634
+36.2,0.03863636363636363
+40.6,0.03863636363636363
+45.0,0.031818181818181815
+49.400000000000006,0.0409090909090909
+53.800000000000004,0.02954545454545454
+58.2,0.006818181818181817
+62.6,0.006818181818181817
+67.0,0.0022727272727272726
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">45.91500088,0.0
+45.91500088,0.0409090909090909
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=4.4, bucket count=11
+Runs: 100 in total, 100 (100%) displayed, 0 (0%) remaining
+Span of displayed sample: [23, 67]
+Mean estimate of displayed sample: 45.92 ± 1.802 (95% CI)</comment>
+				</plot>
+				<plot title="Probability Distribution" xaxis="max: O0.profit + O1.profit + O2.profit" yaxis="probability">
+					<series title="probability" type="b(4.400000)" color="0x0000ff" encoding="csv">23.0,0.01
+27.4,0.07
+31.8,0.06
+36.2,0.17
+40.6,0.17
+45.0,0.14
+49.400000000000006,0.18
+53.800000000000004,0.13
+58.2,0.03
+62.6,0.03
+67.0,0.01
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">45.91500088,0.0
+45.91500088,0.18
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=4.4, bucket count=11
+Runs: 100 in total, 100 (100%) displayed, 0 (0%) remaining
+Span of displayed sample: [23, 67]
+Mean estimate of displayed sample: 45.92 ± 1.802 (95% CI)</comment>
+				</plot>
+				<plot title="Cumulative Probability Distribution" xaxis="max: O0.profit + O1.profit + O2.profit" yaxis="probability">
+					<series title="cumulative" type="l" color="0x000000" encoding="csv">23.0,0.0
+27.4,0.01
+31.8,0.08
+36.2,0.14
+40.6,0.31
+45.0,0.48
+49.400000000000006,0.62
+53.800000000000004,0.8
+58.2,0.93
+62.6,0.96
+67.0,0.99
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">45.91500088,0.0
+45.91500088,1.0
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=4.4, bucket count=11
+Runs: 100 in total, 100 (100%) displayed, 0 (0%) remaining
+Span of displayed sample: [23, 67]
+Mean estimate of displayed sample: 45.92 ± 1.802 (95% CI)</comment>
+				</plot>
+				<plot title="Cumulative Probability Confidence Intervals" xaxis="max: O0.profit + O1.profit + O2.profit" yaxis="probability">
+					<series title="upper limit" type="k" color="0x0000dd" encoding="csv">23.0,0.03621669264517642
+27.4,0.05445938539208066
+31.8,0.15155763586442098
+36.2,0.22372798137056776
+40.6,0.4103145541601993
+45.0,0.5822102345936934
+49.400000000000006,0.7152325238585205
+53.800000000000004,0.8733444478980441
+58.2,0.9713947110925613
+62.6,0.9889955060138118
+67.0,0.9997468539670226
+					</series>
+					<series title="lower limit" type="k" color="0xdd0000" encoding="csv">23.0,0.0
+27.4,2.5314603297742064E-4
+31.8,0.03517156251816281
+36.2,0.07870540492696577
+40.6,0.22128879213067107
+45.0,0.3790054801779586
+49.400000000000006,0.5174606942491933
+53.800000000000004,0.7081573109113719
+58.2,0.8610802715441427
+62.6,0.9007428432873401
+67.0,0.9455406146079194
+					</series>
+					<series title="cumulative" type="l" color="0x000000" encoding="csv">23.0,0.0
+27.4,0.01
+31.8,0.08
+36.2,0.14
+40.6,0.31
+45.0,0.48
+49.400000000000006,0.62
+53.800000000000004,0.8
+58.2,0.93
+62.6,0.96
+67.0,0.99
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">45.91500088,0.0
+45.91500088,1.0
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=4.4, bucket count=11
+Runs: 100 in total, 100 (100%) displayed, 0 (0%) remaining
+Span of displayed sample: [23, 67]
+Mean estimate of displayed sample: 45.92 ± 1.802 (95% CI)</comment>
+				</plot>
+				<plot title="Frequency Histogram" xaxis="max: O0.profit + O1.profit + O2.profit" yaxis="count">
+					<series title="count" type="b(4.400000)" color="0x0000ff" encoding="csv">23.0,1.0
+27.4,7.0
+31.8,6.0
+36.2,17.0
+40.6,17.0
+45.0,14.0
+49.400000000000006,18.0
+53.800000000000004,13.0
+58.2,3.0
+62.6,3.0
+67.0,1.0
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">45.91500088,0.0
+45.91500088,18.0
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=4.4, bucket count=11
+Runs: 100 in total, 100 (100%) displayed, 0 (0%) remaining
+Span of displayed sample: [23, 67]
+Mean estimate of displayed sample: 45.92 ± 1.802 (95% CI)</comment>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>strategy Moneydollars = maxE (O0.profit + O1.profit + O2.profit) [&lt;=100] {} -&gt; {stored[3], stored[4], stored[5], stored[6], stored[7], stored[8]} : &lt;&gt; time&gt;=100</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2023-11-30 12:04:30 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>simulate[&lt;=100;1] { O0.profit + O1.profit + O2.profit } under Moneydollars</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[&lt;=100;100] (max:O0.profit + O1.profit + O2.profit) under Moneydollars</formula>
+			<comment/>
+			<result outcome="success" type="quantity" value="≈ 221.5" timestamp="2023-11-30 12:51:36 +0100">
+				<details>≈ 221.5</details>
+				<plot title="Probability Density Distribution" xaxis="max: O0.profit + O1.profit + O2.profit" yaxis="probability density">
+					<series title="density" type="b(0.000000)" color="0x0000ff" encoding="csv">221.500004,4.503599627370496E15
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">221.50000399999996,0.0
+221.50000399999996,4.503599627370496E15
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=2.2204e-16, bucket count=1
+Runs: 100 in total, 100 (100%) displayed, 0 (0%) remaining
+Span of displayed sample: [221.500004, 221.500004]
+Mean estimate of displayed sample: ≈ 221.500004</comment>
+				</plot>
+				<plot title="Probability Distribution" xaxis="max: O0.profit + O1.profit + O2.profit" yaxis="probability">
+					<series title="probability" type="b(0.000000)" color="0x0000ff" encoding="csv">221.500004,1.0
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">221.50000399999996,0.0
+221.50000399999996,1.0
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=2.2204e-16, bucket count=1
+Runs: 100 in total, 100 (100%) displayed, 0 (0%) remaining
+Span of displayed sample: [221.500004, 221.500004]
+Mean estimate of displayed sample: ≈ 221.500004</comment>
+				</plot>
+				<plot title="Cumulative Probability Distribution" xaxis="max: O0.profit + O1.profit + O2.profit" yaxis="probability">
+					<series title="cumulative" type="l" color="0x000000" encoding="csv">221.500004,0.0
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">221.50000399999996,0.0
+221.50000399999996,1.0
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=2.2204e-16, bucket count=1
+Runs: 100 in total, 100 (100%) displayed, 0 (0%) remaining
+Span of displayed sample: [221.500004, 221.500004]
+Mean estimate of displayed sample: ≈ 221.500004</comment>
+				</plot>
+				<plot title="Cumulative Probability Confidence Intervals" xaxis="max: O0.profit + O1.profit + O2.profit" yaxis="probability">
+					<series title="upper limit" type="k" color="0x0000dd" encoding="csv">221.500004,0.03621669264517642
+					</series>
+					<series title="lower limit" type="k" color="0xdd0000" encoding="csv">221.500004,0.0
+					</series>
+					<series title="cumulative" type="l" color="0x000000" encoding="csv">221.500004,0.0
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">221.50000399999996,0.0
+221.50000399999996,1.0
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=2.2204e-16, bucket count=1
+Runs: 100 in total, 100 (100%) displayed, 0 (0%) remaining
+Span of displayed sample: [221.500004, 221.500004]
+Mean estimate of displayed sample: ≈ 221.500004</comment>
+				</plot>
+				<plot title="Frequency Histogram" xaxis="max: O0.profit + O1.profit + O2.profit" yaxis="count">
+					<series title="count" type="b(0.000000)" color="0x0000ff" encoding="csv">221.500004,100.0
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">221.50000399999996,0.0
+221.50000399999996,100.0
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=2.2204e-16, bucket count=1
+Runs: 100 in total, 100 (100%) displayed, 0 (0%) remaining
+Span of displayed sample: [221.500004, 221.500004]
+Mean estimate of displayed sample: ≈ 221.500004</comment>
+				</plot>
+			</result>
+		</query>
+	</queries>
+</nta>
