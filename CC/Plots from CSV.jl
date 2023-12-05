@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ d0db8070-41a9-11ee-2b97-818668d7efa8
 begin
 	using Pkg
-	Pkg.activate(".")
+	Pkg.activate("..")
 	using CSV
 	using DataFrames
 	using Plots

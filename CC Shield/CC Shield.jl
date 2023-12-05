@@ -76,7 +76,7 @@ end
 @bind distance_max NumberField(0:1000, default = 200)
 
 # ╔═╡ 0fedc544-3a81-45b3-b8b0-94c86d291f1b
-m = CCMechanics(1, 0, distance_max, -10, 20, -10, 20)
+m = CCMechanics(1, 0, distance_max, -10, 14, -10, 14)
 
 # ╔═╡ 6134ef59-6377-466b-952d-bee90e421b80
 s0 = (0, 0, (m.distance_max > 50 ? 50 : 20))
@@ -108,13 +108,13 @@ function speed_limit(min, max, v, action::CCAction)
 end
 
 # ╔═╡ 1431a6cc-1a91-4357-b624-8ed77311a426
-function apply_action(velocity, action::CCAction)
+function apply_action(velocity, action::CCAction, acceleration=2)
 	if action == backwards
-		return velocity - 2
+		return velocity - acceleration
 	elseif action == neutral
 		return velocity
 	else
-		return velocity + 2
+		return velocity + acceleration
 	end
 end
 
@@ -150,13 +150,77 @@ begin
 	        v_ego,
 	        action)
 	    
-	    v_ego = apply_action(v_ego, action′)
+	    v_ego = apply_action(v_ego, action′, 1)
 	
 	    new_vel = v_front - v_ego;
 	
 	    distance += (old_vel + new_vel)/2;
 	    (v_ego, v_front, distance)
 	end
+end
+
+# ╔═╡ 3fedd6cd-589b-402b-bc4f-50b863135892
+let
+	initial_velocity = 10
+	trace = [(initial_velocity, initial_velocity, 0.)]
+	for i in 2:40
+		a = i > 2 ? backwards : neutral
+		s′ = simulate_point(m, trace[i-1], -1, a)
+		push!(trace, s′)
+	end
+	📉1 = plot([v_f for (v_e, v_f, d) in trace], 
+		label="v_front", 
+		xlabel="time", 
+		ylabel="velocity")
+	
+	plot!([v_e for (v_e, v_f, d) in trace], label="v_ego")
+	 
+	📉2 = plot([d for (_, _, d) in trace], 
+		label="distance", 
+		xlabel="time", 
+		ylabel="distance")
+	
+	hline!([-200], label="max distance")
+	plot(📉1, 📉2, size=(800, 400))
+end
+
+# ╔═╡ 5a47a6ac-108b-4411-8f6a-a893454ef507
+let
+	distances = []
+	initial_velocities = []
+	for initial_velocity in -10:2:20
+		trace = [(initial_velocity, initial_velocity, 0.)]
+		for i in 2:40
+			a = i > 2 ? backwards : neutral
+			s′ = simulate_point(m, trace[i-1], -1, a)
+			push!(trace, s′)
+		end
+		#=
+		📉1 = plot([v_f for (v_e, v_f, d) in trace], 
+			label="v_front", 
+			xlabel="time", 
+			ylabel="velocity")
+		
+		plot!([v_e for (v_e, v_f, d) in trace], label="v_ego")
+		 
+		📉2 = plot([d for (_, _, d) in trace], 
+			label="distance", 
+			xlabel="time", 
+			ylabel="distance")
+		
+		hline!([-200], label="max distance")
+		plot(📉1, 📉2, size=(800, 400))
+		=#
+		push!(distances, abs(trace[end][3]))
+		push!(initial_velocities, initial_velocity)
+	end
+	plot(initial_velocities, distances,
+		xlabel="initial velocity (both cars)",
+		ylabel="minimum safe distance",
+		#ylim=(0, 250),
+		xtick=[-10:2:20...],
+		label=nothing,
+		title="front: -2m/s, ego: -1m/s")
 end
 
 # ╔═╡ 62e0bad2-9a11-473a-a36f-5ab977df2c44
@@ -274,7 +338,7 @@ The cars should not crash, so the distance between cars should always be greater
 
 # ╔═╡ 07645bb8-9f8d-4b0e-90ec-34466a966786
 begin
-	is_safe(point) = point[3] > m.distance_min
+	is_safe(point) = m.distance_max > point[3] > m.distance_min
 	
 	is_safe(bounds::Bounds) = 
 			is_safe((nothing, nothing, bounds.lower[3])) &&
@@ -577,6 +641,8 @@ end
 # ╠═0fba5442-bba5-4a82-9821-77068368227e
 # ╠═1431a6cc-1a91-4357-b624-8ed77311a426
 # ╠═d5a28ba8-70fe-4fb2-a9b6-a151ec52fd8b
+# ╠═3fedd6cd-589b-402b-bc4f-50b863135892
+# ╠═5a47a6ac-108b-4411-8f6a-a893454ef507
 # ╟─62e0bad2-9a11-473a-a36f-5ab977df2c44
 # ╟─5db3cdc1-c8ec-4053-a058-b1ed03d2b95e
 # ╟─00b22e0a-7809-4a1e-9997-71e7135d825c

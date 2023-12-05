@@ -38,7 +38,7 @@ begin
         "--blueprint-path"  
             default=pwd() ⨝ "../Fleet_blueprint.xml"
         "--shield-path"  
-            default=pwd() ⨝ "../Shield/libshield.so"
+            default=pwd() ⨝ "../CC Shield/libshield.so"
         "--skip-training"
             action=:store_true
 	end

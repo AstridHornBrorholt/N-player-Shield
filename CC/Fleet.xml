@@ -104,7 +104,7 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Shield/libshield.so"
+import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Shield/libshield.so"
 {
     int get_value(double velocity, double velocityFront, double distance);
 };

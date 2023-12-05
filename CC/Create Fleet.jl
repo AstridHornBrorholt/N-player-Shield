@@ -7,11 +7,11 @@ using InteractiveUtils
 # ╔═╡ 488ee430-40cf-11ee-3160-1f10b20c5be6
 begin
 	using Pkg
-	Pkg.activate(".")
+	Pkg.activate("..")
 	using JSON
 	using Glob
 	using ArgParse
-	include("Strategy to C.jl")
+	include("../Strategy to C.jl")
 end;
 
 # ╔═╡ d2d9ca40-af15-4a65-910e-0319065cd6bf
@@ -136,7 +136,7 @@ Fields in the blueprint surrouned with `%`. Functions or variable names here are
 
 # ╔═╡ 6ba15d9e-1490-47a3-ac77-288eae1dc281
 #=╠═╡
-@bind shield_path TextField(80, default = "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Shield/libshield.so")
+@bind shield_path TextField(80, default = "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/CC Shield/libshield.so")
   ╠═╡ =#
 
 # ╔═╡ b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb

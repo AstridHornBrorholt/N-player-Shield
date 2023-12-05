@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ 7d449a33-2530-44a0-9b9c-8c0ffe4ba475
 begin
 	using Pkg
-	Pkg.activate(".")
+	Pkg.activate("..")
 	using JSON
 	using CSV
 	using Glob

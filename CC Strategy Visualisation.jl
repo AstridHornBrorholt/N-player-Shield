@@ -114,7 +114,7 @@ function show_strategy_info(s::Dict)
 	
 	locationnames = s["locationnames"]
 	
-	locationnames = join(["       - $k: $(locations(v))"
+	locationnames = join(["       - `$k`: $(locations(v))"
 		for (k, v) in locationnames
 	], "\n\n")
 
@@ -130,9 +130,9 @@ function show_strategy_info(s::Dict)
 	Markdown.parse("""
 	!!! info "Strategy { $statevars } -> { $pointvars }"
 
-		`statevars`: $(statevars == "" ? "none" : statevars)
+		`statevars`: $(statevars == "" ? "`none`" : statevars)
 	
-		`pointvars`: $(pointvars == "" ? "none" : pointvars)
+		`pointvars`: $(pointvars == "" ? "`none`" : pointvars)
 	
 		**Location names:**
 	
@@ -261,7 +261,7 @@ end
 # ╔═╡ bf7b4c9d-c4e9-459e-9bd9-7c08f92709cf
 function simulate_sequence(mechanics::CCMechanics, duration, s0, policy::Function)
 	s0 = Tuple(Float64(x) for x in s0)
-    states, times = [s0], [0.0]
+    states, times, actions = [s0], [0.0], []
     s, t = s0, 0
     while times[end] <= duration - mechanics.t_act
         action = policy(s)
@@ -269,8 +269,9 @@ function simulate_sequence(mechanics::CCMechanics, duration, s0, policy::Functio
 		t += mechanics.t_act
         push!(states, s)
         push!(times, t)
+        push!(actions, action)
     end
-    (;states, times)
+    (;states, times, actions)
 end
 
 # ╔═╡ b3e2a24a-fab6-414e-be8b-351a0e7d1b1c
@@ -393,6 +394,15 @@ begin
 	action_colors = [colorant"#9C59D1", colorant"#BD83EB", colorant"#ff74af"]
 end
 
+# ╔═╡ cd41d294-d1d6-42dd-8246-756c6c40f56c
+@bind v_ego NumberField(-10:2:20)
+
+# ╔═╡ 2fd70212-9b73-41a8-a7a6-0cfd02ba8d7e
+@bind v_front NumberField(-10:2:20)
+
+# ╔═╡ f8cf701b-61e0-4423-9b37-cd6a6c2dd5b9
+@bind distance NumberField(0:1:200, default=50)
+
 # ╔═╡ 596dfcee-99dc-44c6-affe-c5ddef76d90c
 md"""
 # Shielding the Policy
@@ -419,6 +429,23 @@ begin
 	(;shield_colors, shield_labels)
 end
 
+# ╔═╡ 0856b055-2c75-47d6-8bfb-db2d4a2cf885
+# ╠═╡ disabled = true
+#=╠═╡
+let
+	state = [v_ego, 0, 50]
+	partition = box(shield, state)
+	slice = Vector{Any}(partition.indices)
+	slice[2] = Colon()
+	slice[3] = Colon()
+	draw(shield, slice, 
+		colors=shield_colors, 
+		color_labels=shield_labels,
+		legend=:outerright,
+		size=(800, 400))
+end
+  ╠═╡ =#
+
 # ╔═╡ aee51ef5-e3d3-43e7-ba9a-0c68b0cff9f0
 function strategy_action_to_CCAction(a)
 	a == 0 ? backwards :
@@ -426,6 +453,28 @@ function strategy_action_to_CCAction(a)
 	a == 2 ? neutral :
 	error("Unexpected value for a: $a")
 end
+
+# ╔═╡ aa7545c2-c313-4b9f-aebe-5e68cbe2d1fc
+# ╠═╡ disabled = true
+#=╠═╡
+# There is no good place to convert between UPPAAL's action IDs and the internal ones, so I do it here.
+function policy_2d(x, y)
+	action = policy((v_ego, y, x))
+	action = strategy_action_to_CCAction(action)
+	action = Int(action)
+	return action
+end
+  ╠═╡ =#
+
+# ╔═╡ e540ed8c-d752-4870-8487-2cd0ea0ea6ba
+# ╠═╡ disabled = true
+#=╠═╡
+draw(policy_2d, bounds, [1, 0.5], 
+	colors=action_colors, 
+	color_labels=action_labels,
+	xlabel="distance",
+	ylabel="v_front")
+  ╠═╡ =#
 
 # ╔═╡ 9da72ccf-d7d9-44ff-9409-5ea5f3a33b34
 function shielded_policy(s)
@@ -445,46 +494,197 @@ function shielded_policy(s)
 	end
 end
 
+# ╔═╡ 9f3ad933-5cf0-4d7c-b09a-521480abe589
+traces = [
+	simulate_sequence(m, 120, [0, 0, 50], shielded_policy)
+	for i in 1:50
+]
+
+# ╔═╡ 11453734-63ad-4377-ae15-78d85aa21bac
+let
+	f, b, n = [], [], []
+
+	for trace in traces
+		for (i, s) in enumerate(trace.states)
+			i == 121 && continue
+			v_ego′, v_front, distance = s
+			v_ego′ != v_ego && continue
+			a = trace.actions[i]
+			if a == forwards
+				push!(f, (distance, v_front))
+			elseif a == backwards
+				push!(b, (distance, v_front))
+			elseif a == neutral
+				push!(n, (distance, v_front))
+			end
+		end
+	end
+	
+	plot(
+		size=(700, 400),
+		xlim=(shield.bounds.lower[3], shield.bounds.upper[3]),
+		ylim=(shield.bounds.lower[2], shield.bounds.upper[2]),
+		xlabel="distance",
+		ylabel="v_front",
+		legend=:outertop)
+	#=
+	draw(shielded_policy_2d, bounds, [1, 0.5], 
+		colors=[colorant"#2C2C2C", action_colors...], 
+		color_labels=["<unsafe>", action_labels...],
+		legend=:outertop,
+		size=(800, 500),
+		ylabel="v_front",
+		xlabel="distance",
+		margin=3mm)
+	=#
+	
+	length(b) > 0 && scatter!(unzip(b),
+		markersize=3,
+		label="backwards",
+		markershape=:diamond,
+		markerstrokewidth=3,
+		markerstrokecolor=colors.ALIZARIN,
+		markercolor=:white)
+	
+	length(n) > 0 && scatter!(unzip(n),
+		markersize=3,
+		label="neutral",
+		markershape=:circle,
+		markerstrokewidth=3,
+		markerstrokecolor=colors.EMERALD,
+		markercolor=:white)
+	
+	length(f) > 0 && scatter!(unzip(f),
+		markersize=3,
+		label="forwards",
+		markershape=:utriangle,
+		markerstrokewidth=3,
+		markerstrokecolor=colors.WISTERIA,
+		markercolor=:white,
+	)
+	
+end
+
+# ╔═╡ ddbd8bcc-a090-459c-a8ea-45847c32169b
+let
+	f, b, n = [], [], []
+
+	for trace in traces
+		for (i, s) in enumerate(trace.states)
+			i == 121 && continue
+			v_ego, v_front′, distance = s
+			v_front′ != v_front && continue
+			a = trace.actions[i]
+			if a == forwards
+				push!(f, (distance, v_ego))
+			elseif a == backwards
+				push!(b, (distance, v_ego))
+			elseif a == neutral
+				push!(n, (distance, v_ego))
+			end
+		end
+	end
+	
+	plot(
+		size=(700, 400),
+		xlim=(shield.bounds.lower[3], shield.bounds.upper[3]),
+		ylim=(shield.bounds.lower[2], shield.bounds.upper[2]),
+		xlabel="distance",
+		ylabel="v_ego",
+		legend=:outertop)
+	
+	length(b) > 0 && scatter!(unzip(b),
+		markersize=3,
+		label="backwards",
+		markershape=:diamond,
+		markerstrokewidth=3,
+		markerstrokecolor=colors.ALIZARIN,
+		markercolor=:white)
+	
+	length(n) > 0 && scatter!(unzip(n),
+		markersize=3,
+		label="neutral",
+		markershape=:circle,
+		markerstrokewidth=3,
+		markerstrokecolor=colors.EMERALD,
+		markercolor=:white)
+	
+	length(f) > 0 && scatter!(unzip(f),
+		markersize=3,
+		label="forwards",
+		markershape=:utriangle,
+		markerstrokewidth=3,
+		markerstrokecolor=colors.WISTERIA,
+		markercolor=:white,
+	)
+	
+end
+
+# ╔═╡ 19db2642-fb75-4d9c-8c33-dfa75ca29b3a
+let
+	f, b, n = [], [], []
+
+	for trace in traces
+		for (i, s) in enumerate(trace.states)
+			i == 121 && continue
+			v_ego, v_front, distance′ = s
+			distance′ != distance && continue
+			a = trace.actions[i]
+			if a == forwards
+				push!(f, (v_front, v_ego))
+			elseif a == backwards
+				push!(b, (v_front, v_ego))
+			elseif a == neutral
+				push!(n, (v_front, v_ego))
+			end
+		end
+	end
+	
+	plot(
+		aspectratio=:equal,
+		size=(700, 400),
+		xlim=(shield.bounds.lower[1], shield.bounds.upper[1]),
+		ylim=(shield.bounds.lower[2], shield.bounds.upper[2]),
+		xlabel="v_front",
+		ylabel="v_ego",
+		legend=:outertop)
+	
+	length(b) > 0 && scatter!(unzip(b),
+		markersize=3,
+		label="backwards",
+		markershape=:diamond,
+		markerstrokewidth=3,
+		markerstrokecolor=colors.ALIZARIN,
+		markercolor=:white)
+	
+	length(n) > 0 && scatter!(unzip(n),
+		markersize=3,
+		label="neutral",
+		markershape=:circle,
+		markerstrokewidth=3,
+		markerstrokecolor=colors.EMERALD,
+		markercolor=:white)
+	
+	length(f) > 0 && scatter!(unzip(f),
+		markersize=3,
+		label="forwards",
+		markershape=:utriangle,
+		markerstrokewidth=3,
+		markerstrokecolor=colors.WISTERIA,
+		markercolor=:white,
+	)
+	plot!()
+end
+
 # ╔═╡ 262a613f-9e5e-4d3f-b31a-b26ebcf31680
 shielded_policy([0, 0, 20])
-
-# ╔═╡ 2fd70212-9b73-41a8-a7a6-0cfd02ba8d7e
-@bind v_ego NumberField(-10:2:20)
-
-# ╔═╡ aa7545c2-c313-4b9f-aebe-5e68cbe2d1fc
-# There is no good place to convert between UPPAAL's action IDs and the internal ones, so I do it here.
-function policy_2d(x, y)
-	action = policy((v_ego, y, x))
-	action = strategy_action_to_CCAction(action)
-	action = Int(action)
-	return action
-end
-
-# ╔═╡ e540ed8c-d752-4870-8487-2cd0ea0ea6ba
-draw(policy_2d, bounds, [1, 0.5], 
-	colors=action_colors, 
-	color_labels=action_labels,
-	xlabel="distance",
-	ylabel="v_front")
-
-# ╔═╡ 0856b055-2c75-47d6-8bfb-db2d4a2cf885
-let
-	state = [v_ego, 0, 50]
-	partition = box(shield, state)
-	slice = Vector{Any}(partition.indices)
-	slice[2] = Colon()
-	slice[3] = Colon()
-	draw(shield, slice, 
-		colors=shield_colors, 
-		color_labels=shield_labels,
-		legend=:outerright,
-		size=(800, 400))
-end
 
 # ╔═╡ 545132b9-ba7c-40dc-ae44-8551113c18dd
 shielded_policy_2d(x, y) = Int(shielded_policy((v_ego, y, x)))
 
 # ╔═╡ d689f140-a352-4a98-b489-48e81896f915
+# ╠═╡ disabled = true
+#=╠═╡
 draw(shielded_policy_2d, bounds, [1, 0.5], 
 	colors=[colorant"#2C2C2C", action_colors...], 
 	color_labels=["<unsafe>", action_labels...],
@@ -493,6 +693,7 @@ draw(shielded_policy_2d, bounds, [1, 0.5],
 	ylabel="v_front",
 	xlabel="distance",
 	margin=3mm)
+  ╠═╡ =#
 
 # ╔═╡ 21bde71c-da6d-4eb9-acfe-8f3ffb2398ad
 md"""
@@ -646,7 +847,7 @@ gif(animate_trace_with_shielded_policy(trace), fps=4, show_msg=false)
 # ╠═678bbf8a-ac82-453c-a02b-ff1a4ad5ab7b
 # ╠═9b77a783-8c05-491e-8c03-1493b795c0db
 # ╠═5f115ebe-b9ce-4412-8e31-6d601e791c1f
-# ╟─bf7b4c9d-c4e9-459e-9bd9-7c08f92709cf
+# ╠═bf7b4c9d-c4e9-459e-9bd9-7c08f92709cf
 # ╟─b3e2a24a-fab6-414e-be8b-351a0e7d1b1c
 # ╠═1a27105e-58d5-4dc2-bb7e-f7392a39c900
 # ╠═7f840af3-bff8-4548-9d31-cf3c64fa9faf
@@ -660,6 +861,13 @@ gif(animate_trace_with_shielded_policy(trace), fps=4, show_msg=false)
 # ╠═8fcb8611-e58c-4830-81e1-9541ddeb2780
 # ╠═c2983ccd-9c9e-4bca-937a-32afd11c35c7
 # ╠═e540ed8c-d752-4870-8487-2cd0ea0ea6ba
+# ╠═9f3ad933-5cf0-4d7c-b09a-521480abe589
+# ╠═cd41d294-d1d6-42dd-8246-756c6c40f56c
+# ╟─11453734-63ad-4377-ae15-78d85aa21bac
+# ╠═2fd70212-9b73-41a8-a7a6-0cfd02ba8d7e
+# ╟─ddbd8bcc-a090-459c-a8ea-45847c32169b
+# ╠═f8cf701b-61e0-4423-9b37-cd6a6c2dd5b9
+# ╟─19db2642-fb75-4d9c-8c33-dfa75ca29b3a
 # ╟─596dfcee-99dc-44c6-affe-c5ddef76d90c
 # ╠═0856b055-2c75-47d6-8bfb-db2d4a2cf885
 # ╟─6df8443f-6aa5-44ce-a865-870a830b6737
@@ -667,7 +875,6 @@ gif(animate_trace_with_shielded_policy(trace), fps=4, show_msg=false)
 # ╠═9da72ccf-d7d9-44ff-9409-5ea5f3a33b34
 # ╠═262a613f-9e5e-4d3f-b31a-b26ebcf31680
 # ╠═545132b9-ba7c-40dc-ae44-8551113c18dd
-# ╠═2fd70212-9b73-41a8-a7a6-0cfd02ba8d7e
 # ╠═d689f140-a352-4a98-b489-48e81896f915
 # ╟─21bde71c-da6d-4eb9-acfe-8f3ffb2398ad
 # ╠═58f0cfbd-54c5-41d6-8504-83beb01bc620

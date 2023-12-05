@@ -8,7 +8,7 @@ function status(str)
     flush(stdout)
 end
 using Pkg
-Pkg.activate(".")
+Pkg.activate("..")
 
 using ArgParse
 include("Create Fleet.jl")
@@ -39,7 +39,7 @@ begin
         "--blueprint-path"  
             default=pwd() ⨝ "Fleet_blueprint.xml"
         "--shield-path"  
-            default=pwd() ⨝ "Shield/libshield.so"
+            default=pwd() ⨝ "../CC Shield/libshield.so"
         "--skip-training"
             action=:store_true
             help="MISNOMER: Use car1.json for all cars in the fleets (must exist) without training any strategies."
