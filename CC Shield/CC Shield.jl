@@ -17,7 +17,7 @@ end
 # ╔═╡ c1bdc9f0-3d96-11ee-00af-b341a715281c
 begin
 	using Pkg
-	Pkg.activate(".")
+	Pkg.activate("..")
 	using Plots
 	using PlutoUI
 	using PlutoLinks
@@ -643,7 +643,7 @@ end
 # ╠═d5a28ba8-70fe-4fb2-a9b6-a151ec52fd8b
 # ╠═3fedd6cd-589b-402b-bc4f-50b863135892
 # ╠═5a47a6ac-108b-4411-8f6a-a893454ef507
-# ╟─62e0bad2-9a11-473a-a36f-5ab977df2c44
+# ╠═62e0bad2-9a11-473a-a36f-5ab977df2c44
 # ╟─5db3cdc1-c8ec-4053-a058-b1ed03d2b95e
 # ╟─00b22e0a-7809-4a1e-9997-71e7135d825c
 # ╟─4c0f483c-147a-4325-b907-16d914e9205e

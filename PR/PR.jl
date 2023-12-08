@@ -250,11 +250,11 @@ md"""
 # ╔═╡ 7ecdeacb-fccf-4406-98ea-5f8e7a4b3c84
 begin
 	# rvar = Random VARiable.
-	function simulate_point(mechanics::PRMechanics, point::PRState, rvar, action)
+	function simulate_point(m::PRMechanics, point::PRState, rvar, action)
 		(;V_a, V_b, µ_in_a, µ_in_b, µ_out_a, µ_out_b) = point
 
-		in_a = input_behaviour(mechanics, µ_in_a, rvar[1])
-		in_b = input_behaviour(mechanics, µ_in_b, rvar[2])
+		in_a = input_behaviour(m, µ_in_a, rvar[1])
+		in_b = input_behaviour(m, µ_in_b, rvar[2])
 
 		out_a = (action == on_on || action == on_off) ? m.production_rate : 0 
 		out_b = (action == on_on || action == off_on) ? m.production_rate : 0 
@@ -269,12 +269,12 @@ begin
 		return PRState(V_a′, V_b′, µ_in_a′, µ_in_b′, µ_out_a′, µ_out_b′)
 	end
 	
-	function simulate_point(mechanics::PRMechanics, point, rvar, action)
-		simulate_point(mechanics, PRState(point...), rvar, action)
+	function simulate_point(m::PRMechanics, point, rvar, action)
+		simulate_point(m, PRState(point...), rvar, action)
 	end
 	
-	function simulate_point(mechanics::PRMechanics, point::PRState, action)
-		simulate_point(mechanics, point, rand([0, 1], 2), action)
+	function simulate_point(m::PRMechanics, point::PRState, action)
+		simulate_point(m, point, rand([0, 1], 2), action)
 	end
 end
 
@@ -372,7 +372,7 @@ end
 plot_sequence(trace)
 
 # ╔═╡ 1260d5e5-1f2b-4578-909e-a5d0a367b126
-gif(@animate(for _ in 1:10 plot_sequence(simulate_sequence(m, 100, s0, random_policy)) end), show_msg=false, fps=1)
+#gif(@animate(for _ in 1:10 plot_sequence(simulate_sequence(m, 100, s0, random_policy)) end), show_msg=false, fps=1)
 
 # ╔═╡ b35e34d2-6557-4f67-84fe-949f8d8eeed8
 md"""
