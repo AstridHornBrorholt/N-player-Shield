@@ -75,11 +75,11 @@ md"""
 # ╔═╡ 69001b1e-5208-430b-a809-800a5df71b03
 # Actions
 
-@enum CHAction wait input_one input_two input_three
+@enum CPAction wait input_one input_two input_three
 
 # ╔═╡ a73bed3f-9e0f-45ad-a32c-935d17a52bb7
 begin
-	@with_kw struct CHMechanics
+	@with_kw struct CPMechanics
 		t_act::Float64=1.0
 		min_stored::Float64=2.0
 		max_stored::Float64=20.0
@@ -88,26 +88,26 @@ begin
 end
 
 # ╔═╡ e019f426-8a0f-4698-8b6d-ed487a68ae5c
-m_defaults = CHMechanics()
+m_defaults = CPMechanics()
 
 # ╔═╡ cd9ba9af-db52-485b-af56-d14827926137
 randomness_space = Bounds((0,), (1,))
 
 # ╔═╡ af920ac1-a57a-44fe-8026-f18d527becb3
 begin
-	struct CHState
+	struct CPState
 		volume::Float64
 	end
 
-	function CHState(t::NTuple{6, Float64})
-		CHState(t...)
+	function CPState(t::NTuple{6, Float64})
+		CPState(t...)
 	end
 
-	Base.convert(::Type{CHState}, x::NTuple{6, Float64}) = CHState(x)
-	Base.length(::CHState) = 1
-	Base.tail(s::CHState) = s.volume
-	Base.iterate(s::CHState) = s.volume, :done
-	Base.iterate(s::CHState, iter) = nothing # simple case
+	Base.convert(::Type{CPState}, x::NTuple{6, Float64}) = CPState(x)
+	Base.length(::CPState) = 1
+	Base.tail(s::CPState) = s.volume
+	Base.iterate(s::CPState) = s.volume, :done
+	Base.iterate(s::CPState, iter) = nothing # simple case
 end
 
 # ╔═╡ 14d4416b-ef73-4777-942e-f621c3ef801d
@@ -150,7 +150,7 @@ end
 @bind m_inputs multi_field(m_defaults)
 
 # ╔═╡ 8b0e8b12-3b16-4d71-9d29-6fb5db82a47a
-m = CHMechanics(;m_inputs...)
+m = CPMechanics(;m_inputs...)
 
 # ╔═╡ 4dadcdaa-4fce-4a14-9dd7-e4baf141bd42
 # Index-name pairs. Used for choosing axes to draw the shield.
@@ -160,7 +160,7 @@ state_variables = [1 => "volume"]
 middle_volume = m.min_stored + (m.max_stored - m.min_stored)/2
 
 # ╔═╡ 098ca31f-e1e5-4ee4-a42e-7d169915aace
-s0 = CHState(middle_volume)
+s0 = CPState(middle_volume)
 
 # ╔═╡ f6b985da-e65e-4842-921d-8200ba17c157
 [x for x in s0], Base.tail(s0)
@@ -174,7 +174,7 @@ md"""
 m
 
 # ╔═╡ 84d04b11-efef-4f02-a9b4-0d266430a655
-s_unsafe = CHState(m.min_stored)
+s_unsafe = CPState(m.min_stored)
 
 # ╔═╡ 6ecc0cf7-d7a1-46ef-a840-717fe0784f59
 function environment_action(m, rvar)
@@ -188,8 +188,8 @@ end
 # ╔═╡ 7ecdeacb-fccf-4406-98ea-5f8e7a4b3c84
 begin
 	# rvar = Random VARiable.
-	function simulate_point(m::CHMechanics, 
-		point::CHState, rvar, action::CHAction)::CHState
+	function simulate_point(m::CPMechanics, 
+		point::CPState, rvar, action::CPAction)::CPState
 		(;volume) = point
 	
 		volume_in = action == input_one ? m.flow_rate_single : 
@@ -200,28 +200,28 @@ begin
 		
 		volume′ = volume + (volume_in - volume_out)*m.t_act
 		
-		return CHState(volume′)
+		return CPState(volume′)
 	end
 	
-	function simulate_point(m::CHMechanics, point, rvar, action::CHAction)::CHState
-		simulate_point(m, CHState(point...), rvar, action)
+	function simulate_point(m::CPMechanics, point, rvar, action::CPAction)::CPState
+		simulate_point(m, CPState(point...), rvar, action)
 	end
 	
-	function simulate_point(m::CHMechanics, point::CHState, action::CHAction)::CHState
+	function simulate_point(m::CPMechanics, point::CPState, action::CPAction)::CPState
 		simulate_point(m, point, rand(0:1/6:1), action)
 	end
 end
 
 # ╔═╡ 0a5b97c3-b03f-4418-bb36-af0ca6d6471e
-struct CHTrace
-	states::Vector{CHState}
+struct CPTrace
+	states::Vector{CPState}
 	times::Vector{Float64}
-	actions::Vector{CHAction}
+	actions::Vector{CPAction}
 end
 
 # ╔═╡ 58410e5a-0c4a-4afa-b1c0-390b53905fa6
-function simulate_sequence(m::CHMechanics, duration, s0, policy)::CHTrace
-	states, times, actions = CHState[s0], Float64[0], CHAction[]
+function simulate_sequence(m::CPMechanics, duration, s0, policy)::CPTrace
+	states, times, actions = CPState[s0], Float64[0], CPAction[]
 
 	s, t = s0, 0
     while times[end] <= duration - m.t_act
@@ -232,11 +232,11 @@ function simulate_sequence(m::CHMechanics, duration, s0, policy)::CHTrace
         push!(times, t)
         push!(actions, a)
     end
-    CHTrace(states, times, actions)
+    CPTrace(states, times, actions)
 end
 
 # ╔═╡ 534ee19b-69ed-4d6d-b80c-ff8b954b6293
-random_policy = (_...) -> rand(instances(CHAction))
+random_policy = (_...) -> rand(instances(CPAction))
 
 # ╔═╡ d6016b3e-3d40-4a4c-914f-55a0d5edfa83
 trace = simulate_sequence(m, 100, s0, random_policy)
@@ -247,7 +247,7 @@ md"""
 """
 
 # ╔═╡ f6162914-dd94-46e6-868f-478f6280d1cb
-function plot_sequence(trace::CHTrace; time=nothing, plotargs...)
+function plot_sequence(trace::CPTrace; time=nothing, plotargs...)
 	volumes = [s.volume for s in trace.states]
 
 	📈 = plot(trace.times, volumes, 
@@ -284,13 +284,13 @@ m; @bind reset_button Button("Reset")
 
 # ╔═╡ 22205344-1445-41fb-bab9-3fced063d62b
 # Initialize or reset trace. Will be modified using reactivity of Pluto Notebooks.
-reset_button; reactive_trace = CHTrace(CHState[], Float64[], CHAction[]);
+reset_button; reactive_trace = CPTrace(CPState[], Float64[], CPAction[]);
 
 # ╔═╡ 67893b1c-ad3e-45f3-90a4-c684b29438a1
 md"""
 Agent action
 
-$(@bind interactive_action Select([instances(CHAction)...]))
+$(@bind interactive_action Select([instances(CPAction)...]))
 """
 
 # ╔═╡ 29654ee9-9e10-4d1b-b4a4-aef6f3d4f33f
@@ -334,11 +334,11 @@ No underflow or overflow; in either tank. Additionally, the moving average of in
 
 # ╔═╡ 41584071-89c1-45f9-bded-61fbe98a9b78
 begin
-	function is_safe(s::CHState)
+	function is_safe(s::CPState)
 		return (m.min_stored < s.volume < m.max_stored)
 	end
 
-	function is_safe(s) return is_safe(CHState(s...)) end
+	function is_safe(s) return is_safe(CPState(s...)) end
 	
 	function is_safe(b::Bounds) return is_safe(b.lower) && is_safe(b.upper) end
 end
@@ -356,7 +356,7 @@ md"""
 """
 
 # ╔═╡ 557c1aee-1ab6-43f0-9394-4509ff7ecf3f
-function get_state_space_bounds(m::CHMechanics)
+function get_state_space_bounds(m::CPMechanics)
 	Bounds([m.min_stored],[m.max_stored])
 end
 
@@ -364,7 +364,7 @@ end
 state_space_bounds = get_state_space_bounds(m)
 
 # ╔═╡ 394f9428-f2d6-46aa-b82e-de3a59dab5ee
-function get_bounds(m::CHMechanics, granularity)
+function get_bounds(m::CPMechanics, granularity)
 	state_space = get_state_space_bounds(m)
 	return Bounds(state_space.lower, state_space.upper .+ granularity)
 end
@@ -401,7 +401,7 @@ let
 end
 
 # ╔═╡ c52e7c97-0711-4330-95f1-11ffddbfb8c7
-any_action, no_action = actions_to_int(instances(CHAction)), actions_to_int([])
+any_action, no_action = actions_to_int(instances(CPAction)), actions_to_int([])
 
 # ╔═╡ 81b3f1a4-ecb9-4684-b1a7-d6eb6c989b75
 grid  = let
@@ -414,7 +414,7 @@ end
 grid
 
 # ╔═╡ b89e6235-f6d6-4943-a7a3-1992d857be10
-GridShielding.box(grid::Grid, s::CHState) = box(grid, s...)
+GridShielding.box(grid::Grid, s::CPState) = box(grid, s...)
 
 # ╔═╡ 3fac2081-fbc1-4969-b5db-369d6314f073
 Tuple(s0) ∈ grid, Tuple(s_unsafe) ∈ grid
@@ -428,7 +428,7 @@ grid.array
 # ╔═╡ 32c0ec89-42ea-4e3b-a284-9317c7920165
 begin
 	ch_color_labels = [("{$(join(actions, ", "))}", actions_to_int(actions)) 
-		for actions in powerset(instances(CHAction))]
+		for actions in powerset(instances(CPAction))]
 
 	sort!(ch_color_labels, by=(x -> x[2]))
 	ch_color_labels = [x[1] for x in ch_color_labels]
@@ -520,7 +520,7 @@ Try starting at 1 and then stepping through the iterations.
 # ╔═╡ 7dedba0d-f017-4af3-805f-3fd945abbddb
 if make_shield_button > 0
 	reachability_function_precomputed = 
-		get_transitions(reachability_function, CHAction, grid)
+		get_transitions(reachability_function, CPAction, grid)
 end
 
 # ╔═╡ 939245b5-e393-4b16-b881-b8d5d41b5646
@@ -531,7 +531,7 @@ begin
 
 		# here
 		shield, max_steps_reached = 
-			make_shield(reachability_function_precomputed, CHAction, grid; max_steps)
+			make_shield(reachability_function_precomputed, CPAction, grid; max_steps)
 		
 	end
 end
@@ -549,12 +549,12 @@ md"""
 
 `volume =` $(@bind volume NumberField(m.min_stored:m.max_stored - granularity_V, default=s0.volume))
 
-`action =` $(@bind action Select([instances(CHAction)...]))
+`action =` $(@bind action Select([instances(CPAction)...]))
 
 """
 
 # ╔═╡ 2060621f-84b6-448a-a857-0d6c556e3f4f
-s = CHState(volume)
+s = CPState(volume)
 
 # ╔═╡ 14643fb4-54b1-4c92-9511-4051b337a258
 is_safe(s0), is_safe(s), !is_safe(s_unsafe)
@@ -630,20 +630,20 @@ shield.array
 get_value(box(shield, s))
 
 # ╔═╡ ce5aad22-f447-4502-af51-84f4d48e9413
-int_to_actions(CHAction, get_value(box(shield, s)))
+int_to_actions(CPAction, get_value(box(shield, s)))
 
 # ╔═╡ 1857b91b-de36-44b9-afeb-5739c19ffea0
 make_shield_button; unique(shield.array)
 
 # ╔═╡ cbaf2ad3-9d1b-4a58-9f76-797bca422fe3
-function shielded_random(s::CHState)
+function shielded_random(s::CPState)
 	if [s...] ∉ grid
-		return rand(instances(CHAction))
+		return rand(instances(CPAction))
 	end
 	partition = box(shield, s)
-	allowed = int_to_actions(CHAction, get_value(partition))
+	allowed = int_to_actions(CPAction, get_value(partition))
 	if length(allowed) == 0
-		return rand(instances(CHAction))
+		return rand(instances(CPAction))
 	end
 	rand(allowed)
 end
@@ -664,7 +664,7 @@ shielded_trace.states[i]
 shielded_trace.actions[i]
 
 # ╔═╡ cf7aee84-d05f-4786-abe9-970e5b57484f
-int_to_actions(CHAction, get_value(box(shield, shielded_trace.states[i])))
+int_to_actions(CPAction, get_value(box(shield, shielded_trace.states[i])))
 
 # ╔═╡ 8b169b68-2fdf-4327-8113-1a6bd22991a0
 let
@@ -677,8 +677,8 @@ end
 plot_sequence(shielded_trace, time=shielded_trace.times[i])
 
 # ╔═╡ b40d36af-9d76-4226-88e1-899167a84179
-function evaluate_safety(m::CHMechanics, shield::Grid; checks=1000)
-	example_trace = CHTrace([], [], [])
+function evaluate_safety(m::CPMechanics, shield::Grid; checks=1000)
+	example_trace = CPTrace([], [], [])
 	safe = 0
 	for c in 1:checks
 		trace = simulate_sequence(m, 120, s0, shielded_random)
