@@ -39,6 +39,21 @@ end
 # ╔═╡ 3a57c06f-0adb-4f92-9f64-f22edbefcadf
 TableOfContents(title="Chemical Production")
 
+# ╔═╡ 9aead72a-8c20-4565-a4bf-26d72ef832ab
+md"""
+**Simple Chemical Production Example**
+
+Okay, all that other stuff was too complex. Time to KISS. 
+
+A tank can control pumps attached to **3** ingoing pipes to control its inflow. Likewise, there are **3** outgoing pipes which are uncontrollable. 
+
+The top row of tanks will have unlimited access to material. The bottom row will be supplying material to partially random consumers. 
+
+Maybe some of the pipes will be double-width, and others will be connected to unlimited material. 
+
+![image](https://i.imgur.com/N3SRgfe.png)
+"""
+
 # ╔═╡ 1e159603-fc61-45f8-9595-f75e55318344
 md"""
 # Preamble
@@ -57,17 +72,18 @@ md"""
 ## Mechanics
 """
 
+# ╔═╡ 69001b1e-5208-430b-a809-800a5df71b03
+# Actions
+
+@enum CHAction wait input_one input_two input_three
+
 # ╔═╡ a73bed3f-9e0f-45ad-a32c-935d17a52bb7
 begin
 	@with_kw struct CHMechanics
 		t_act::Float64=1.0
 		min_stored::Float64=2.0
 		max_stored::Float64=20.0
-		average_flow::Float64=0.5
-		min_divergence::Float64=-5
-		max_divergence::Float64=5
-		flow_rate_low::Float64=1.0
-		flow_rate_high::Float64=2.0
+		flow_rate_single::Float64=1.0
 	end
 end
 
@@ -80,8 +96,6 @@ randomness_space = Bounds((0,), (1,))
 # ╔═╡ af920ac1-a57a-44fe-8026-f18d527becb3
 begin
 	struct CHState
-		balance_in::Float64
-		balance_out::Float64
 		volume::Float64
 	end
 
@@ -90,15 +104,10 @@ begin
 	end
 
 	Base.convert(::Type{CHState}, x::NTuple{6, Float64}) = CHState(x)
-	Base.length(::CHState) = 3
+	Base.length(::CHState) = 1
 	Base.tail(s::CHState) = s.volume
-	Base.iterate(s::CHState) = s.balance_in, 2
-	Base.iterate(s::CHState, iter) = 
-		if iter == 2 return s.balance_out, 3
-		elseif iter == 3 return s.volume, :done
-		else
-			nothing
-		end
+	Base.iterate(s::CHState) = s.volume, :done
+	Base.iterate(s::CHState, iter) = nothing # simple case
 end
 
 # ╔═╡ 14d4416b-ef73-4777-942e-f621c3ef801d
@@ -145,22 +154,16 @@ m = CHMechanics(;m_inputs...)
 
 # ╔═╡ 4dadcdaa-4fce-4a14-9dd7-e4baf141bd42
 # Index-name pairs. Used for choosing axes to draw the shield.
-state_variables = [1 => "balance_in", 2 => "balance_out", 3 => "volume"]
-
-# ╔═╡ 34c374e5-dff5-40fb-a641-b25aa597aa26
-rand([0, 1], 2)
+state_variables = [1 => "volume"]
 
 # ╔═╡ cc75006e-d258-47a4-830f-a00f800b8bf3
 middle_volume = m.min_stored + (m.max_stored - m.min_stored)/2
 
 # ╔═╡ 098ca31f-e1e5-4ee4-a42e-7d169915aace
-s0 = CHState(0, 0, middle_volume)
+s0 = CHState(middle_volume)
 
 # ╔═╡ f6b985da-e65e-4842-921d-8200ba17c157
 [x for x in s0], Base.tail(s0)
-
-# ╔═╡ 69001b1e-5208-430b-a809-800a5df71b03
-@enum CHAction wait input_low input_high
 
 # ╔═╡ c3598256-2917-4546-9066-b4d785e2d55f
 md"""
@@ -171,39 +174,15 @@ md"""
 m
 
 # ╔═╡ 84d04b11-efef-4f02-a9b4-0d266430a655
-s_unsafe = CHState(m.min_divergence, m.min_divergence, m.min_stored)
+s_unsafe = CHState(m.min_stored)
 
 # ╔═╡ 6ecc0cf7-d7a1-46ef-a840-717fe0784f59
-function environment_action(m, balance_out, rvar)
-	outflow = 0 # How much the connected tanks are pulling.
-	if (rvar < 1/6)		outflow = 0
-	elseif (rvar < 2/6)	outflow = m.flow_rate_low
-	elseif (rvar < 3/6)	outflow = m.flow_rate_high
-	elseif (rvar < 4/6)	outflow = m.flow_rate_high + m.flow_rate_low
-	elseif (rvar < 5/6)	outflow = m.flow_rate_low + m.flow_rate_low
-	else outflow = m.flow_rate_high + m.flow_rate_high
+function environment_action(m, rvar)
+	if     (rvar < 1/4)	return 0
+	elseif (rvar < 2/4)	return m.flow_rate_single
+	elseif (rvar < 3/4)	return m.flow_rate_single*2
+	else return m.flow_rate_single*3
 	end
-	if balance_out + outflow - m.average_flow <= m.min_divergence
-		return m.flow_rate_high
-	end
-	if balance_out + outflow - m.average_flow >= m.max_divergence
-		return 0
-	end
-	return outflow
-end
-
-# ╔═╡ 87783990-d669-48aa-8c5d-2276afe01980
-# Min and max environment balance
-let
-	trace = [0.]
-	for i in 1:2000
-		push!(trace, 
-			trace[end] + environment_action(m, trace[end], 
-				# Pad the sample space with 0s because otherwise it will mostly go up with very high likelihood
-				rand([0, 0, 0, 0, rand(0:1/6:1)])) - m.average_flow)
-	end
-	trace
-	max(trace...), min(trace...)
 end
 
 # ╔═╡ 7ecdeacb-fccf-4406-98ea-5f8e7a4b3c84
@@ -211,26 +190,17 @@ begin
 	# rvar = Random VARiable.
 	function simulate_point(m::CHMechanics, 
 		point::CHState, rvar, action::CHAction)::CHState
-		
-		if point == s_unsafe
-			return s_unsafe
-		end
-		(;balance_in, balance_out, volume) = point
+		(;volume) = point
 	
-		volume_in = action == input_low ? m.flow_rate_low : 
-				action == input_high ? m.flow_rate_high : 0
+		volume_in = action == input_one ? m.flow_rate_single : 
+		            action == input_two ? m.flow_rate_single*2 : 
+		            action == input_three ? m.flow_rate_single*3 : 0
 
-		volume_out = environment_action(m, balance_out, rvar[1])
+		volume_out = environment_action(m, rvar[1])
 		
 		volume′ = volume + (volume_in - volume_out)*m.t_act
-		balance_in′ = balance_in + (-m.average_flow + volume_in)*m.t_act
-		balance_out′ = balance_out + (-m.average_flow + volume_out)*m.t_act
-
-		if !(m.min_divergence < balance_in < m.max_divergence)
-			return s_unsafe
-		end
 		
-		return CHState(balance_in′, balance_out′, volume′)
+		return CHState(volume′)
 	end
 	
 	function simulate_point(m::CHMechanics, point, rvar, action::CHAction)::CHState
@@ -241,9 +211,6 @@ begin
 		simulate_point(m, point, rand(0:1/6:1), action)
 	end
 end
-
-# ╔═╡ eac3b932-3288-4032-8ee6-a5d14fd20efb
-environment_action(m, -5, rand(0:1/6:1))
 
 # ╔═╡ 0a5b97c3-b03f-4418-bb36-af0ca6d6471e
 struct CHTrace
@@ -282,8 +249,6 @@ md"""
 # ╔═╡ f6162914-dd94-46e6-868f-478f6280d1cb
 function plot_sequence(trace::CHTrace; time=nothing, plotargs...)
 	volumes = [s.volume for s in trace.states]
-	ins = [s.balance_in for s in trace.states]
-	outs = [s.balance_out for s in trace.states]
 
 	📈 = plot(trace.times, volumes, 
 		legend=:outerright;
@@ -298,27 +263,7 @@ function plot_sequence(trace::CHTrace; time=nothing, plotargs...)
 	if !isnothing(time)
 		vline!([time], color=colors.WET_ASPHALT, label=nothing)
 	end
-	
-	📉 = plot(trace.times, ins, 
-		label="ins",
-		color=colors.PETER_RIVER, 
-		linewidth=2)
-
-	plot!(trace.times, outs,
-		label="outs",
-		color=colors.SUNFLOWER,
-		linewidth=1,
-		xlabel="time (\$s\$)",
-		ylabel="Divergence from average (\$l\$)",
-		legend=:outerright;
-		plotargs...)
-
-	hline!([m.min_divergence, m.max_divergence], color=colors.WET_ASPHALT, label=nothing)
-	if !isnothing(time)
-		vline!([time], color=colors.WET_ASPHALT, label=nothing)
-	end
-	
-	plot(📈, 📉, layout=(2, 1))
+	plot!()
 end
 
 # ╔═╡ fb61867c-89ca-4685-b3da-2ad7eb18267d
@@ -355,8 +300,8 @@ reset_button; @bind step_button CounterButton("Step")
 step_button; md"""
 Anatagonist actions (randomized each step)
 
-$(@bind rvar1 NumberField(randomness_space.lower[1]:1/6:randomness_space.upper[1], 
-	default=rand(randomness_space.lower[1]:1/6:randomness_space.upper[1])))
+$(@bind rvar1 NumberField(randomness_space.lower[1]:1/4:randomness_space.upper[1], 
+	default=rand(randomness_space.lower[1]:1/4:randomness_space.upper[1])))
 """
 
 # ╔═╡ 388cace6-e8d3-4fb1-8e86-eeda23b19d2d
@@ -390,10 +335,7 @@ No underflow or overflow; in either tank. Additionally, the moving average of in
 # ╔═╡ 41584071-89c1-45f9-bded-61fbe98a9b78
 begin
 	function is_safe(s::CHState)
-		return (m.min_divergence < s.balance_in < m.max_divergence
-			 #&& m.min_divergence < s.balance_out < m.max_divergence
-			 && m.min_stored < s.volume < m.max_stored
-		)
+		return (m.min_stored < s.volume < m.max_stored)
 	end
 
 	function is_safe(s) return is_safe(CHState(s...)) end
@@ -415,10 +357,7 @@ md"""
 
 # ╔═╡ 557c1aee-1ab6-43f0-9394-4509ff7ecf3f
 function get_state_space_bounds(m::CHMechanics)
-	Bounds(
-		[m.min_divergence, m.min_divergence, m.min_stored],
-		[m.max_divergence, m.max_divergence, m.max_stored]
-	)
+	Bounds([m.min_stored],[m.max_stored])
 end
 
 # ╔═╡ e4e4e610-7fe6-4322-a8fd-b65042bc3838
@@ -430,18 +369,14 @@ function get_bounds(m::CHMechanics, granularity)
 	return Bounds(state_space.lower, state_space.upper .+ granularity)
 end
 
-# ╔═╡ c52e7c97-0711-4330-95f1-11ffddbfb8c7
-any_action, no_action = actions_to_int(instances(CHAction)), actions_to_int([])
-
 # ╔═╡ ed11b92e-283a-454f-9f7c-b75b00dcb921
 md"""
 ### 🛠 `granularity`
-`granularity_divergence =` $(@bind granularity_divergence NumberField(0.01:0.01:2, default=1))
 `granularity_V =` $(@bind granularity_V NumberField(0.01:0.01:2, default=1))
 """
 
 # ╔═╡ b4382746-4cbc-4b75-979e-a3b52d877489
-granularity = [granularity_divergence, granularity_divergence, granularity_V]
+granularity = [granularity_V]
 
 # ╔═╡ 2a5749b2-0b3d-4e34-9bbe-60ffa6c867ae
 grid_bounds = get_bounds(m, granularity)
@@ -465,12 +400,18 @@ let
 	""")
 end
 
+# ╔═╡ c52e7c97-0711-4330-95f1-11ffddbfb8c7
+any_action, no_action = actions_to_int(instances(CHAction)), actions_to_int([])
+
 # ╔═╡ 81b3f1a4-ecb9-4684-b1a7-d6eb6c989b75
 grid  = let
 	grid = Grid(granularity, grid_bounds)
 	initialize!(grid, x -> is_safe(x) ? any_action : no_action)
 	grid
 end
+
+# ╔═╡ 1708aee6-8d26-4d32-ae78-2357fbe2cecf
+grid
 
 # ╔═╡ b89e6235-f6d6-4943-a7a3-1992d857be10
 GridShielding.box(grid::Grid, s::CHState) = box(grid, s...)
@@ -481,17 +422,24 @@ Tuple(s0) ∈ grid, Tuple(s_unsafe) ∈ grid
 # ╔═╡ b9c584c6-9530-4785-970a-85805797b8f3
 unique(grid.array)
 
+# ╔═╡ 4f1f36cb-f338-4c00-a576-a9c9eb7ff285
+grid.array
+
 # ╔═╡ 32c0ec89-42ea-4e3b-a284-9317c7920165
 begin
-	ch_color_labels = ["{$(join(actions, ", "))}" 
+	ch_color_labels = [("{$(join(actions, ", "))}", actions_to_int(actions)) 
 		for actions in powerset(instances(CHAction))]
+
+	sort!(ch_color_labels, by=(x -> x[2]))
+	ch_color_labels = [x[1] for x in ch_color_labels]
 	
 	ch_colors = [colors[1 + i%length(colors)] 
 		for (i, _) in enumerate(ch_color_labels)]
 	
 	replace!(ch_colors, 
-		colors.WET_ASPHALT => colors.POMEGRANATE, 
-		colors.CLOUDS => colors.SILVER)
+		colors.MIDNIGHT_BLUE => colors.TURQUOISE, 
+		colors.WET_ASPHALT => colors.POMEGRANATE,
+		colors.CLOUDS => colors.ASBESTOS)
 	
 	ch_colors[1] = colors.MIDNIGHT_BLUE
 	ch_colors[end] = colors.CLOUDS
@@ -521,26 +469,30 @@ The value of `spa_random`  was specifically chosen because there are **6** possi
 """
 
 # ╔═╡ 34e7038c-0267-4ea9-a5fd-485d773dbb05
-[environment_action(m, 0, x[1]) 
+[environment_action(m, x[1]) 
 	for x in SupportingPoints(spa_random, randomness_space)]
 
 # ╔═╡ a2b19e10-e4b1-4476-8544-3ae960ae1a29
-[environment_action(m, 3, x[1]) 
+[environment_action(m, x[1]) 
 	for x in SupportingPoints(spa_random, randomness_space)]
 
 # ╔═╡ 8d10f70a-9a5d-4c7d-9d09-6f0fa8aee90a
-[environment_action(m, -5, x[1]) 
+[environment_action(m, x[1]) 
 	for x in SupportingPoints(spa_random, randomness_space)]
 
 # ╔═╡ a3572115-75ee-42a8-926c-b2099b4f7cc5
-samples_per_axis = (spa_V, spa_V, spa_V)
+samples_per_axis = (spa_V,)
 
 # ╔═╡ 429e77b7-73ad-452e-a188-aee86c1cd28f
-[environment_action(m, 0, x[1]) 
+[environment_action(m, x[1]) 
 	for x in SupportingPoints(spa_random, randomness_space)]
 
 # ╔═╡ 8e2fcfff-a319-4a5a-813b-65bd8072c6dc
-model = SimulationModel(simulation_function, randomness_space, samples_per_axis, spa_random)
+model = SimulationModel(
+	simulation_function, 
+	randomness_space, 
+	samples_per_axis, 
+	spa_random)
 
 # ╔═╡ f1040518-fc20-4310-8d84-440cd28f0beb
 reachability_function = get_barbaric_reachability_function(model)
@@ -595,14 +547,6 @@ end
 md"""
 ### 🛠 `s`, `a`
 
-`balance_in =` $(@bind balance_in NumberField(
-	m.min_divergence:granularity_divergence:m.max_divergence, 
-	default=s0.balance_in))
-
-`balance_out =` $(@bind balance_out NumberField(
-	m.min_divergence:granularity_divergence:m.max_divergence, 
-	default=s0.balance_out))
-
 `volume =` $(@bind volume NumberField(m.min_stored:m.max_stored - granularity_V, default=s0.volume))
 
 `action =` $(@bind action Select([instances(CHAction)...]))
@@ -610,7 +554,7 @@ md"""
 """
 
 # ╔═╡ 2060621f-84b6-448a-a857-0d6c556e3f4f
-s = CHState(balance_in, balance_out, volume)
+s = CHState(volume)
 
 # ╔═╡ 14643fb4-54b1-4c92-9511-4051b337a258
 is_safe(s0), is_safe(s), !is_safe(s_unsafe)
@@ -646,40 +590,47 @@ simulate_point(m, s, action)
 # ╔═╡ aab9d926-b488-4e78-8789-d311096ce4f0
 [s for s in possible_outcomes(model, partition, action)]
 
-# ╔═╡ 7b6080bd-e682-4a6c-a4f1-469ba2a166b0
-md"""
-### 🛠 Configure display projection
-
-$(@bind index_1 Select(state_variables))
-
-$(@bind index_2 Select(state_variables,	default=2))
-"""
-
-# ╔═╡ 84a538ee-c780-4b73-bc98-638bc5da2b93
-begin
-	xlabel = min(index_1, index_2)
-	ylabel = max(index_1, index_2)
-	xlabel = Dict(state_variables)[xlabel]
-	ylabel = Dict(state_variables)[ylabel]
-	(;xlabel, ylabel)
-end
-
-# ╔═╡ 94ba7109-6600-4ad9-96d7-145130092566
-slice = let
-	slice = Any[partition.indices...]
-	slice[index_1] = Colon()
-	slice[index_2] = Colon()
-	slice
-end
-
 # ╔═╡ f73b6e42-c024-4018-83b2-2eac30e96fda
-draw(shield, slice; colors=ch_colors, color_labels=ch_color_labels, 
-	show_grid=true,
-	legend=:outerright,
-	size=(800,400),
-	xlabel, 
-	ylabel
-); draw_barbaric_transition!(model, partition, action, slice)
+let
+	# Horrible hack to turn a 1D grid into a 1D grid
+	granularity = shield.granularity[1]
+	shield_2d = Grid([granularity, granularity], 
+		(shield.bounds.lower[1], 0.),
+		(shield.bounds.upper[1], granularity)
+	)
+	for partition in shield
+		shield_2d.array[partition.indices[1]] = get_value(partition)
+	end
+
+	draw(shield_2d; colors=ch_colors, color_labels=ch_color_labels, 
+		show_grid=true,
+		legend=:outertop,
+		aspectratio=:equal,
+		xlabel="Volume",
+		ylim=(0, granularity),
+		yticks=nothing
+	)
+	outcomes = [s for s in possible_outcomes(model, partition, action)]
+	outcomes = [s[1] for s in outcomes]
+	scatter!(outcomes, [granularity/2 for _ in outcomes], 
+		marker=(3, colors.ASBESTOS),
+		markerstrokewidth=0,
+		label=nothing)
+	
+	scatter!([s.volume], [granularity/2], 
+		marker=(:+, 6, colors.WET_ASPHALT),
+		markerstrokewidth=4,
+		label=nothing)
+end
+
+# ╔═╡ 2df83fee-956c-4e01-964c-493b6f5c98d9
+shield.array
+
+# ╔═╡ cf64d90e-dd40-4d93-b210-37dd3485c852
+get_value(box(shield, s))
+
+# ╔═╡ ce5aad22-f447-4502-af51-84f4d48e9413
+int_to_actions(CHAction, get_value(box(shield, s)))
 
 # ╔═╡ 1857b91b-de36-44b9-afeb-5739c19ffea0
 make_shield_button; unique(shield.array)
@@ -764,6 +715,7 @@ end
 
 # ╔═╡ Cell order:
 # ╠═3a57c06f-0adb-4f92-9f64-f22edbefcadf
+# ╟─9aead72a-8c20-4565-a4bf-26d72ef832ab
 # ╟─1e159603-fc61-45f8-9595-f75e55318344
 # ╠═c1bdc9f0-3d96-11ee-00af-b341a715281c
 # ╠═d2204fe6-a71e-4131-a568-349572ce28d4
@@ -772,6 +724,7 @@ end
 # ╠═e019f426-8a0f-4698-8b6d-ed487a68ae5c
 # ╟─9be0a063-d016-4081-8c5d-dbff0e31de87
 # ╟─fd85cc40-217a-4f76-b979-adacb1e0ea9b
+# ╠═69001b1e-5208-430b-a809-800a5df71b03
 # ╟─39de57fd-ddf5-41f7-9c33-6a0759d0e5a7
 # ╠═a73bed3f-9e0f-45ad-a32c-935d17a52bb7
 # ╠═8b0e8b12-3b16-4d71-9d29-6fb5db82a47a
@@ -779,11 +732,9 @@ end
 # ╠═af920ac1-a57a-44fe-8026-f18d527becb3
 # ╠═4dadcdaa-4fce-4a14-9dd7-e4baf141bd42
 # ╠═f6b985da-e65e-4842-921d-8200ba17c157
-# ╠═34c374e5-dff5-40fb-a641-b25aa597aa26
 # ╠═2060621f-84b6-448a-a857-0d6c556e3f4f
 # ╠═cc75006e-d258-47a4-830f-a00f800b8bf3
 # ╠═098ca31f-e1e5-4ee4-a42e-7d169915aace
-# ╠═69001b1e-5208-430b-a809-800a5df71b03
 # ╟─c3598256-2917-4546-9066-b4d785e2d55f
 # ╠═fed037e7-5100-45a4-9031-ef830c61533d
 # ╠═84d04b11-efef-4f02-a9b4-0d266430a655
@@ -791,16 +742,14 @@ end
 # ╠═34e7038c-0267-4ea9-a5fd-485d773dbb05
 # ╠═a2b19e10-e4b1-4476-8544-3ae960ae1a29
 # ╠═8d10f70a-9a5d-4c7d-9d09-6f0fa8aee90a
-# ╠═87783990-d669-48aa-8c5d-2276afe01980
 # ╠═7ecdeacb-fccf-4406-98ea-5f8e7a4b3c84
-# ╠═eac3b932-3288-4032-8ee6-a5d14fd20efb
 # ╠═ca3fe131-a504-48a6-bfa9-77869d76689d
 # ╠═0a5b97c3-b03f-4418-bb36-af0ca6d6471e
 # ╠═58410e5a-0c4a-4afa-b1c0-390b53905fa6
 # ╠═534ee19b-69ed-4d6d-b80c-ff8b954b6293
 # ╠═d6016b3e-3d40-4a4c-914f-55a0d5edfa83
 # ╟─85b4f24c-3567-4b77-ab26-f29de2348181
-# ╟─f6162914-dd94-46e6-868f-478f6280d1cb
+# ╠═f6162914-dd94-46e6-868f-478f6280d1cb
 # ╟─fb61867c-89ca-4685-b3da-2ad7eb18267d
 # ╠═1260d5e5-1f2b-4578-909e-a5d0a367b126
 # ╟─4faea1ce-ad42-456a-8f8f-6cf3bc9787ff
@@ -819,22 +768,23 @@ end
 # ╠═37dcadc9-f699-4913-ae83-585bf9e6f415
 # ╠═55dc7ecb-af07-4de9-a900-b0b5ce40131e
 # ╟─2a89484b-0eb1-4175-89b7-58a1806bda89
-# ╠═2a5749b2-0b3d-4e34-9bbe-60ffa6c867ae
+# ╠═557c1aee-1ab6-43f0-9394-4509ff7ecf3f
 # ╠═e4e4e610-7fe6-4322-a8fd-b65042bc3838
 # ╠═394f9428-f2d6-46aa-b82e-de3a59dab5ee
-# ╠═557c1aee-1ab6-43f0-9394-4509ff7ecf3f
-# ╠═c52e7c97-0711-4330-95f1-11ffddbfb8c7
 # ╟─ed11b92e-283a-454f-9f7c-b75b00dcb921
-# ╟─5abfeedd-3a3c-4a20-9ade-673ac225f2a1
 # ╠═b4382746-4cbc-4b75-979e-a3b52d877489
+# ╠═2a5749b2-0b3d-4e34-9bbe-60ffa6c867ae
+# ╟─5abfeedd-3a3c-4a20-9ade-673ac225f2a1
+# ╠═c52e7c97-0711-4330-95f1-11ffddbfb8c7
 # ╠═81b3f1a4-ecb9-4684-b1a7-d6eb6c989b75
+# ╠═1708aee6-8d26-4d32-ae78-2357fbe2cecf
 # ╠═b89e6235-f6d6-4943-a7a3-1992d857be10
 # ╠═3fac2081-fbc1-4969-b5db-369d6314f073
 # ╠═cea6063e-277c-40eb-9b36-893a20a7aa28
 # ╠═e81836f7-ba93-4735-b30a-35b980ef2ab4
-# ╠═84a538ee-c780-4b73-bc98-638bc5da2b93
 # ╠═b9c584c6-9530-4785-970a-85805797b8f3
-# ╠═32c0ec89-42ea-4e3b-a284-9317c7920165
+# ╠═4f1f36cb-f338-4c00-a576-a9c9eb7ff285
+# ╟─32c0ec89-42ea-4e3b-a284-9317c7920165
 # ╟─98d6efed-136f-4d2e-b851-0bbb190e7bf9
 # ╠═d307696e-54e1-497e-aca0-1f0314a1fdcd
 # ╟─56f86d5c-02d0-4252-8984-d9fb4baca1ee
@@ -854,9 +804,10 @@ end
 # ╠═939245b5-e393-4b16-b881-b8d5d41b5646
 # ╟─0aee3c2e-44b7-419d-88d3-434d49494835
 # ╟─c9d8a8ea-5ffe-44a6-b8a8-ca955eed3184
-# ╟─7b6080bd-e682-4a6c-a4f1-469ba2a166b0
-# ╟─94ba7109-6600-4ad9-96d7-145130092566
-# ╠═f73b6e42-c024-4018-83b2-2eac30e96fda
+# ╟─f73b6e42-c024-4018-83b2-2eac30e96fda
+# ╠═2df83fee-956c-4e01-964c-493b6f5c98d9
+# ╠═cf64d90e-dd40-4d93-b210-37dd3485c852
+# ╠═ce5aad22-f447-4502-af51-84f4d48e9413
 # ╠═1857b91b-de36-44b9-afeb-5739c19ffea0
 # ╠═cbaf2ad3-9d1b-4a58-9f76-797bca422fe3
 # ╠═6a7c19f3-964a-453a-b93c-fc7c8bb1e434
