@@ -75,7 +75,7 @@ md"""
 # ╔═╡ 69001b1e-5208-430b-a809-800a5df71b03
 # Actions
 
-@enum CPAction wait input_one input_two input_three
+@enum CPAction wait=0 input_one input_two input_three
 
 # ╔═╡ a73bed3f-9e0f-45ad-a32c-935d17a52bb7
 begin
@@ -83,15 +83,24 @@ begin
 		t_act::Float64=1.0
 		min_stored::Float64=2.0
 		max_stored::Float64=20.0
-		flow_rate_single::Float64=1.0
+		flow_rate::Float64=1.65
+		flow_rate_variance::Float64=0.25
 	end
 end
 
 # ╔═╡ e019f426-8a0f-4698-8b6d-ed487a68ae5c
 m_defaults = CPMechanics()
 
+# ╔═╡ 240cd0df-8f69-4749-8567-a6b560af4aea
+md"""
+The space of random outcomes has 3 dimensions:
+- The environment action (`wait`, `input_one`, `input_two`)
+- Random variance of inflows
+- Random variance of outflows.
+"""
+
 # ╔═╡ cd9ba9af-db52-485b-af56-d14827926137
-randomness_space = Bounds((0,), (1,))
+randomness_space = Bounds((0, -1, -1), (1, 1, 1))
 
 # ╔═╡ af920ac1-a57a-44fe-8026-f18d527becb3
 begin
@@ -152,6 +161,10 @@ end
 # ╔═╡ 8b0e8b12-3b16-4d71-9d29-6fb5db82a47a
 m = CPMechanics(;m_inputs...)
 
+# ╔═╡ e945773a-6365-4eb0-a384-5fc7c1dfa70e
+@assert 3*m.flow_rate - 3*m.flow_rate_variance > 
+	    2*m.flow_rate + 2*m.flow_rate_variance
+
 # ╔═╡ 4dadcdaa-4fce-4a14-9dd7-e4baf141bd42
 # Index-name pairs. Used for choosing axes to draw the shield.
 state_variables = [1 => "volume"]
@@ -167,7 +180,7 @@ s0 = CPState(middle_volume)
 
 # ╔═╡ c3598256-2917-4546-9066-b4d785e2d55f
 md"""
-## Simulation Function -- Putting it All Together
+## Simulation Function
 """
 
 # ╔═╡ fed037e7-5100-45a4-9031-ef830c61533d
@@ -177,13 +190,24 @@ m
 s_unsafe = CPState(m.min_stored)
 
 # ╔═╡ 6ecc0cf7-d7a1-46ef-a840-717fe0784f59
-function environment_action(m, rvar)
-	if     (rvar < 1/4)	return 0
-	elseif (rvar < 2/4)	return m.flow_rate_single
-	elseif (rvar < 3/4)	return m.flow_rate_single*2
-	else return m.flow_rate_single*3
+# Only two outgoing pipes
+function environment_action(rvar)
+	if     (rvar < 1/3)	return wait
+	elseif (rvar < 2/3)	return input_one
+	else return input_two
 	end
 end
+
+# ╔═╡ ed8ea3e2-8a9e-4a90-a19e-11134f9fe2ab
+function get_flow_rate(m::CPMechanics, r, a::CPAction)
+	multiplier = Int(a) # wait = 0, input_one = 1, ...
+	return multiplier*m.flow_rate + multiplier*r*m.flow_rate_variance
+end
+
+# ╔═╡ 54d35405-0859-4b1f-ba89-9ae9f8660cc3
+get_flow_rate(m, -1, input_three), 
+get_flow_rate(m, 0, input_three), 
+get_flow_rate(m, 1, input_three)
 
 # ╔═╡ 7ecdeacb-fccf-4406-98ea-5f8e7a4b3c84
 begin
@@ -192,11 +216,9 @@ begin
 		point::CPState, rvar, action::CPAction)::CPState
 		(;volume) = point
 	
-		volume_in = action == input_one ? m.flow_rate_single : 
-		            action == input_two ? m.flow_rate_single*2 : 
-		            action == input_three ? m.flow_rate_single*3 : 0
+		volume_in = get_flow_rate(m, rvar[2], action)
 
-		volume_out = environment_action(m, rvar[1])
+		volume_out = get_flow_rate(m, rvar[3], environment_action(rvar[1]))
 		
 		volume′ = volume + (volume_in - volume_out)*m.t_act
 		
@@ -208,9 +230,14 @@ begin
 	end
 	
 	function simulate_point(m::CPMechanics, point::CPState, action::CPAction)::CPState
-		simulate_point(m, point, rand(0:1/6:1), action)
+		simulate_point(m, point, (rand(0:1/6:1), rand(-1:0.1:1), rand(-1:0.1:1)), action)
 	end
 end
+
+# ╔═╡ 88fc5464-030d-4732-b9d1-5b05a93e1df5
+md"""
+### Simulating Whole Traces
+"""
 
 # ╔═╡ 0a5b97c3-b03f-4418-bb36-af0ca6d6471e
 struct CPTrace
@@ -301,7 +328,11 @@ step_button; md"""
 Anatagonist actions (randomized each step)
 
 $(@bind rvar1 NumberField(randomness_space.lower[1]:1/4:randomness_space.upper[1], 
-	default=rand(randomness_space.lower[1]:1/4:randomness_space.upper[1])))
+	default=rand(randomness_space.lower[1]:0.1:randomness_space.upper[1])))
+$(@bind rvar2 NumberField(randomness_space.lower[2]:0.1:randomness_space.upper[2], 
+	default=rand(randomness_space.lower[2]:0.1:randomness_space.upper[2])))
+$(@bind rvar3 NumberField(randomness_space.lower[3]:0.1:randomness_space.upper[3], 
+	default=rand(randomness_space.lower[3]:0.1:randomness_space.upper[3])))
 """
 
 # ╔═╡ 388cace6-e8d3-4fb1-8e86-eeda23b19d2d
@@ -310,7 +341,7 @@ let
 		reactive_trace.times ← reactive_trace.times[end] + m.t_act
 		reactive_trace.actions ← interactive_action
 		s = reactive_trace.states[end]
-		s′ = simulate_point(m, s, rvar1, interactive_action)
+		s′ = simulate_point(m, s, (rvar1, rvar2, rvar3), interactive_action)
 		reactive_trace.states ← s′
 	else
 		reactive_trace.times ← 0
@@ -463,29 +494,33 @@ md"""
 
 `spa_V =` $(@bind spa_V NumberField(1:9, default=1))
 
-`spa_random =` $(@bind spa_random NumberField(1:9, default=6))
+`spa_random_action =` $(@bind spa_random_action NumberField(1:9, default=3))
 
-The value of `spa_random`  was specifically chosen because there are **6** possile combinations of actions the adversarial agents can take.
+The value of `spa_random_action`  was specifically chosen because there are **3** possile actions the adversarial agents can take.
+
+`spa_random_variance =` $(@bind spa_random_variance NumberField(1:9, default=3))
 """
 
+# ╔═╡ 05bcbcc1-aa0e-4949-beb2-ab45f06ce81c
+spa_random = (spa_random_action, spa_random_variance, spa_random_variance)
+
 # ╔═╡ 34e7038c-0267-4ea9-a5fd-485d773dbb05
-[environment_action(m, x[1]) 
+[environment_action(x[1]) 
 	for x in SupportingPoints(spa_random, randomness_space)]
 
 # ╔═╡ a2b19e10-e4b1-4476-8544-3ae960ae1a29
-[environment_action(m, x[1]) 
+[environment_action(x[1]) 
 	for x in SupportingPoints(spa_random, randomness_space)]
 
 # ╔═╡ 8d10f70a-9a5d-4c7d-9d09-6f0fa8aee90a
-[environment_action(m, x[1]) 
+[environment_action(x[1]) 
 	for x in SupportingPoints(spa_random, randomness_space)]
+
+# ╔═╡ 429e77b7-73ad-452e-a188-aee86c1cd28f
+[x for x in SupportingPoints(spa_random, randomness_space)]
 
 # ╔═╡ a3572115-75ee-42a8-926c-b2099b4f7cc5
 samples_per_axis = (spa_V,)
-
-# ╔═╡ 429e77b7-73ad-452e-a188-aee86c1cd28f
-[environment_action(m, x[1]) 
-	for x in SupportingPoints(spa_random, randomness_space)]
 
 # ╔═╡ 8e2fcfff-a319-4a5a-813b-65bd8072c6dc
 model = SimulationModel(
@@ -547,7 +582,7 @@ end
 md"""
 ### 🛠 `s`, `a`
 
-`volume =` $(@bind volume NumberField(m.min_stored:m.max_stored - granularity_V, default=s0.volume))
+`volume =` $(@bind volume NumberField(m.min_stored:granularity_V:m.max_stored - granularity_V, default=s0.volume))
 
 `action =` $(@bind action Select([instances(CPAction)...]))
 
@@ -593,8 +628,9 @@ simulate_point(m, s, action)
 # ╔═╡ f73b6e42-c024-4018-83b2-2eac30e96fda
 let
 	# Horrible hack to turn a 1D grid into a 1D grid
+	height = 1 # height of squares
 	granularity = shield.granularity[1]
-	shield_2d = Grid([granularity, granularity], 
+	shield_2d = Grid([granularity, height], 
 		(shield.bounds.lower[1], 0.),
 		(shield.bounds.upper[1], granularity)
 	)
@@ -603,21 +639,21 @@ let
 	end
 
 	draw(shield_2d; colors=ch_colors, color_labels=ch_color_labels, 
-		show_grid=true,
+		#show_grid=true,
 		legend=:outertop,
 		aspectratio=:equal,
 		xlabel="Volume",
-		ylim=(0, granularity),
+		ylim=(0, height),
 		yticks=nothing
 	)
 	outcomes = [s for s in possible_outcomes(model, partition, action)]
 	outcomes = [s[1] for s in outcomes]
-	scatter!(outcomes, [granularity/2 for _ in outcomes], 
+	scatter!(outcomes, [height/2 for _ in outcomes], 
 		marker=(3, colors.ASBESTOS),
 		markerstrokewidth=0,
 		label=nothing)
 	
-	scatter!([s.volume], [granularity/2], 
+	scatter!([s.volume], [height/2], 
 		marker=(:+, 6, colors.WET_ASPHALT),
 		markerstrokewidth=4,
 		label=nothing)
@@ -725,9 +761,11 @@ end
 # ╟─9be0a063-d016-4081-8c5d-dbff0e31de87
 # ╟─fd85cc40-217a-4f76-b979-adacb1e0ea9b
 # ╠═69001b1e-5208-430b-a809-800a5df71b03
-# ╟─39de57fd-ddf5-41f7-9c33-6a0759d0e5a7
 # ╠═a73bed3f-9e0f-45ad-a32c-935d17a52bb7
+# ╟─39de57fd-ddf5-41f7-9c33-6a0759d0e5a7
 # ╠═8b0e8b12-3b16-4d71-9d29-6fb5db82a47a
+# ╠═e945773a-6365-4eb0-a384-5fc7c1dfa70e
+# ╟─240cd0df-8f69-4749-8567-a6b560af4aea
 # ╠═cd9ba9af-db52-485b-af56-d14827926137
 # ╠═af920ac1-a57a-44fe-8026-f18d527becb3
 # ╠═4dadcdaa-4fce-4a14-9dd7-e4baf141bd42
@@ -742,14 +780,17 @@ end
 # ╠═34e7038c-0267-4ea9-a5fd-485d773dbb05
 # ╠═a2b19e10-e4b1-4476-8544-3ae960ae1a29
 # ╠═8d10f70a-9a5d-4c7d-9d09-6f0fa8aee90a
+# ╠═ed8ea3e2-8a9e-4a90-a19e-11134f9fe2ab
+# ╠═54d35405-0859-4b1f-ba89-9ae9f8660cc3
 # ╠═7ecdeacb-fccf-4406-98ea-5f8e7a4b3c84
 # ╠═ca3fe131-a504-48a6-bfa9-77869d76689d
+# ╟─88fc5464-030d-4732-b9d1-5b05a93e1df5
 # ╠═0a5b97c3-b03f-4418-bb36-af0ca6d6471e
 # ╠═58410e5a-0c4a-4afa-b1c0-390b53905fa6
 # ╠═534ee19b-69ed-4d6d-b80c-ff8b954b6293
 # ╠═d6016b3e-3d40-4a4c-914f-55a0d5edfa83
 # ╟─85b4f24c-3567-4b77-ab26-f29de2348181
-# ╠═f6162914-dd94-46e6-868f-478f6280d1cb
+# ╟─f6162914-dd94-46e6-868f-478f6280d1cb
 # ╟─fb61867c-89ca-4685-b3da-2ad7eb18267d
 # ╠═1260d5e5-1f2b-4578-909e-a5d0a367b126
 # ╟─4faea1ce-ad42-456a-8f8f-6cf3bc9787ff
@@ -758,7 +799,7 @@ end
 # ╟─ebf8f146-1aa5-4525-aba5-47ffefb4dc45
 # ╟─67893b1c-ad3e-45f3-90a4-c684b29438a1
 # ╟─29654ee9-9e10-4d1b-b4a4-aef6f3d4f33f
-# ╟─388cace6-e8d3-4fb1-8e86-eeda23b19d2d
+# ╠═388cace6-e8d3-4fb1-8e86-eeda23b19d2d
 # ╟─45543b62-c6fb-4797-a336-e3c456b6e0cb
 # ╟─20830df6-e46b-44e2-acb2-a2c291f9b14a
 # ╟─b35e34d2-6557-4f67-84fe-949f8d8eeed8
@@ -788,8 +829,9 @@ end
 # ╟─98d6efed-136f-4d2e-b851-0bbb190e7bf9
 # ╠═d307696e-54e1-497e-aca0-1f0314a1fdcd
 # ╟─56f86d5c-02d0-4252-8984-d9fb4baca1ee
-# ╠═a3572115-75ee-42a8-926c-b2099b4f7cc5
+# ╠═05bcbcc1-aa0e-4949-beb2-ab45f06ce81c
 # ╠═429e77b7-73ad-452e-a188-aee86c1cd28f
+# ╠═a3572115-75ee-42a8-926c-b2099b4f7cc5
 # ╠═8e2fcfff-a319-4a5a-813b-65bd8072c6dc
 # ╠═f1040518-fc20-4310-8d84-440cd28f0beb
 # ╟─5f8e4725-711b-4ee9-834e-47603f26b9eb
