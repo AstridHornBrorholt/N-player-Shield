@@ -1,27 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
 <nta>
-	<declaration>/**
+	<declaration>/**TODOS:**
+ - Shield that actually match the mechanics
+ - Variance in flow rate
+ - Time variant price or something to make learning more interesting
+*/
+
+/**
 Every production unit has two outputs which feed into other production units or to outlets.
 If a production unit doesn't receive output from another unit, it receives it from an intake that delivers material according to a cyclic pattern.
 */
 clock time;    // Used as exit condition for the strategy queries
-const int N = 23; // Number of units + providers
-const int N_PROVIDERS = 10; // Number of just providers
-const int L = 0;    // Constant to add if this is a left output
-const int R = N; // Constant to add if this is a right output
-typedef int[0, N - 1] UnitID;
-typedef int[0, N_PROVIDERS - 1] CostID;
-typedef int[0, N*2 - 1] OutputID;
+broadcast chan choose;
+const int N_UNITS = 10; // Number of units
+const int N_provider_out = 10; // Number of providers
+typedef int[1, N_UNITS] unitid_t;
+typedef int[1, N_provider_out] providerid_t;
 
 const double MIN_STORED = 2;       // Unit: L
-const double MAX_STORED = 20;      // Unit: L
-const double RATE = 1;  // Unit: L/m
+const double MAX_STORED = 50;      // Unit: L
+const double RATE = 2.65;    // Flow rate through single pipe. Unit: L/m
+const double VARIANCE = 0.5; // Flow rate diverges with 0 to +VARIANCE at each time-step.
 
 // Material stored in each tank. Unit: L
-clock stored[N] = {11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11};
-clock cost[N_PROVIDERS];
-double output[N*2];   // Outputs of production unit. Left outputs are indexed by unit_id+L = unit_id, right outputs by unit_id+R. Unit: L/h
+clock stored[unitid_t] = {11, 11, 11, 11, 11, 11, 11, 11, 11, 11};
+
+// Current outflow rate from production units. Can be influenced by multiple other  units.  Unit: L/m
+double unit_out[unitid_t];
+
+// Current outflow rate from providers. Used to calculate cost. Can be influence by multiple production units. Unit: L/m
+double provider_out[providerid_t];
+
+// Cost per litre for the given provider. Unit: moneydollars/L
+const double cost_multiplier[providerid_t] = { 0.5, 0.5, 0.5, 1.0, 1.0, 3.0, 3.0, 3.0, 5.0, 5.0};
+clock cost;
 
 
 /** Shielding **/
@@ -57,9 +70,8 @@ allowedActions intToActions(int bitarray) {
 
 int debugUnsafeState = 0;
 
-allowedActions get_allowed(UnitID i) {
-    double V = stored[i]+0.0;    // This is how to convert clock to double.  
-    allowedActions allowed = intToActions(get_value(V));
+allowedActions get_allowed(double stored) {
+    allowedActions allowed = intToActions(get_value(stored));
     allowedActions any = {true, true, true, true};
     if (!allowed.wait &amp;&amp; !allowed.input_one &amp;&amp; !allowed.input_two &amp;&amp; !allowed.input_three) {
         debugUnsafeState = 1;
@@ -70,63 +82,53 @@ allowedActions get_allowed(UnitID i) {
 </declaration>
 	<template>
 		<name x="5" y="5">Consumer</name>
-		<parameter>UnitID id, double t0, double t1, double t2, double t3, double t4</parameter>
+		<parameter>double&amp; pipe1, const double t0, const double t1, const double t2, const double t3, const double t4</parameter>
 		<declaration>// Place local declarations here.
 clock x;</declaration>
 		<location id="id0" x="-433" y="-289">
-			<label kind="invariant" x="-443" y="-272">x &lt;= 1 &amp;&amp;
-stored[id]' == 0</label>
 		</location>
 		<location id="id1" x="-204" y="-289">
-			<label kind="invariant" x="-214" y="-272">x &lt;= 1 &amp;&amp;
-stored[id]' == 0</label>
 		</location>
 		<location id="id2" x="17" y="-289">
-			<label kind="invariant" x="7" y="-272">x &lt;= 1  &amp;&amp;
-stored[id]' == 0</label>
 		</location>
 		<location id="id3" x="238" y="-289">
-			<label kind="invariant" x="228" y="-272">x &lt;= 1  &amp;&amp;
-stored[id]' == 0</label>
 		</location>
 		<location id="id4" x="425" y="-289">
-			<label kind="invariant" x="415" y="-272">x &lt;= 1  &amp;&amp;
-stored[id]' == 0</label>
 		</location>
 		<init ref="id0"/>
 		<transition id="id5" controllable="false">
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="guard" x="-392" y="-348">x&gt;=1</label>
-			<label kind="assignment" x="-416" y="-331">output[id+L]=t0,
+			<label kind="synchronisation" x="-416" y="-348">choose?</label>
+			<label kind="assignment" x="-416" y="-331">pipe1=t0,
 x=0</label>
 		</transition>
 		<transition id="id6" controllable="false">
 			<source ref="id1"/>
 			<target ref="id2"/>
-			<label kind="guard" x="-163" y="-348">x&gt;=1</label>
-			<label kind="assignment" x="-187" y="-331">output[id+L]=t1,
+			<label kind="synchronisation" x="-187" y="-348">choose?</label>
+			<label kind="assignment" x="-187" y="-331">pipe1=t1,
 x=0</label>
 		</transition>
 		<transition id="id7" controllable="false">
 			<source ref="id2"/>
 			<target ref="id3"/>
-			<label kind="guard" x="58" y="-348">x&gt;=1</label>
-			<label kind="assignment" x="34" y="-331">output[id+L]=t2,
+			<label kind="synchronisation" x="34" y="-348">choose?</label>
+			<label kind="assignment" x="34" y="-331">pipe1=t2,
 x=0</label>
 		</transition>
 		<transition id="id8" controllable="false">
 			<source ref="id3"/>
 			<target ref="id4"/>
-			<label kind="guard" x="279" y="-348">x&gt;=1</label>
-			<label kind="assignment" x="255" y="-331">output[id+L]=t3,
+			<label kind="synchronisation" x="255" y="-348">choose?</label>
+			<label kind="assignment" x="255" y="-331">pipe1=t3,
 x=0</label>
 		</transition>
 		<transition id="id9" controllable="false">
 			<source ref="id4"/>
 			<target ref="id0"/>
-			<label kind="guard" x="450" y="-306">x&gt;=1</label>
-			<label kind="assignment" x="-34" y="-221">output[id+L]=t4,
+			<label kind="synchronisation" x="-34" y="-238">choose?</label>
+			<label kind="assignment" x="-34" y="-221">pipe1=t4,
 x=0</label>
 			<nail x="382" y="-221"/>
 			<nail x="-391" y="-221"/>
@@ -134,758 +136,215 @@ x=0</label>
 	</template>
 	<template>
 		<name>ProductionUnit</name>
-		<parameter>UnitID id, OutputID supplier1, OutputID supplier2, OutputID supplier3</parameter>
-		<declaration>clock x;
+		<parameter>double&amp; out, clock&amp; stored, double&amp; pipe1, double&amp; pipe2, double&amp; pipe3</parameter>
+		<declaration>allowedActions allowed = { true, true, true, true };
 
-allowedActions allowed = { true, true, true, true };
-// HACK: Since the output are set to either 0 or RATE in each case, there cannot be two pipes to the same output. 
-// This is not so pretty. Setting it as +1 would require a central scheduler to reset all the outputs each tick.
-double inflow = 0; </declaration>
-		<location id="id10" x="-1538" y="-909">
-			<label kind="comments" x="-1623" y="-884">8 possible actions,
-controlling 3 pipes:
-000, 001, 010, 100,
-111, 011, 101, 011</label>
+// inflow
+double in = 0;</declaration>
+		<location id="id10" x="-2235" y="-1938">
+			<name x="-2278" y="-1921">Choosing</name>
+			<label kind="comments" x="-2320" y="-1879">8 possible actions,
+controlling 3 unit_out:
+(Closed/Open)
+CCC, CCO, COC, OCC,
+OOO, COO, OCO, COO</label>
 			<urgent/>
 		</location>
-		<location id="id11" x="-1547" y="-1164">
-			<label kind="invariant" x="-1632" y="-1224">x &lt;= 1 &amp;&amp;
-stored[id]' == (inflow
-              - output[id + L]
-              - output[id + R])</label>
+		<location id="id11" x="-2244" y="-2193">
+			<name x="-2278" y="-2219">Working</name>
+			<label kind="invariant" x="-2320" y="-2244">stored' == in - out</label>
 		</location>
 		<init ref="id11"/>
 		<transition id="id12">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-2142" y="-1139">allowed.input_one</label>
-			<label kind="assignment" x="-1981" y="-1156">output[supplier1] = 0,
-output[supplier2] = 0,
-output[supplier3] = RATE,
-inflow = RATE</label>
-			<nail x="-1759" y="-1105"/>
+			<label kind="guard" x="-2626" y="-2142">allowed.input_one</label>
+			<label kind="assignment" x="-2626" y="-2125">pipe3 = pipe3 + RATE,
+			in = 1</label>
+			<nail x="-2456" y="-2134"/>
 		</transition>
 		<transition id="id13">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-2151" y="-1054">allowed.input_one</label>
-			<label kind="assignment" x="-1989" y="-1071">output[supplier1] = 0,
-output[supplier2] = RATE,
-output[supplier3] = 0,
-inflow = RATE</label>
-			<nail x="-1760" y="-1045"/>
+			<label kind="guard" x="-2618" y="-2083">allowed.input_one</label>
+			<label kind="assignment" x="-2618" y="-2066">pipe2 = pipe2 + RATE,
+			in = 1</label>
+			<nail x="-2457" y="-2074"/>
 		</transition>
 		<transition id="id14">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-2151" y="-969">allowed.input_one</label>
-			<label kind="assignment" x="-1989" y="-986">output[supplier1] = RATE,
-output[supplier2] = 0,
-output[supplier3] = 0,
-inflow = RATE</label>
-			<nail x="-1751" y="-977"/>
+			<label kind="guard" x="-2601" y="-2015">allowed.input_one</label>
+			<label kind="assignment" x="-2601" y="-1998">pipe1 = pipe1 + RATE,
+			in = 1</label>
+			<nail x="-2448" y="-2006"/>
 		</transition>
 		<transition id="id15">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-2117" y="-884">allowed.wait</label>
-			<label kind="assignment" x="-1989" y="-901">output[supplier1] = 0,
-output[supplier2] = 0,
-output[supplier3] = 0,
-inflow = 0</label>
-			<nail x="-1734" y="-926"/>
+			<label kind="guard" x="-2533" y="-1955">allowed.wait</label>
+			<label kind="assignment" x="-2533" y="-1938">in = 0</label>
+			<nail x="-2414" y="-1947"/>
 		</transition>
 		<transition id="id16">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-977" y="-1122">allowed.input_two</label>
-			<label kind="assignment" x="-1317" y="-1156">output[supplier1] = RATE,
-output[supplier2] = RATE,
-output[supplier3] = 0,
-inflow = RATE*2</label>
-			<nail x="-1325" y="-1096"/>
+			<label kind="guard" x="-2006" y="-2176">allowed.input_two</label>
+			<label kind="assignment" x="-2006" y="-2159">pipe1 = pipe1 + RATE,
+pipe2 = pipe2 + RATE,
+in = 2</label>
+			<nail x="-2014" y="-2168"/>
 		</transition>
 		<transition id="id17">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-994" y="-986">allowed.input_two</label>
-			<label kind="assignment" x="-1334" y="-1003">output[supplier1] = 0,
-output[supplier2] = RATE,
-output[supplier3] = RATE,
-inflow = RATE*2</label>
-			<nail x="-1342" y="-977"/>
+			<label kind="guard" x="-2031" y="-2023">allowed.input_two</label>
+			<label kind="assignment" x="-2031" y="-2006">pipe2 = pipe2 + RATE,
+pipe3 = pipe3 + RATE,
+in = 2</label>
+			<nail x="-2031" y="-2015"/>
 		</transition>
 		<transition id="id18">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-977" y="-1054">allowed.input_two</label>
-			<label kind="assignment" x="-1317" y="-1079">output[supplier1] = RATE,
-output[supplier2] = 0,
-output[supplier3] = RATE,
-inflow = RATE*2</label>
-			<nail x="-1325" y="-1045"/>
+			<label kind="guard" x="-2006" y="-2100">allowed.input_two</label>
+			<label kind="assignment" x="-2006" y="-2083">pipe1 = pipe1 + RATE,
+pipe3 = pipe3 + RATE,
+in = 2</label>
+			<nail x="-2023" y="-2091"/>
 		</transition>
 		<transition id="id19">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-1003" y="-935">allowed.input_three</label>
-			<label kind="assignment" x="-1351" y="-918">output[supplier1] = RATE,
-output[supplier2] = RATE,
-output[supplier3] = RATE,
-inflow = RATE*3</label>
-			<nail x="-1351" y="-926"/>
+			<label kind="guard" x="-2048" y="-1947">allowed.input_three</label>
+			<label kind="assignment" x="-2048" y="-1930">pipe1 = pipe1 + RATE,
+pipe2 = pipe2 + RATE,
+pipe3 = pipe3 + RATE,
+in = 3</label>
+			<nail x="-2065" y="-1947"/>
 		</transition>
 		<transition id="id20" controllable="false">
 			<source ref="id11"/>
 			<target ref="id10"/>
-			<label kind="guard" x="-1615" y="-1071">x &gt;= 1</label>
-			<label kind="assignment" x="-1615" y="-1054">x=0, 
-allowed = get_allowed(id)</label>
+			<label kind="synchronisation" x="-2312" y="-2091">choose?</label>
+			<label kind="assignment" x="-2312" y="-2074">out = 0,
+allowed = get_allowed(stored)</label>
+		</transition>
+	</template>
+	<template>
+		<name>Metronome</name>
+		<declaration>clock x;</declaration>
+		<location id="id21" x="0" y="0">
+			<label kind="invariant" x="-25" y="17">x &lt;= 1 &amp;&amp;
+x' == 2 &amp;&amp;
+cost' == sum (i : providerid_t) provider_out[i]*cost_multiplier[i]</label>
+		</location>
+		<init ref="id21"/>
+		<transition id="id22" controllable="false">
+			<source ref="id21"/>
+			<target ref="id21"/>
+			<label kind="guard" x="-34" y="-102">x == 1</label>
+			<label kind="synchronisation" x="-34" y="-85">choose!</label>
+			<label kind="assignment" x="-34" y="-68">x = 0</label>
+			<nail x="-43" y="-51"/>
+			<nail x="41" y="-51"/>
 		</transition>
 	</template>
 	<template>
 		<name>Provider</name>
-		<parameter>UnitID id, CostID jd, double cost_rate</parameter>
-		<location id="id21" x="-366" y="-161">
-			<label kind="invariant" x="-442" y="-221">stored[id]' == 0 &amp;&amp;
-cost[jd]' == cost_rate</label>
-			<label kind="comments" x="-578" y="-289">The providers just have infinite material, 
-but if the clock rate is not set to 0, 
-it will default to 1 and mess up the plots.</label>
+		<parameter>double&amp; consumption</parameter>
+		<declaration>double out = 0;</declaration>
+		<location id="id23" x="-366" y="-161">
+			<label kind="comments" x="-569" y="-229">The provider_out just have infinite material,
+but they have to reset consumption rate each tick.</label>
 		</location>
-		<init ref="id21"/>
+		<init ref="id23"/>
+		<transition id="id24" controllable="false">
+			<source ref="id23"/>
+			<target ref="id23"/>
+			<label kind="synchronisation" x="-399" y="-127">choose?</label>
+			<label kind="assignment" x="-391" y="-110">consumption=0</label>
+			<nail x="-416" y="-127"/>
+			<nail x="-314" y="-127"/>
+		</transition>
 	</template>
 	<system>/** Layout: https://i.imgur.com/i9NSdTN.png
-Lines show pipes providing material to next layer.
-Boxes signify production units. No box signifies providers.
+Lines show unit_out providing material to next layer.
+Boxes signify production units. No box signifies provider_out.
 D1 and D2 are consumers.
 */ 
 
-P1 = Provider(0, 0, 1.0);
-P2 = Provider(1, 1, 1.0);
-P3 = Provider(2, 2, 1.0);
+P1 = Provider(provider_out[1]);
+P2 = Provider(provider_out[2]);
+P3 = Provider(provider_out[3]);
 
-U3 = ProductionUnit(3, 0, 0, 0);
-U4 = ProductionUnit(4, 1, 1, 1);
-U5 = ProductionUnit(5, 2, 2, 2);
+U1 = ProductionUnit(unit_out[1], stored[1], provider_out[1], provider_out[1], provider_out[1]);
+U2 = ProductionUnit(unit_out[2], stored[2], provider_out[2], provider_out[2], provider_out[2]);
+U3 = ProductionUnit(unit_out[3], stored[3], provider_out[3], provider_out[3], provider_out[3]);
 
-P6 = Provider(6, 3, 2.0);
-P7 = Provider(7, 4, 2.0);
+P4 = Provider(provider_out[4]);
+P5 = Provider(provider_out[5]);
 
-U8 = ProductionUnit(8, 6, 3+R, 4+L);
-U9 = ProductionUnit(9, 4+R, 5+L, 7);
+U4 = ProductionUnit(unit_out[4], stored[4], provider_out[4], unit_out[1], unit_out[2]);
+U5 = ProductionUnit(unit_out[5], stored[5], unit_out[2], unit_out[3], provider_out[5]);
 
-P10 = Provider(10, 5, 3.0);
-P11 = Provider(11, 6, 3.0);
-P12 = Provider(12, 7, 3.0);
+P6 = Provider(provider_out[6]);
+P7 = Provider(provider_out[7]);
+P8 = Provider(provider_out[8]);
 
-U13 = ProductionUnit(13, 10, 10, 8+L);
-U14 = ProductionUnit(14, 8+R, 9+L, 11);
-U15 = ProductionUnit(15, 9+R, 12, 12);
+U6 = ProductionUnit(unit_out[6], stored[6], provider_out[6], provider_out[6], unit_out[4]);
+U7 = ProductionUnit(unit_out[7], stored[7], unit_out[4], unit_out[5], provider_out[7]);
+U8 = ProductionUnit(unit_out[8], stored[8], unit_out[5], provider_out[8], provider_out[8]);
 
-P16 = Provider(16, 8, 4.0);
-P17 = Provider(17, 9, 4.0);
+P9 = Provider(provider_out[9]);
+P10 = Provider(provider_out[10]);
 
-U18 = ProductionUnit(18, 16, 13+R, 14+L);
-U19 = ProductionUnit(19, 14+R, 15+L, 17);
+U9 = ProductionUnit(unit_out[9], stored[9], provider_out[9], unit_out[6], unit_out[7]);
+U10 = ProductionUnit(unit_out[10], stored[10], unit_out[7], unit_out[8], provider_out[10]);
 
-// Consumers don't have an ID
-D1 = Consumer(18, 0.0, 2.0, 2.0, 1.0, 0.0);
-D2 = Consumer(19, 1.0, 1.0, 0.0, 2.0, 1.0);
-system P1, P2, P3, U3, U4, U5, P6, P7, U8, U9, P10, P11, P12, U13, U14, U15, P16, P17, U18, U19, D1, D2;
+D1 = Consumer(unit_out[9], 0.0, 2.0, 2.0, 1.0, 0.0);
+D2 = Consumer(unit_out[10], 1.0, 1.0, 0.0, 2.0, 1.0);
+system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8, P9, P10, U9, U10, D1, D2;
 </system>
 	<simulator type="concrete">
-		<plot-widget title="stored">
-			<expression>stored[5]</expression>
-			<expression>stored[4]</expression>
-			<expression>stored[3]</expression>
-			<expression>stored[2]</expression>
-			<expression>stored[1]</expression>
-			<expression>stored[0]</expression>
-			<expression>stored[11]</expression>
-			<expression>stored[10]</expression>
-			<expression>stored[9]</expression>
-			<expression>stored[8]</expression>
-			<expression>stored[7]</expression>
-			<expression>stored[6]</expression>
+		<plot-widget title="cost">
+			<expression>cost</expression>
 		</plot-widget>
 	</simulator>
 	<queries>
 		<query>
 			<formula>simulate[&lt;=100;1] {
+    stored[1],
+    stored[2],
     stored[3],
     stored[4],
     stored[5],
+    stored[6],
+    stored[7],
     stored[8],
     stored[9],
-    stored[13],
-    stored[14],
-    stored[15],
-    stored[18],
-    stored[19]
+    stored[10]
     }</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2023-12-20 14:27:19 +0100">
-				<plot title="Simulations (1)" xaxis="time" yaxis="value">
-					<series title="stored[3]" type="l" color="0xff0000" encoding="csv">0.0,11.0
-2.0,11.0
-5.0,14.0
-7.0,14.0
-8.0,16.0
-9.0,17.0
-11.0,17.0
-12.0,18.0
-13.0,18.0
-14.0,17.0
-15.0,18.0
-19.0,18.0
-20.0,17.0
-21.0,18.0
-24.0,18.0
-25.0,17.0
-26.0,18.0
-27.0,17.0
-28.0,18.0
-39.0,18.0
-40.0,17.0
-41.0,18.0
-42.0,18.0
-43.0,17.0
-44.0,17.0
-45.0,18.0
-53.0,18.0
-54.0,17.0
-55.0,18.0
-61.0,18.0
-62.0,17.0
-63.0,18.0
-75.0,18.0
-76.0,17.0
-77.0,18.0
-86.0,18.0
-87.0,17.0
-88.0,18.0
-93.0,18.0
-94.0,17.0
-97.0,17.0
-98.0,18.0
-99.0,17.0
-100.0,17.0
-100.000002,17.000002
-					</series>
-					<series title="stored[4]" type="l" color="0xff9900" encoding="csv">0.0,11.0
-3.0,11.0
-4.0,12.0
-5.0,14.0
-6.0,13.0
-7.0,15.0
-8.0,14.0
-10.0,14.0
-11.0,13.0
-13.0,15.0
-14.0,17.0
-15.0,17.0
-16.0,18.0
-21.0,18.0
-22.0,17.0
-25.0,17.0
-26.0,18.0
-27.0,17.0
-28.0,18.0
-29.0,17.0
-30.0,17.0
-31.0,18.0
-32.0,18.0
-33.0,17.0
-34.0,17.0
-35.0,18.0
-40.0,18.0
-41.0,16.0
-42.0,17.0
-43.0,17.0
-44.0,18.0
-45.0,17.0
-46.0,18.0
-47.0,17.0
-48.0,17.0
-49.0,16.0
-50.0,18.0
-51.0,17.0
-52.0,18.0
-53.0,18.0
-54.0,17.0
-55.0,18.0
-56.0,17.0
-57.0,18.0
-58.0,17.0
-59.0,18.0
-63.0,18.0
-64.0,17.0
-65.0,17.0
-66.0,18.0
-67.0,17.0
-68.0,18.0
-74.0,18.0
-75.0,16.0
-76.0,17.0
-79.0,17.0
-80.0,18.0
-81.0,16.0
-83.0,18.0
-84.0,18.0
-85.0,17.0
-86.0,17.0
-87.0,18.0
-90.0,18.0
-91.0,16.0
-92.0,16.0
-93.0,17.0
-94.0,16.0
-95.0,18.0
-100.000002,18.0
-					</series>
-					<series title="stored[5]" type="l" color="0xccff00" encoding="csv">0.0,11.0
-1.0,11.0
-2.0,12.0
-3.0,14.0
-4.0,17.0
-10.0,17.0
-11.0,16.0
-12.0,18.0
-13.0,17.0
-14.0,18.0
-18.0,18.0
-19.0,17.0
-20.0,18.0
-23.0,18.0
-24.0,17.0
-26.0,17.0
-27.0,18.0
-37.0,18.0
-38.0,17.0
-39.0,17.0
-40.0,18.0
-52.0,18.0
-53.0,17.0
-54.0,18.0
-56.0,18.0
-57.0,17.0
-58.0,18.0
-59.0,17.0
-60.0,18.0
-67.0,18.0
-68.0,17.0
-69.0,18.0
-88.0,18.0
-89.0,17.0
-90.0,17.0
-91.0,18.0
-100.000002,18.0
-					</series>
-					<series title="stored[8]" type="l" color="0x33ff00" encoding="csv">0.0,11.0
-1.0,11.0
-4.0,14.0
-5.0,12.0
-6.0,13.0
-7.0,13.0
-10.0,16.0
-11.0,18.0
-12.0,18.0
-13.0,17.0
-14.0,18.0
-17.0,18.0
-18.0,17.0
-20.0,17.0
-21.0,18.0
-22.0,17.0
-24.0,17.0
-25.0,18.0
-26.0,17.0
-27.0,18.0
-29.0,18.0
-30.0,17.0
-31.0,17.0
-32.0,15.0
-33.0,17.0
-34.0,18.0
-35.0,18.0
-36.0,17.0
-37.0,18.0
-38.0,18.0
-39.0,17.0
-42.0,17.0
-43.0,18.0
-44.0,17.0
-45.0,18.0
-46.0,17.0
-49.0,17.0
-50.0,18.0
-51.0,17.0
-52.0,17.0
-53.0,16.0
-54.0,18.0
-56.0,18.0
-57.0,17.0
-58.0,17.0
-59.0,16.0
-61.0,16.0
-62.0,17.0
-65.0,17.0
-66.0,16.0
-67.0,18.0
-68.0,16.0
-70.0,18.0
-71.0,18.0
-72.0,17.0
-73.0,17.0
-74.0,15.0
-75.0,16.0
-76.0,16.0
-77.0,15.0
-78.0,17.0
-79.0,18.0
-80.0,16.0
-81.0,17.0
-82.0,17.0
-83.0,18.0
-84.0,16.0
-85.0,16.0
-87.0,18.0
-88.0,17.0
-89.0,18.0
-91.0,16.0
-92.0,17.0
-93.0,16.0
-94.0,17.0
-95.0,17.0
-96.0,18.0
-97.0,18.0
-98.0,17.0
-99.0,18.0
-100.000002,18.0
-					</series>
-					<series title="stored[9]" type="l" color="0x00ff66" encoding="csv">0.0,11.0
-3.0,11.0
-4.0,13.0
-7.0,13.0
-8.0,15.0
-9.0,14.0
-10.0,14.0
-11.0,16.0
-12.0,16.0
-13.0,18.0
-17.0,18.0
-18.0,17.0
-23.0,17.0
-24.0,18.0
-25.0,18.0
-26.0,17.0
-27.0,17.0
-28.0,16.0
-29.0,18.0
-30.0,17.0
-31.0,18.0
-32.0,17.0
-33.0,18.0
-34.0,17.0
-35.0,18.0
-36.0,18.0
-37.0,17.0
-38.0,17.0
-39.0,18.0
-40.0,17.0
-44.0,17.0
-45.0,18.0
-46.0,17.0
-47.0,18.0
-48.0,17.0
-49.0,17.0
-50.0,16.0
-51.0,18.0
-52.0,17.0
-53.0,18.0
-54.0,17.0
-56.0,17.0
-57.0,18.0
-58.0,17.0
-59.0,18.0
-60.0,18.0
-61.0,17.0
-62.0,17.0
-63.0,16.0
-64.0,16.0
-66.0,18.0
-67.0,17.0
-68.0,18.0
-73.0,18.0
-74.0,17.0
-75.0,18.0
-76.0,17.0
-77.0,18.0
-78.0,17.0
-79.0,17.0
-80.0,16.0
-81.0,18.0
-82.0,18.0
-83.0,17.0
-84.0,17.0
-85.0,18.0
-86.0,17.0
-87.0,18.0
-88.0,17.0
-89.0,18.0
-90.0,17.0
-91.0,18.0
-92.0,18.0
-93.0,17.0
-94.0,17.0
-95.0,18.0
-100.0,18.0
-100.000002,17.999998
-					</series>
-					<series title="stored[13]" type="l" color="0x00ffff" encoding="csv">0.0,11.0
-3.0,11.0
-4.0,10.0
-5.0,11.0
-6.0,11.0
-7.0,13.0
-9.0,15.0
-10.0,18.0
-11.0,17.0
-12.0,18.0
-18.0,18.0
-20.0,16.0
-21.0,17.0
-23.0,17.0
-24.0,18.0
-25.0,18.0
-26.0,17.0
-28.0,17.0
-29.0,18.0
-30.0,17.0
-32.0,17.0
-33.0,18.0
-34.0,17.0
-35.0,18.0
-36.0,18.0
-37.0,17.0
-38.0,18.0
-40.0,18.0
-42.0,16.0
-43.0,17.0
-44.0,17.0
-45.0,18.0
-46.0,17.0
-47.0,18.0
-49.0,18.0
-50.0,17.0
-51.0,18.0
-52.0,18.0
-53.0,17.0
-56.0,17.0
-57.0,18.0
-58.0,17.0
-60.0,17.0
-62.0,15.0
-64.0,17.0
-66.0,17.0
-67.0,16.0
-68.0,18.0
-71.0,18.0
-73.0,16.0
-76.0,16.0
-77.0,18.0
-78.0,18.0
-79.0,17.0
-81.0,17.0
-82.0,18.0
-83.0,17.0
-85.0,17.0
-86.0,18.0
-87.0,18.0
-88.0,17.0
-89.0,18.0
-90.0,17.0
-91.0,18.0
-93.0,18.0
-94.0,17.0
-95.0,18.0
-96.0,18.0
-97.0,17.0
-98.0,18.0
-100.0,18.0
-100.000002,17.999998
-					</series>
-					<series title="stored[14]" type="l" color="0x0066ff" encoding="csv">0.0,11.0
-3.0,11.0
-4.0,9.0
-5.0,11.0
-8.0,14.0
-9.0,14.0
-10.0,16.0
-12.0,16.0
-13.0,18.0
-14.0,18.0
-15.0,16.0
-16.0,17.0
-17.0,16.0
-21.0,16.0
-22.0,18.0
-23.0,18.0
-25.0,16.0
-26.0,16.0
-27.0,17.0
-29.0,15.0
-32.0,18.0
-33.0,17.0
-35.0,17.0
-36.0,16.0
-38.0,16.0
-39.0,15.0
-40.0,15.0
-42.0,17.0
-43.0,16.0
-44.0,17.0
-45.0,16.0
-46.0,16.0
-47.0,14.0
-48.0,15.0
-49.0,15.0
-51.0,13.0
-53.0,15.0
-54.0,17.0
-55.0,16.0
-56.0,17.0
-61.0,17.0
-62.0,15.0
-64.0,17.0
-68.0,17.0
-69.0,15.0
-70.0,15.0
-71.0,14.0
-72.0,15.0
-73.0,15.0
-74.0,16.0
-75.0,16.0
-77.0,18.0
-79.0,16.0
-80.0,18.0
-81.0,17.0
-82.0,18.0
-83.0,17.0
-85.0,17.0
-86.0,16.0
-87.0,14.0
-89.0,14.0
-91.0,16.0
-92.0,15.0
-94.0,17.0
-97.0,17.0
-98.0,16.0
-99.0,17.0
-100.0,16.0
-100.000002,16.0
-					</series>
-					<series title="stored[15]" type="l" color="0x3300ff" encoding="csv">0.0,11.0
-1.0,11.0
-2.0,13.0
-3.0,13.0
-4.0,14.0
-5.0,14.0
-6.0,15.0
-7.0,17.0
-8.0,17.0
-9.0,18.0
-11.0,16.0
-13.0,18.0
-14.0,18.0
-15.0,17.0
-16.0,18.0
-17.0,17.0
-18.0,18.0
-21.0,18.0
-22.0,17.0
-23.0,18.0
-25.0,18.0
-26.0,17.0
-27.0,18.0
-29.0,16.0
-30.0,18.0
-31.0,17.0
-32.0,18.0
-36.0,18.0
-37.0,17.0
-38.0,18.0
-39.0,18.0
-40.0,17.0
-41.0,18.0
-42.0,17.0
-43.0,18.0
-44.0,18.0
-45.0,17.0
-46.0,17.0
-47.0,18.0
-48.0,17.0
-49.0,17.0
-50.0,18.0
-51.0,17.0
-52.0,18.0
-53.0,17.0
-54.0,17.0
-55.0,18.0
-56.0,17.0
-57.0,17.0
-58.0,18.0
-59.0,17.0
-65.0,17.0
-66.0,16.0
-67.0,18.0
-68.0,17.0
-69.0,18.0
-71.0,18.0
-73.0,16.0
-74.0,17.0
-75.0,16.0
-76.0,18.0
-77.0,17.0
-79.0,17.0
-80.0,18.0
-81.0,18.0
-82.0,17.0
-85.0,17.0
-86.0,18.0
-90.0,18.0
-91.0,17.0
-92.0,18.0
-93.0,18.0
-95.0,16.0
-96.0,18.0
-97.0,17.0
-98.0,18.0
-99.0,17.0
-100.0,17.0
-100.000002,17.000002
-					</series>
-					<series title="stored[18]" type="l" color="0xcc00ff" encoding="csv">0.0,11.0
-100.000002,11.0
-					</series>
-					<series title="stored[19]" type="l" color="0xff0099" encoding="csv">0.0,11.0
-100.000002,11.0
-					</series>
-					<comment/>
-				</plot>
-			</result>
 		</query>
 		<query>
 			<formula>simulate[&lt;=100;1] { sum (i : int[1,3]) 2*i } </formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>simulate[&lt;=100;1] { sum (i : int[0,] ]) 2*i } </formula>
+			<formula>simulate[&lt;=100;10] { cost } </formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>strategy Moneydollars = maxE (cost) [&lt;=100] {} -&gt; {stored[3], stored[4], stored[5], stored[6], stored[7], stored[8]} : &lt;&gt; time&gt;=100</formula>
+			<formula>strategy Moneydollars = minE (cost) [&lt;=100] {} -&gt; {stored[1], stored[2], stored[3], stored[4], stored[5], stored[6], stored[7], stored[8], stored[9], stored[10]} : &lt;&gt; time&gt;=100</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[&lt;=100;100] (max:cost)</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[&lt;=100;100] (max:cost) under Moneydollars</formula>
 			<comment/>
 		</query>
 	</queries>
