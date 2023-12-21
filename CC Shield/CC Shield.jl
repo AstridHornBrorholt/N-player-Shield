@@ -524,6 +524,17 @@ let
 	end
 end
 
+# ╔═╡ 0382588a-ac96-4528-9fee-67ab93d4a1f8
+if make_shield_button > 0 let
+	animation = @animate for i in 1:10
+		
+		trace = simulate_sequence(m, 120, s0, shielded_random)
+	
+		plot_sequence(trace..., title="Shielded Trace", legend=:topleft)
+	end
+	gif(animation, fps=1, show_msg=false)
+end end
+
 # ╔═╡ 107b960f-1a75-41f9-9cb9-195877ad6184
 shielded_random = s -> begin
 	if s ∈ shield
@@ -537,17 +548,6 @@ shielded_random = s -> begin
 		return rand(instances(CCAction))
 	end
 end
-
-# ╔═╡ 0382588a-ac96-4528-9fee-67ab93d4a1f8
-if make_shield_button > 0 let
-	animation = @animate for i in 1:10
-		
-		trace = simulate_sequence(m, 120, s0, shielded_random)
-	
-		plot_sequence(trace..., title="Shielded Trace", legend=:topleft)
-	end
-	gif(animation, fps=1, show_msg=false)
-end end
 
 # ╔═╡ c971bbe4-bc6b-49dd-940d-3277017e99bc
 function evaluate(m::CCMechanics, policy; episode_length=120, traces=1000)
