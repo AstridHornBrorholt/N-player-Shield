@@ -49,6 +49,11 @@ import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CP/libc
     int get_value(double volume);
 };
 
+import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Strategies/libmoneydollars.so"
+{
+    int get_action_moneydollars(double t, double volume);
+};
+
 
 typedef struct {
     bool wait;

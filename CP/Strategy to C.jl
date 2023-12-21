@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -67,6 +67,9 @@ body:not(.___) pluto-cell:focus-within > pluto-trafficlight {
 <p>🎨 Custom style sheet loaded.</p>
 """
 
+# ╔═╡ c5cde56e-cd4b-4509-a739-d8281a7c5248
+⨝ = joinpath
+
 # ╔═╡ 3bb7e0de-5364-4a52-ab7d-7d5cb9273efa
 #=╠═╡
 @bind picked_file FilePicker()
@@ -86,32 +89,71 @@ json = JSON.parse(text)
 #=╠═╡
 Markdown.parse("""
 !!! info "Actions" 
-$(join(["    **$k** => $v" for (k,v) in sort(collect(json["actions"]), by=((k) -> k))], "\n\n"))
+$(join(["    **$k** => $v" for (k,v) in sort(collect(json["actions"]), by=((k) ->  parse(Int, k[1])))], "\n\n"))
 """)
   ╠═╡ =#
 
-# ╔═╡ 0981acdc-1c81-4e64-8542-c0686eb5f618
-#=╠═╡
-if !(occursin("NegativeAcc", json["actions"]["0"]) &&
-		occursin("PositiveAcc", json["actions"]["1"]) &&
-		occursin("NoAcc", json["actions"]["2"]))
-	md"""
-	!!! danger "Discrepancy Detected"
-	See the conditional.
-	"""
-end
-  ╠═╡ =#
-
 # ╔═╡ f2b82444-77da-4ec5-9991-186f609d9576
+# "Closed", "Open" for each of the 3 pipes
 actions = Dict(
-	"0" => "NegativeAcceleration",
-	"1" => "PositiveAcceleration",
-	"2" => "NoAcceleration"
+	"0" => "CCO",
+	"1" => "COC",
+	"2" => "OCC",
+	"3" => "CCC",
+	"4" => "OOC",
+	"5" => "COO",
+	"6" => "OCO",
+	"7" => "OOO",
 )
 
-# ╔═╡ f9f09026-dc0d-41cd-af2c-6ca18d3768d0
+# ╔═╡ 74ff2ba2-dbf6-45c4-bba9-ea7c38269666
+# Check if the action given in the "actions" dictionary
+# matches the edge descriptions given in the strategy.
+function matches(action::String, uppaal_action::String; show_msg=true)
+	for (i, pipe_status) in enumerate(action)
+		# The UPPAAL action contains this string if the pipe is open.
+		pipe_enabled = "pipe$i := pipe$i +"
+		if pipe_status == 'C'
+			if occursin(pipe_enabled, uppaal_action)
+				show_msg && @error "Pipe $i is closed in action $action, but open in UPPAAL action."
+				
+				return false
+			end
+		elseif pipe_status == 'O'
+			if !occursin(pipe_enabled, uppaal_action)
+				show_msg && @error "Pipe $i is open in action $action, but closed in UPPAAL action."
+				
+				return false
+			end
+		else
+			error("Unexpected character $pipe_status in action name")
+		end
+	end
+	return true
+end
+
+# ╔═╡ 8f6f9a4a-19d6-4a6f-b7f2-14bf6f47490e
+function matches(actions::Dict, uppaal_actions::Dict; show_msg=true)
+	for k in keys(actions)
+		action, uppaal_action = actions[k], uppaal_actions[k]
+		if !matches(action, uppaal_action; show_msg)
+			show_msg && @error "Mismatch in action number $k, $action and UPPAAL action $uppaal_action."
+			return false
+		end
+	end
+	return true
+end
+
+# ╔═╡ 0981acdc-1c81-4e64-8542-c0686eb5f618
 #=╠═╡
-regressor = json["regressors"]["(1)"]["regressor"]
+if !(matches(actions, json["actions"]))
+	md"""
+	!!! danger "Discrepancy Detected"
+		See the error outputs.
+	"""
+else
+	md"The action mapping is fine 👍"
+end
   ╠═╡ =#
 
 # ╔═╡ 36031e3c-ff0d-4f29-99f3-316b7b2992e5
@@ -124,10 +166,14 @@ $(join(["    **$k** => $v" for (k,v) in enumerate(json["pointvars"])], "\n\n"))
 
 # ╔═╡ 4de463bf-8e89-4aa8-ac89-872bc9399d78
 vars = [
-	"velocity",
-	"velocity_front",
-	"distance"
+	"t",
+	"stored"
 ]
+
+# ╔═╡ f9f09026-dc0d-41cd-af2c-6ca18d3768d0
+#=╠═╡
+regressor = json["regressors"]["(1)"]["regressor"]
+  ╠═╡ =#
 
 # ╔═╡ 9f83ff3e-33ff-4a2a-b87d-58476b422686
 #=╠═╡
@@ -177,9 +223,16 @@ begin
 	end
 end
 
+# ╔═╡ c8f10474-12a8-4c71-8325-86fd600b4daf
+#=╠═╡
+if_chain_1 = if_chain(regressor["1"], vars, 0);
+  ╠═╡ =#
+
 # ╔═╡ 490df7d6-a79b-4d3e-8e9b-a302d1e359db
 #=╠═╡
-@info if_chain(regressor["1"], vars, 0)[1:1000]*"\n..."
+if length(if_chain_1) > 1000
+	@info if_chain_1[1:1000]*"\n..." 
+else @info if_chain_1 end
   ╠═╡ =#
 
 # ╔═╡ 308aa994-8cf5-4393-9631-4f4baac64c6a
@@ -337,7 +390,7 @@ end
 
 # ╔═╡ 4a05ce54-e3fe-4017-b642-699747bb96ac
 #=╠═╡
-@bind name TextField(60, default="car1")
+@bind name TextField(60, default="unit1")
   ╠═╡ =#
 
 # ╔═╡ d1663eca-6f1f-4026-a036-da8016815977
@@ -360,30 +413,11 @@ begin
 end
   ╠═╡ =#
 
-# ╔═╡ ae547020-fdda-47c4-baf6-40b69001d7a5
-#=╠═╡
-# Write a file path here, which will be written to reactively
-@bind savepath TextField(80, default="")
-  ╠═╡ =#
-
-# ╔═╡ 6d3d2412-e8a9-4bf0-92df-21973375e7fb
-#=╠═╡
-if isdir(dirname(savepath))
-	open(savepath, "w") do io
-		entire_file(io, json["regressors"]["(1)"]["regressor"], vars, actions, name)
-	end
-	@info "saved to '$savepath'"
-end
-  ╠═╡ =#
-
 # ╔═╡ b80ec1d9-6975-4198-b1c7-46acd5c84544
 excluding_extension(file::String) = file[1:findlast(==('.'), file) - 1]
 
 # ╔═╡ 3058c083-d9de-4b55-aa91-b5b7ded5abca
 excluding_extension("foo.bar.baz")
-
-# ╔═╡ c5cde56e-cd4b-4509-a739-d8281a7c5248
-⨝ = joinpath
 
 # ╔═╡ a9e5461c-7495-476b-a9d9-e18c6912e6f5
 """
@@ -410,6 +444,7 @@ function strategy_to_c(strategy_path,
 		vars::AbstractArray, 
 		actions::Dict, 
 		output_dir;
+		working_dir=mktempdir(),
 		name=nothing)
 
 	name = something(name, strategy_path |> basename |> excluding_extension)
@@ -426,23 +461,25 @@ function strategy_to_c(strategy_path,
 	end
 	previous_working_dir = pwd() # pun: pwd() is "print working dir"
 	try
-		mktempdir() do tmp
-			cd(tmp)
+		cd(working_dir)
+		
+		# Create C-file
+		open("$name.c", "w") do c_file
+			entire_file(c_file, 
+				json["regressors"]["(1)"]["regressor"],
+				vars, 
+				actions,
+				name)
 			
-			# Create C-file
-			open("$name.c", "w") do c_file
-				entire_file(c_file, 
-					json["regressors"]["(1)"]["regressor"],
-					vars, 
-					actions,
-					name)
-				
-			end
-			
-			# Compile C-file and export library
-			run(`gcc -c -fPIC $name.c -o $name.o`)
-			run(`gcc -shared -o lib$name.so $name.o`)
-			cp("lib$name.so", output_dir, force=true)
+		end
+		
+		destination = pwd() ⨝ "lib$name.so"
+		
+		# Compile C-file and export library
+		run(`gcc -c -fPIC $name.c -o $name.o`)
+		run(`gcc -shared -o $destination $name.o`)
+		if destination != output_dir
+			cp(destination, output_dir, force=true)
 		end
 	catch
 		cd(previous_working_dir)
@@ -458,11 +495,31 @@ end;
 @bind strategy_path TextField(80, default="")
   ╠═╡ =#
 
+# ╔═╡ ae547020-fdda-47c4-baf6-40b69001d7a5
+#=╠═╡
+# Write a file path here, which will be written to reactively
+@bind savepath TextField(80, default=mktempdir())
+  ╠═╡ =#
+
+# ╔═╡ 2a410a3a-b427-4da4-9e7e-3f86a0ee7365
+working_dir = mktempdir()
+
 # ╔═╡ 96d0609b-87a4-428d-aadf-8c996089e6f0
 #=╠═╡
 if isfile(strategy_path)
-	strategy_to_c(strategy_path, vars, actions, dirname(strategy_path))
+	const signature, savefile = strategy_to_c(strategy_path, vars, actions, savepath; working_dir)
 end
+  ╠═╡ =#
+
+# ╔═╡ d0e68988-6e25-47bf-8352-7fda76a7f2fe
+#=╠═╡
+get_action_unit1(t, stored) = 
+	@ccall savefile.get_action_moneydollars(t::Float64, stored::Float64)::Int64
+  ╠═╡ =#
+
+# ╔═╡ b49c646e-5e1a-40c3-bac5-66599b5225fe
+#=╠═╡
+get_action_unit1(0, 10)
   ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -744,18 +801,22 @@ version = "17.4.0+0"
 # ╠═fc499f82-3c3c-11ee-109a-f534985c8341
 # ╠═5615668e-7020-43b2-9a97-07dbca4aa115
 # ╟─a63ee558-5b46-4827-ae1a-95fa633e30d5
+# ╠═c5cde56e-cd4b-4509-a739-d8281a7c5248
 # ╠═3bb7e0de-5364-4a52-ab7d-7d5cb9273efa
 # ╠═451b36a9-9712-42ac-b53e-e2031c978ec2
 # ╠═46d36365-2146-4094-9bd7-15310269e746
-# ╠═c78f40f4-945c-4ee0-ad4e-8b47a734f222
-# ╟─0981acdc-1c81-4e64-8542-c0686eb5f618
+# ╟─c78f40f4-945c-4ee0-ad4e-8b47a734f222
 # ╠═f2b82444-77da-4ec5-9991-186f609d9576
-# ╠═f9f09026-dc0d-41cd-af2c-6ca18d3768d0
-# ╠═36031e3c-ff0d-4f29-99f3-316b7b2992e5
+# ╟─74ff2ba2-dbf6-45c4-bba9-ea7c38269666
+# ╟─8f6f9a4a-19d6-4a6f-b7f2-14bf6f47490e
+# ╟─0981acdc-1c81-4e64-8542-c0686eb5f618
+# ╟─36031e3c-ff0d-4f29-99f3-316b7b2992e5
 # ╠═4de463bf-8e89-4aa8-ac89-872bc9399d78
+# ╠═f9f09026-dc0d-41cd-af2c-6ca18d3768d0
 # ╠═9f83ff3e-33ff-4a2a-b87d-58476b422686
 # ╠═b10ccf72-c9f9-4c7a-855f-aed16ca5a794
 # ╠═b1129b94-6ad6-4d50-9155-10821419fb62
+# ╠═c8f10474-12a8-4c71-8325-86fd600b4daf
 # ╠═490df7d6-a79b-4d3e-8e9b-a302d1e359db
 # ╠═308aa994-8cf5-4393-9631-4f4baac64c6a
 # ╠═67978236-9ffa-49e0-a3b0-d4c3f4985d3a
@@ -765,13 +826,14 @@ version = "17.4.0+0"
 # ╠═eb410fb5-2677-4168-8c1b-aceddf47e994
 # ╠═4a05ce54-e3fe-4017-b642-699747bb96ac
 # ╠═5e7f42a5-7292-440c-a8e0-57b84b357955
-# ╠═ae547020-fdda-47c4-baf6-40b69001d7a5
-# ╠═6d3d2412-e8a9-4bf0-92df-21973375e7fb
 # ╠═b80ec1d9-6975-4198-b1c7-46acd5c84544
 # ╠═3058c083-d9de-4b55-aa91-b5b7ded5abca
-# ╠═c5cde56e-cd4b-4509-a739-d8281a7c5248
 # ╠═a9e5461c-7495-476b-a9d9-e18c6912e6f5
 # ╠═b727f3d0-11a2-4150-80ad-e6bccd2b7017
+# ╠═ae547020-fdda-47c4-baf6-40b69001d7a5
+# ╠═2a410a3a-b427-4da4-9e7e-3f86a0ee7365
 # ╠═96d0609b-87a4-428d-aadf-8c996089e6f0
+# ╠═d0e68988-6e25-47bf-8352-7fda76a7f2fe
+# ╠═b49c646e-5e1a-40c3-bac5-66599b5225fe
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

@@ -11,7 +11,7 @@ begin
 	using JSON
 	using Glob
 	using ArgParse
-	include("../Strategy to C.jl")
+	include("./Strategy to C.jl")
 end;
 
 # ╔═╡ d2d9ca40-af15-4a65-910e-0319065cd6bf
