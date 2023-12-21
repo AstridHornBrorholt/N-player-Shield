@@ -80,11 +80,11 @@ md"""
 # ╔═╡ a73bed3f-9e0f-45ad-a32c-935d17a52bb7
 begin
 	@with_kw struct CPMechanics
-		t_act::Float64=1.0
+		t_act::Float64=0.5
 		min_stored::Float64=2.0
-		max_stored::Float64=20.0
-		flow_rate::Float64=1.65
-		flow_rate_variance::Float64=0.25
+		max_stored::Float64=50.0
+		flow_rate::Float64=2.65
+		flow_rate_variance::Float64=0.5
 	end
 end
 
@@ -100,7 +100,7 @@ The space of random outcomes has 3 dimensions:
 """
 
 # ╔═╡ cd9ba9af-db52-485b-af56-d14827926137
-randomness_space = Bounds((0, -1, -1), (1, 1, 1))
+randomness_space = Bounds((0, 0, 0), (1, 1, 1))
 
 # ╔═╡ af920ac1-a57a-44fe-8026-f18d527becb3
 begin
@@ -205,8 +205,8 @@ function get_flow_rate(m::CPMechanics, r, a::CPAction)
 end
 
 # ╔═╡ 54d35405-0859-4b1f-ba89-9ae9f8660cc3
-get_flow_rate(m, -1, input_three), 
 get_flow_rate(m, 0, input_three), 
+get_flow_rate(m, 0.5, input_three), 
 get_flow_rate(m, 1, input_three)
 
 # ╔═╡ 7ecdeacb-fccf-4406-98ea-5f8e7a4b3c84
@@ -230,7 +230,7 @@ begin
 	end
 	
 	function simulate_point(m::CPMechanics, point::CPState, action::CPAction)::CPState
-		simulate_point(m, point, (rand(0:1/6:1), rand(-1:0.1:1), rand(-1:0.1:1)), action)
+		simulate_point(m, point, (rand(0:1/6:1), rand(0:0.1:1), rand(0:0.1:1)), action)
 	end
 end
 
@@ -306,51 +306,12 @@ md"""
 Interactive control of the simulation.
 """
 
-# ╔═╡ fb6af406-731d-40b9-8f3f-47ddb48c1f5d
-m; @bind reset_button Button("Reset")
-
-# ╔═╡ 22205344-1445-41fb-bab9-3fced063d62b
-# Initialize or reset trace. Will be modified using reactivity of Pluto Notebooks.
-reset_button; reactive_trace = CPTrace(CPState[], Float64[], CPAction[]);
-
 # ╔═╡ 67893b1c-ad3e-45f3-90a4-c684b29438a1
 md"""
 Agent action
 
 $(@bind interactive_action Select([instances(CPAction)...]))
 """
-
-# ╔═╡ 29654ee9-9e10-4d1b-b4a4-aef6f3d4f33f
-reset_button; @bind step_button CounterButton("Step")
-
-# ╔═╡ ebf8f146-1aa5-4525-aba5-47ffefb4dc45
-step_button; md"""
-Anatagonist actions (randomized each step)
-
-$(@bind rvar1 NumberField(randomness_space.lower[1]:1/4:randomness_space.upper[1], 
-	default=rand(randomness_space.lower[1]:0.1:randomness_space.upper[1])))
-$(@bind rvar2 NumberField(randomness_space.lower[2]:0.1:randomness_space.upper[2], 
-	default=rand(randomness_space.lower[2]:0.1:randomness_space.upper[2])))
-$(@bind rvar3 NumberField(randomness_space.lower[3]:0.1:randomness_space.upper[3], 
-	default=rand(randomness_space.lower[3]:0.1:randomness_space.upper[3])))
-"""
-
-# ╔═╡ 388cace6-e8d3-4fb1-8e86-eeda23b19d2d
-let 
-	if step_button > 0
-		reactive_trace.times ← reactive_trace.times[end] + m.t_act
-		reactive_trace.actions ← interactive_action
-		s = reactive_trace.states[end]
-		s′ = simulate_point(m, s, (rvar1, rvar2, rvar3), interactive_action)
-		reactive_trace.states ← s′
-	else
-		reactive_trace.times ← 0
-		reactive_trace.states ← s0
-	end
-end; "this cell does the reactive computation"
-
-# ╔═╡ 45543b62-c6fb-4797-a336-e3c456b6e0cb
-step_button > 0 ? plot_sequence(reactive_trace) : "plot appears here"
 
 # ╔═╡ b35e34d2-6557-4f67-84fe-949f8d8eeed8
 md"""
@@ -372,13 +333,6 @@ begin
 	function is_safe(s) return is_safe(CPState(s...)) end
 	
 	function is_safe(b::Bounds) return is_safe(b.lower) && is_safe(b.upper) end
-end
-
-# ╔═╡ 20830df6-e46b-44e2-acb2-a2c291f9b14a
-if step_button > 0 && !is_safe(reactive_trace.states[end])
-	md"""!!! danger "Unsafe state reached" """
-else 
-	md"""Current state is safe."""
 end
 
 # ╔═╡ 2a89484b-0eb1-4175-89b7-58a1806bda89
@@ -492,7 +446,7 @@ end
 md"""
 ### 🛠 `spa_*`
 
-`spa_V =` $(@bind spa_V NumberField(1:9, default=1))
+`spa_V =` $(@bind spa_V NumberField(1:9, default=3))
 
 `spa_random_action =` $(@bind spa_random_action NumberField(1:9, default=3))
 
@@ -528,6 +482,52 @@ model = SimulationModel(
 	randomness_space, 
 	samples_per_axis, 
 	spa_random)
+
+# ╔═╡ fb6af406-731d-40b9-8f3f-47ddb48c1f5d
+m, model; @bind reset_button Button("Reset")
+
+# ╔═╡ 22205344-1445-41fb-bab9-3fced063d62b
+# Initialize or reset trace. Will be modified using reactivity of Pluto Notebooks.
+reset_button; reactive_trace = CPTrace(CPState[], Float64[], CPAction[]);
+
+# ╔═╡ 29654ee9-9e10-4d1b-b4a4-aef6f3d4f33f
+reset_button; @bind step_button CounterButton("Step")
+
+# ╔═╡ ebf8f146-1aa5-4525-aba5-47ffefb4dc45
+step_button; md"""
+Anatagonist actions (randomized each step)
+
+$(@bind rvar1 NumberField(randomness_space.lower[1]:1/4:randomness_space.upper[1], 
+	default=rand(randomness_space.lower[1]:0.1:randomness_space.upper[1])))
+$(@bind rvar2 NumberField(randomness_space.lower[2]:0.1:randomness_space.upper[2], 
+	default=rand(randomness_space.lower[2]:0.1:randomness_space.upper[2])))
+$(@bind rvar3 NumberField(randomness_space.lower[3]:0.1:randomness_space.upper[3], 
+	default=rand(randomness_space.lower[3]:0.1:randomness_space.upper[3])))
+"""
+
+# ╔═╡ 388cace6-e8d3-4fb1-8e86-eeda23b19d2d
+let 
+	if step_button > 0
+		reactive_trace.times ← reactive_trace.times[end] + m.t_act
+		reactive_trace.actions ← interactive_action
+		s = reactive_trace.states[end]
+		s′ = simulate_point(m, s, (rvar1, rvar2, rvar3), interactive_action)
+		reactive_trace.states ← s′
+	else
+		reactive_trace.times ← 0
+		reactive_trace.states ← s0
+	end
+end; "this cell does the reactive computation"
+
+# ╔═╡ 45543b62-c6fb-4797-a336-e3c456b6e0cb
+step_button > 0 ? plot_sequence(reactive_trace) : "plot appears here"
+
+# ╔═╡ 20830df6-e46b-44e2-acb2-a2c291f9b14a
+if step_button > 0 && !is_safe(reactive_trace.states[end])
+	md"""!!! danger "Unsafe state reached" """
+else 
+	md"""Current state is safe."""
+end
 
 # ╔═╡ f1040518-fc20-4310-8d84-440cd28f0beb
 reachability_function = get_barbaric_reachability_function(model)
@@ -684,37 +684,9 @@ function shielded_random(s::CPState)
 	rand(allowed)
 end
 
-# ╔═╡ 6a7c19f3-964a-453a-b93c-fc7c8bb1e434
-grid_bounds
-
-# ╔═╡ 5ebdad31-631d-4552-a699-931b1a0679c1
-shielded_trace = simulate_sequence(m, 100, s0, shielded_random)
-
-# ╔═╡ c80dff92-324f-4115-a683-ccecf8db9131
-@bind i NumberField(1:length(shielded_trace.states))
-
-# ╔═╡ 23eb7824-7dbb-4439-93f8-d76e725492e5
-shielded_trace.states[i]
-
-# ╔═╡ fe481f6a-5da2-4331-a297-72582200d984
-shielded_trace.actions[i]
-
-# ╔═╡ cf7aee84-d05f-4786-abe9-970e5b57484f
-int_to_actions(CPAction, get_value(box(shield, shielded_trace.states[i])))
-
-# ╔═╡ 8b169b68-2fdf-4327-8113-1a6bd22991a0
-let
-	reachable_states = possible_outcomes(model, box(shield, shielded_trace.states[i]), shielded_trace.actions[i])
-
-	[box(grid, (clamp(s, grid.bounds))) for s in reachable_states]
-end
-
-# ╔═╡ 3d48fcd3-abd6-48dd-a600-c72221209377
-plot_sequence(shielded_trace, time=shielded_trace.times[i])
-
 # ╔═╡ b40d36af-9d76-4226-88e1-899167a84179
 function evaluate_safety(m::CPMechanics, shield::Grid; checks=1000)
-	example_trace = CPTrace([], [], [])
+	example_trace = nothing
 	safe = 0
 	for c in 1:checks
 		trace = simulate_sequence(m, 120, s0, shielded_random)
@@ -729,7 +701,54 @@ function evaluate_safety(m::CPMechanics, shield::Grid; checks=1000)
 end
 
 # ╔═╡ 71cbbe67-1015-4369-90dd-b03dc2d7ca69
-evaluate_safety(m, shield; checks=10000)
+(;safe, checks, example_trace) = evaluate_safety(m, shield; checks=10000)
+
+# ╔═╡ 347f06a4-5524-4407-a833-7cae548b6439
+if !isnothing(example_trace)
+	shielded_trace = example_trace
+else
+	shielded_trace = simulate_sequence(m, 100, s0, shielded_random)
+end
+
+# ╔═╡ 17bbfa1f-cf25-45ca-8a1b-f62b8cae5759
+@bind i NumberField(1:length(shielded_trace.states))
+
+# ╔═╡ 3d48fcd3-abd6-48dd-a600-c72221209377
+if !isnothing(example_trace)
+	plot_sequence(shielded_trace, time=shielded_trace.times[i], title="Unsafe trace")
+else
+	plot_sequence(shielded_trace, time=shielded_trace.times[i], title="Safe trace")
+end
+
+# ╔═╡ a62e8c4b-46f9-4d4d-aac5-9cd839e52765
+shielded_trace.states[i], shielded_trace.actions[i], shielded_trace.times[i]
+
+# ╔═╡ cf7aee84-d05f-4786-abe9-970e5b57484f
+int_to_actions(CPAction, get_value(box(shield, shielded_trace.states[i])))
+
+# ╔═╡ 95faabfd-14d4-474f-99af-50cf410b5797
+shielded_trace.actions[i] ∈ int_to_actions(CPAction, get_value(box(shield, shielded_trace.states[i])))
+
+# ╔═╡ 52c571b4-a6e3-4674-9053-8c02768d91da
+possible_i = possible_outcomes(model, 
+	box(shield, shielded_trace.states[i]), 
+	shielded_trace.actions[i])
+
+# ╔═╡ bf102935-b72a-4bdf-b18b-bd656d956975
+min(possible_i...), max(possible_i...)
+
+# ╔═╡ 14ae0be0-1395-44e6-bb2c-39f6318d2f60
+if !isnothing(example_trace)
+	md"""
+	!!! danger "Unsafe trace found"
+		:-(
+	"""
+else
+	md"""
+	!!! success "👍👍"
+		Only safe traces found.
+	"""
+end
 
 # ╔═╡ 5ff82f30-fabe-4a39-912f-6aadd31228f1
 md"""
@@ -746,7 +765,7 @@ end
 # ╔═╡ a3ea7ead-3589-405e-94f3-1d523e5e0a6c
 let
 	libshield_so = get_libshield(shield)
-	DownloadButton(libshield_so |> read, "libprshield.so")
+	DownloadButton(libshield_so |> read, "libcpshield.so")
 end
 
 # ╔═╡ Cell order:
@@ -799,7 +818,7 @@ end
 # ╟─ebf8f146-1aa5-4525-aba5-47ffefb4dc45
 # ╟─67893b1c-ad3e-45f3-90a4-c684b29438a1
 # ╟─29654ee9-9e10-4d1b-b4a4-aef6f3d4f33f
-# ╠═388cace6-e8d3-4fb1-8e86-eeda23b19d2d
+# ╟─388cace6-e8d3-4fb1-8e86-eeda23b19d2d
 # ╟─45543b62-c6fb-4797-a336-e3c456b6e0cb
 # ╟─20830df6-e46b-44e2-acb2-a2c291f9b14a
 # ╟─b35e34d2-6557-4f67-84fe-949f8d8eeed8
@@ -852,16 +871,17 @@ end
 # ╠═ce5aad22-f447-4502-af51-84f4d48e9413
 # ╠═1857b91b-de36-44b9-afeb-5739c19ffea0
 # ╠═cbaf2ad3-9d1b-4a58-9f76-797bca422fe3
-# ╠═6a7c19f3-964a-453a-b93c-fc7c8bb1e434
-# ╠═5ebdad31-631d-4552-a699-931b1a0679c1
-# ╠═c80dff92-324f-4115-a683-ccecf8db9131
-# ╠═23eb7824-7dbb-4439-93f8-d76e725492e5
-# ╠═fe481f6a-5da2-4331-a297-72582200d984
-# ╠═cf7aee84-d05f-4786-abe9-970e5b57484f
-# ╠═8b169b68-2fdf-4327-8113-1a6bd22991a0
 # ╠═3d48fcd3-abd6-48dd-a600-c72221209377
+# ╠═17bbfa1f-cf25-45ca-8a1b-f62b8cae5759
+# ╠═a62e8c4b-46f9-4d4d-aac5-9cd839e52765
+# ╠═cf7aee84-d05f-4786-abe9-970e5b57484f
+# ╠═95faabfd-14d4-474f-99af-50cf410b5797
+# ╠═bf102935-b72a-4bdf-b18b-bd656d956975
+# ╠═52c571b4-a6e3-4674-9053-8c02768d91da
 # ╠═b40d36af-9d76-4226-88e1-899167a84179
 # ╠═71cbbe67-1015-4369-90dd-b03dc2d7ca69
+# ╟─347f06a4-5524-4407-a833-7cae548b6439
+# ╟─14ae0be0-1395-44e6-bb2c-39f6318d2f60
 # ╟─5ff82f30-fabe-4a39-912f-6aadd31228f1
 # ╟─8d0e55c3-ea57-408b-8c9b-d8484226b43d
 # ╟─a3ea7ead-3589-405e-94f3-1d523e5e0a6c
