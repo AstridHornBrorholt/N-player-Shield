@@ -13,7 +13,7 @@ for ((r=1; r<=$repetitions; r++))
 do
     export repetition=$r
     
-    export runs=20023
+    export runs=2502
     export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
