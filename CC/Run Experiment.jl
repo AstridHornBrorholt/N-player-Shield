@@ -86,7 +86,7 @@ mkpath(models_dir)
 
 ## Mainmatter ##
 strategy_paths = String[]
-for N in max_cars:max_cars
+for N in 2:max_cars
     status("Running Fleet of $N Cars...  (repetition=$repetition)")
     outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
     model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, models_dir; checks, skip_training)
