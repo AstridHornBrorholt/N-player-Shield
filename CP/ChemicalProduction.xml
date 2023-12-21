@@ -2,7 +2,6 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
 <nta>
 	<declaration>/**TODOS:**
- - Variance in flow rate
  - Time variant price or something to make learning more interesting
 */
 
@@ -139,7 +138,8 @@ x=0</label>
 		<declaration>allowedActions allowed = { true, true, true, true };
 
 // inflow
-double in = 0;</declaration>
+double in = 0;
+double r1, r2, r3;</declaration>
 		<location id="id10" x="-2235" y="-1938">
 			<name x="-2278" y="-1921">Choosing</name>
 			<label kind="comments" x="-2320" y="-1879">8 possible actions,
@@ -157,25 +157,25 @@ OOO, COO, OCO, COO</label>
 		<transition id="id12">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-2626" y="-2142">allowed.input_one</label>
-			<label kind="assignment" x="-2626" y="-2125">pipe3 = pipe3 + RATE,
-in = RATE</label>
+			<label kind="guard" x="-2669" y="-2142">allowed.input_one</label>
+			<label kind="assignment" x="-2669" y="-2125">pipe3 = pipe3 + RATE + r3,
+in = RATE + r3</label>
 			<nail x="-2456" y="-2134"/>
 		</transition>
 		<transition id="id13">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-2618" y="-2083">allowed.input_one</label>
-			<label kind="assignment" x="-2618" y="-2066">pipe2 = pipe2 + RATE,
-in = RATE</label>
+			<label kind="guard" x="-2686" y="-2082">allowed.input_one</label>
+			<label kind="assignment" x="-2686" y="-2065">pipe2 = pipe2 + RATE + r2,
+in = RATE + r2</label>
 			<nail x="-2457" y="-2074"/>
 		</transition>
 		<transition id="id14">
 			<source ref="id10"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-2601" y="-2015">allowed.input_one</label>
-			<label kind="assignment" x="-2601" y="-1998">pipe1 = pipe1 + RATE,
-in = RATE</label>
+			<label kind="guard" x="-2652" y="-2023">allowed.input_one</label>
+			<label kind="assignment" x="-2660" y="-1997">pipe1 = pipe1 + RATE + r1,
+in = RATE + r1</label>
 			<nail x="-2448" y="-2006"/>
 		</transition>
 		<transition id="id15">
@@ -189,44 +189,47 @@ in = RATE</label>
 			<source ref="id10"/>
 			<target ref="id11"/>
 			<label kind="guard" x="-2006" y="-2176">allowed.input_two</label>
-			<label kind="assignment" x="-2006" y="-2159">pipe1 = pipe1 + RATE,
-pipe2 = pipe2 + RATE,
-in = 2*RATE</label>
+			<label kind="assignment" x="-2006" y="-2159">pipe1 = pipe1 + RATE + r1,
+pipe2 = pipe2 + RATE + r2,
+in = 2*RATE + r1 + r2</label>
 			<nail x="-2014" y="-2168"/>
 		</transition>
 		<transition id="id17">
 			<source ref="id10"/>
 			<target ref="id11"/>
 			<label kind="guard" x="-2031" y="-2023">allowed.input_two</label>
-			<label kind="assignment" x="-2031" y="-2006">pipe2 = pipe2 + RATE,
-pipe3 = pipe3 + RATE,
-in = 2*RATE</label>
+			<label kind="assignment" x="-2031" y="-2006">pipe2 = pipe2 + RATE + r2,
+pipe3 = pipe3 + RATE + r3,
+in = 2*RATE + r2 + r3</label>
 			<nail x="-2031" y="-2015"/>
 		</transition>
 		<transition id="id18">
 			<source ref="id10"/>
 			<target ref="id11"/>
 			<label kind="guard" x="-2006" y="-2100">allowed.input_two</label>
-			<label kind="assignment" x="-2006" y="-2083">pipe1 = pipe1 + RATE,
-pipe3 = pipe3 + RATE,
-in = 2*RATE</label>
+			<label kind="assignment" x="-2006" y="-2083">pipe1 = pipe1 + RATE + r1,
+pipe3 = pipe3 + RATE + r3,
+in = 2*RATE + r1 + r3</label>
 			<nail x="-2023" y="-2091"/>
 		</transition>
 		<transition id="id19">
 			<source ref="id10"/>
 			<target ref="id11"/>
 			<label kind="guard" x="-2048" y="-1947">allowed.input_three</label>
-			<label kind="assignment" x="-2048" y="-1930">pipe1 = pipe1 + RATE,
-pipe2 = pipe2 + RATE,
-pipe3 = pipe3 + RATE,
-in = 3*RATE</label>
+			<label kind="assignment" x="-2048" y="-1930">pipe1 = pipe1 + RATE + r1,
+pipe2 = pipe2 + RATE + r2,
+pipe3 = pipe3 + RATE + r3,
+in = 3*RATE + r1 + r2 + r3</label>
 			<nail x="-2065" y="-1947"/>
 		</transition>
 		<transition id="id20" controllable="false">
 			<source ref="id11"/>
 			<target ref="id10"/>
 			<label kind="synchronisation" x="-2312" y="-2091">choose?</label>
-			<label kind="assignment" x="-2312" y="-2074">out = 0,
+			<label kind="assignment" x="-2312" y="-2099">out = 0,
+r1 = random(VARIANCE),
+r2 = random(VARIANCE),
+r3 = random(VARIANCE),
 allowed = get_allowed(stored)</label>
 		</transition>
 	</template>
