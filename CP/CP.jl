@@ -163,7 +163,9 @@ m = CPMechanics(;m_inputs...)
 
 # ╔═╡ e945773a-6365-4eb0-a384-5fc7c1dfa70e
 @assert 3*m.flow_rate - 3*m.flow_rate_variance > 
-	    2*m.flow_rate + 2*m.flow_rate_variance
+	    2*m.flow_rate + 2*m.flow_rate_variance; (
+	3*m.flow_rate - 3*m.flow_rate_variance, 
+	2*m.flow_rate + 2*m.flow_rate_variance)
 
 # ╔═╡ 4dadcdaa-4fce-4a14-9dd7-e4baf141bd42
 # Index-name pairs. Used for choosing axes to draw the shield.

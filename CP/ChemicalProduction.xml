@@ -2,7 +2,6 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
 <nta>
 	<declaration>/**TODOS:**
- - Shield that actually match the mechanics
  - Variance in flow rate
  - Time variant price or something to make learning more interesting
 */
@@ -160,7 +159,7 @@ OOO, COO, OCO, COO</label>
 			<target ref="id11"/>
 			<label kind="guard" x="-2626" y="-2142">allowed.input_one</label>
 			<label kind="assignment" x="-2626" y="-2125">pipe3 = pipe3 + RATE,
-			in = 1</label>
+in = RATE</label>
 			<nail x="-2456" y="-2134"/>
 		</transition>
 		<transition id="id13">
@@ -168,7 +167,7 @@ OOO, COO, OCO, COO</label>
 			<target ref="id11"/>
 			<label kind="guard" x="-2618" y="-2083">allowed.input_one</label>
 			<label kind="assignment" x="-2618" y="-2066">pipe2 = pipe2 + RATE,
-			in = 1</label>
+in = RATE</label>
 			<nail x="-2457" y="-2074"/>
 		</transition>
 		<transition id="id14">
@@ -176,7 +175,7 @@ OOO, COO, OCO, COO</label>
 			<target ref="id11"/>
 			<label kind="guard" x="-2601" y="-2015">allowed.input_one</label>
 			<label kind="assignment" x="-2601" y="-1998">pipe1 = pipe1 + RATE,
-			in = 1</label>
+in = RATE</label>
 			<nail x="-2448" y="-2006"/>
 		</transition>
 		<transition id="id15">
@@ -192,7 +191,7 @@ OOO, COO, OCO, COO</label>
 			<label kind="guard" x="-2006" y="-2176">allowed.input_two</label>
 			<label kind="assignment" x="-2006" y="-2159">pipe1 = pipe1 + RATE,
 pipe2 = pipe2 + RATE,
-in = 2</label>
+in = 2*RATE</label>
 			<nail x="-2014" y="-2168"/>
 		</transition>
 		<transition id="id17">
@@ -201,7 +200,7 @@ in = 2</label>
 			<label kind="guard" x="-2031" y="-2023">allowed.input_two</label>
 			<label kind="assignment" x="-2031" y="-2006">pipe2 = pipe2 + RATE,
 pipe3 = pipe3 + RATE,
-in = 2</label>
+in = 2*RATE</label>
 			<nail x="-2031" y="-2015"/>
 		</transition>
 		<transition id="id18">
@@ -210,7 +209,7 @@ in = 2</label>
 			<label kind="guard" x="-2006" y="-2100">allowed.input_two</label>
 			<label kind="assignment" x="-2006" y="-2083">pipe1 = pipe1 + RATE,
 pipe3 = pipe3 + RATE,
-in = 2</label>
+in = 2*RATE</label>
 			<nail x="-2023" y="-2091"/>
 		</transition>
 		<transition id="id19">
@@ -220,7 +219,7 @@ in = 2</label>
 			<label kind="assignment" x="-2048" y="-1930">pipe1 = pipe1 + RATE,
 pipe2 = pipe2 + RATE,
 pipe3 = pipe3 + RATE,
-in = 3</label>
+in = 3*RATE</label>
 			<nail x="-2065" y="-1947"/>
 		</transition>
 		<transition id="id20" controllable="false">
@@ -268,7 +267,7 @@ but they have to reset consumption rate each tick.</label>
 			<nail x="-314" y="-127"/>
 		</transition>
 	</template>
-	<system>/** Layout: https://i.imgur.com/i9NSdTN.png
+	<system>/** Layout: https://i.imgur.com/qZdiKOI.png
 Lines show unit_out providing material to next layer.
 Boxes signify production units. No box signifies provider_out.
 D1 and D2 are consumers.
@@ -302,13 +301,15 @@ P10 = Provider(provider_out[10]);
 U9 = ProductionUnit(unit_out[9], stored[9], provider_out[9], unit_out[6], unit_out[7]);
 U10 = ProductionUnit(unit_out[10], stored[10], unit_out[7], unit_out[8], provider_out[10]);
 
-D1 = Consumer(unit_out[9], 0.0, 2.0, 2.0, 1.0, 0.0);
-D2 = Consumer(unit_out[10], 1.0, 1.0, 0.0, 2.0, 1.0);
+D1 = Consumer(unit_out[9], 0.0, 2*RATE, 2*RATE, RATE, 0.0);
+D2 = Consumer(unit_out[10], RATE, RATE, 0.0, 2*RATE, RATE);
 system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8, P9, P10, U9, U10, D1, D2;
 </system>
 	<simulator type="concrete">
-		<plot-widget title="cost">
-			<expression>cost</expression>
+		<plot-widget title="Untitled Plot">
+			<expression>unit_out[1]</expression>
+			<expression>unit_out[3]</expression>
+			<expression>unit_out[2]</expression>
 		</plot-widget>
 	</simulator>
 	<queries>
@@ -325,6 +326,14 @@ system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8
     stored[9],
     stored[10]
     }</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>simulate[&lt;=100;1] {stored[1]}</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>Pr[&lt;=100;10000] (&lt;&gt; forall (i : unitid_t) (MIN_STORED &lt; stored[i] &amp;&amp; stored[i] &lt; MAX_STORED))</formula>
 			<comment/>
 		</query>
 		<query>
@@ -345,6 +354,10 @@ system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8
 		</query>
 		<query>
 			<formula>E[&lt;=100;100] (max:cost) under Moneydollars</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>Pr[&lt;=100;10000] (&lt;&gt; forall (i : unitid_t) (MIN_STORED &lt; stored[i] &amp;&amp; stored[i] &lt; MAX_STORED)) under Moneydollars</formula>
 			<comment/>
 		</query>
 	</queries>
