@@ -275,8 +275,23 @@ end
 # ╔═╡ 67978236-9ffa-49e0-a3b0-d4c3f4985d3a
 function action_decider_signature(name, vars::AbstractArray) 
 	args = join(["double $var" for var in vars], ", ")
-	"int get_action_$name($args)"
+	"int get_action_$name($args, bool allowed_wait, bool allowed_input_one, bool allowed_input_two, bool allowed_input_three)"
 end
+
+# ╔═╡ ad9435f6-a6c9-402f-ab7e-ee039fd0174d
+allowed = Dict(
+	"OOC" => "allowed_input_two",
+	"COC" => "allowed_input_one",
+	"COO" => "allowed_input_two",
+	"CCO" => "allowed_input_one",
+	"OCC" => "allowed_input_one",
+	"OCO" => "allowed_input_two",
+	"OOO" => "allowed_input_three",
+	"CCC" => "allowed_wait",
+)
+
+# ╔═╡ 407ec72c-3a55-4d42-96e2-19f3b0a853c9
+all(v ∈ keys(allowed) for (k, v) in actions)
 
 # ╔═╡ 879a90ad-f58a-4c38-aef6-8b8363016651
 begin
@@ -323,7 +338,7 @@ begin
 			@printf io "expected = expected_%s(%s);\n" action args
 			
 			indentation(io, indent)
-			@printf io "if (expected < best) {\n"
+			@printf io "if (%s && expected < best) {\n" allowed[action]
 			indent += 1
 			
 			indentation(io, indent)
@@ -353,6 +368,7 @@ function header(io::IO, name, actions::Dict)
 
 	# Includes
 	@printf io "#include <math.h>\n\n"
+	@printf io "#include <stdbool.h>\n\n"
 
 	# Constants representing the given actions.
 	for (k, v) in actions
@@ -514,7 +530,7 @@ end
 # ╔═╡ d0e68988-6e25-47bf-8352-7fda76a7f2fe
 #=╠═╡
 get_action_unit1(t, stored) = 
-	@ccall savefile.get_action_moneydollars(t::Float64, stored::Float64)::Int64
+	@ccall savefile.get_action_moneydollars(t::Float64, stored::Float64, true::Bool, true::Bool, true::Bool, true::Bool)::Int64
   ╠═╡ =#
 
 # ╔═╡ b49c646e-5e1a-40c3-bac5-66599b5225fe
@@ -820,6 +836,8 @@ version = "17.4.0+0"
 # ╠═490df7d6-a79b-4d3e-8e9b-a302d1e359db
 # ╠═308aa994-8cf5-4393-9631-4f4baac64c6a
 # ╠═67978236-9ffa-49e0-a3b0-d4c3f4985d3a
+# ╠═ad9435f6-a6c9-402f-ab7e-ee039fd0174d
+# ╠═407ec72c-3a55-4d42-96e2-19f3b0a853c9
 # ╠═879a90ad-f58a-4c38-aef6-8b8363016651
 # ╠═d1663eca-6f1f-4026-a036-da8016815977
 # ╠═df870b5a-7232-4195-9d9a-4d92cba2cec2

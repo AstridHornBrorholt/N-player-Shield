@@ -94,12 +94,12 @@ const int CCC = 3;
 
 import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Strategies/libmoneydollars.so"
 {
-    int get_action_moneydollars(double t, double volume);
+    int get_action_moneydollars(double t, double volume, bool allowed_wait, bool allowed_input_one, bool allowed_input_two, bool allowed_input_three);
 };
 
-action_t get_action(unitid_t id, double t, double volume) {
+action_t get_action(unitid_t id, double t, double volume, allowedActions allowed) {
     if (id == 1) {
-        return get_action_moneydollars(t, volume);
+        return get_action_moneydollars(t, volume, allowed.wait, allowed.input_one, allowed.input_two, allowed.input_three);
     } else {
         stored[-100] = -100;     //Provoke error: Unexpected ID for production unit.
         return CCC;
@@ -461,8 +461,8 @@ in = 3*RATE + r1 + r2 + r3</label>
 r1 = random(VARIANCE),
 r2 = random(VARIANCE),
 r3 = random(VARIANCE),
-action = get_action(id, t, stored),
-allowed = get_allowed(stored)</label>
+allowed = get_allowed(stored),
+action = get_action(id, t, stored, allowed)</label>
 		</transition>
 	</template>
 	<template>
@@ -538,8 +538,8 @@ out=0</label>
 		</transition>
 	</template>
 	<system>/** Layout: https://i.imgur.com/qZdiKOI.png
-Lines show unit_out providing material to next layer.
-Boxes signify production units. No box signifies provider_out.
+Lines show pipes providing material to next layer.
+Boxes signify production units. No box signifies a provider.
 D1 and D2 are consumers.
 */ 
 
