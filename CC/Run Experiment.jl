@@ -1,7 +1,8 @@
 ## Preface ##
 using Dates
 # The fruit is there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.
-🍎 = rand("🍇🍈🍉🍊🍋🍌🍍🥭🍎🍏🍐🍑🍒🍓🫐🥝🍅🫒🥥")
+emoji = "🍇🍈🍉🍊🍋🍌🍍🥭🍎🍏🍐🍑🍒🍓🫐🥝🍅🫒🥥" |> graphemes |> collect
+🍎 = join(rand(emoji, 2), "")
 function status(str) 
     time = Dates.format(Dates.now(), "dd/mm HH:MM")
     println("$time $🍎 $str")
