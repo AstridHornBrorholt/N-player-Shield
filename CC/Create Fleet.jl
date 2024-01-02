@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -93,9 +93,6 @@ actions = Dict(
 # ╔═╡ 7c2cdf08-7180-423a-9c36-55f4fc2ecc02
 ← = push!
 
-# ╔═╡ 883e028a-7651-4dc1-a55d-708eb9fff889
-
-
 # ╔═╡ 265701e4-9cd6-4834-af7d-df02bbd976ec
 function strategies_to_c(strategy_paths, output_dir)
 	result = Tuple{String, String}[]
@@ -136,7 +133,7 @@ Fields in the blueprint surrouned with `%`. Functions or variable names here are
 
 # ╔═╡ 6ba15d9e-1490-47a3-ac77-288eae1dc281
 #=╠═╡
-@bind shield_path TextField(80, default = "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/CC Shield/libshield.so")
+@bind shield_path TextField(80, default = pwd() ⨝ "../CC Shield/libshield.so")
   ╠═╡ =#
 
 # ╔═╡ b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb
@@ -168,9 +165,14 @@ function name_from_signature(signature)
 	without_type[1:findfirst((==)('('), without_type) - 1]
 end
 
+# ╔═╡ dcf332e0-2f37-4354-9e71-68529882f2b2
+#=╠═╡
+signature = strategies[1][1]
+  ╠═╡ =#
+
 # ╔═╡ 90043fd6-5214-4d4b-8e3f-cd2427a90b28
 #=╠═╡
-name_from_signature(strategies[1][1])
+name_from_signature(signature)
   ╠═╡ =#
 
 # ╔═╡ 654632ba-3f6a-4453-81fb-24d7bc566a69
@@ -291,7 +293,7 @@ md"""
 
 # ╔═╡ fade61a9-8136-4a4c-99a2-dee9bf79fd32
 #=╠═╡
-@bind blueprint_path TextField(80, default="/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Fleet_blueprint.xml")
+@bind blueprint_path TextField(80, default=pwd() ⨝ "Fleet_blueprint.xml")
   ╠═╡ =#
 
 # ╔═╡ a0e02d1a-0355-4496-9b18-70f53c67a389
@@ -453,7 +455,6 @@ Support for running this script from the command line.
 # ╠═6faf4945-da06-4ce8-8f79-2db5fb321ce1
 # ╠═9228d33d-bfe8-4c96-9e11-815fa674a5b6
 # ╠═7c2cdf08-7180-423a-9c36-55f4fc2ecc02
-# ╠═883e028a-7651-4dc1-a55d-708eb9fff889
 # ╠═265701e4-9cd6-4834-af7d-df02bbd976ec
 # ╠═91f00f7e-43b7-47c5-970b-ee4f0c6100b4
 # ╠═695ffd13-dc54-48e0-a8a4-364cd938e640
@@ -463,6 +464,7 @@ Support for running this script from the command line.
 # ╠═e5e56986-4728-480e-8c07-cb78c61e9579
 # ╠═d642235d-8da6-4a9c-b346-1c01ba5ef885
 # ╠═468c1f4a-a306-4a16-aa42-dc7e7728d959
+# ╠═dcf332e0-2f37-4354-9e71-68529882f2b2
 # ╠═90043fd6-5214-4d4b-8e3f-cd2427a90b28
 # ╠═654632ba-3f6a-4453-81fb-24d7bc566a69
 # ╠═81a2de17-4954-4110-a39b-b775c85c9dfb
@@ -489,5 +491,3 @@ Support for running this script from the command line.
 # ╠═96aaff55-db70-4e32-b405-decad1a887c0
 # ╠═86082ab2-b9c3-4575-b878-b2734044e7d6
 # ╟─a99d74ed-cc83-41f7-910b-5df140129d3f
-# ╠═a3e1e009-7d3d-4be8-9f76-ae64bace2514
-# ╠═8eb7b2c0-6c8e-4b4e-adf2-a0b67f819caf

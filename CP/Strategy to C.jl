@@ -68,7 +68,7 @@ body:not(.___) pluto-cell:focus-within > pluto-trafficlight {
 """
 
 # ╔═╡ c5cde56e-cd4b-4509-a739-d8281a7c5248
-⨝ = joinpath
+const ⨝ = joinpath
 
 # ╔═╡ 3bb7e0de-5364-4a52-ab7d-7d5cb9273efa
 #=╠═╡
