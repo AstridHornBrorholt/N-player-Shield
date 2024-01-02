@@ -1,22 +1,23 @@
 ## Preface ##
 using Dates
+using Unicode
 # The fruit is there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.
-emoji = rand(split("🍇🍈🍉🍊🍋🍌🍍🥭🍎🍏🍐🍑🍒🍓🫐🥝🍅🫒🥥", ""))
-🍎 = join(rand(emoji, 2), "")
+emoji = "🧪🦠🥽🥼⚗️💊🧫👨‍🔬👩‍🔬🧬🌡️⏳💉🔬💡📊" |> graphemes |> collect
+🧪📊 = join(rand(emoji, 2), "")
 function status(str) 
     time = Dates.format(Dates.now(), "dd/mm HH:MM")
-    println("$time $🍎 $str")
+    println("$time $🧪📊 $str")
     flush(stdout)
 end
 using Pkg
 Pkg.activate("..")
 
 using ArgParse
-include("Create Fleet.jl")
+include("Create Plant.jl")
 
 ## Args and Constants ##
-⨝ = joinpath
-← = push!
+const ⨝ = joinpath
+const ← = push!
 
 begin
 	s = ArgParseSettings()
@@ -27,23 +28,23 @@ begin
 		"--checks"
 			arg_type=Int
 			required=true
-        "--max-cars"
+        "--n-units"
+            help="number of units"
             arg_type=Int
-            required=true
+            default=10
         "--repetition"
             arg_type=Int
             required=true
 		"--results-dir"
-			default=homedir() ⨝ "Results/N-player CC"
+			default=homedir() ⨝ "Results/N-player CP"
         "--verifyta-path"
-            default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta.sh"
+            default=homedir() ⨝ "opt/uppaal-5.1.0-beta5-linux64/bin/verifyta.sh"
         "--blueprint-path"  
-            default=pwd() ⨝ "Fleet_blueprint.xml"
+            default=pwd() ⨝ "Plant_blueprint.xml"
         "--shield-path"  
-            default=pwd() ⨝ "../CC Shield/libshield.so"
+            default=pwd() ⨝ "libcpshield.so"
         "--skip-training"
             action=:store_true
-            help="MISNOMER: Use car1.json for all cars in the fleets (must exist) without training any strategies."
 	end
 end;
 
@@ -51,12 +52,12 @@ args = parse_args(s)
 
 runs = args["runs"]
 checks = args["checks"]
-max_cars = args["max-cars"]
+n_units = args["n-units"]
 repetition = args["repetition"]
 results_dir = args["results-dir"]
 verifyta_path = args["verifyta-path"]
 skip_training = args["skip-training"]
-status("Starting... (runs=$runs, max_cars=$max_cars, repetition=$repetition, skip_training=$skip_training)")
+status("Starting... $((;runs, repetition, skip_training))")
 
 isdir(results_dir) || mkdir(results_dir) # Error if path is invalid except if it is only the last folder missing.
 isfile(verifyta_path) || error("File verifyta not found at path $verifyta_path")
@@ -87,20 +88,16 @@ mkpath(models_dir)
 
 ## Mainmatter ##
 strategy_paths = String[]
-for N in 2:max_cars
-    status("Running Fleet of $N Cars...  (repetition=$repetition)")
-    outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
+for N in 1:n_units
+    status("Running plant with $N optimized produciton units...  (repetition=$repetition)")
+    outfile = query_results_dir ⨝ "Plant $N.txt"
     model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, models_dir; checks, skip_training)
-    if skip_training
-        strategy_paths ← (working_dir ⨝ "Models/car1.json")
-    else
-        strategy_paths ← (working_dir ⨝ "Models/car$(N - 1).json")
-    end
+    strategy_paths ← (working_dir ⨝ "Models/unit$N.json")
     open(outfile, "w") do io
         result = [verifyta_call..., model_path, queries_path] |> Cmd |> read |> String
         write(io, result)
     end
-    status("Done running Fleet of $N Cars.  (repetition=$repetition)")
+    status("Done running plant with $N optimized production units.  (repetition=$repetition)")
 end
 
 status("All done.")

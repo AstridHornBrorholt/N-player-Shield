@@ -203,6 +203,9 @@ name_from_signature(signature)
 
 # ╔═╡ 654632ba-3f6a-4453-81fb-24d7bc566a69
 function agent_selector(strategies)
+	if length(strategies) == 0
+		return "if (false) { return 0; }"
+	end
 	result = String[]
 	for (i, (signature, path)) in enumerate(strategies)
 		fname = name_from_signature(signature)
@@ -215,6 +218,9 @@ function agent_selector(strategies)
 	end
 	join(result, "\n")
 end
+
+# ╔═╡ 8b72ad52-5e5f-4321-9834-027c8739a215
+agent_selector([]) |> multiline
 
 # ╔═╡ 81a2de17-4954-4110-a39b-b775c85c9dfb
 #=╠═╡
@@ -298,8 +304,10 @@ md"""
 @bind blueprint_path TextField(80, default=pwd() ⨝ "Plant_blueprint.xml")
   ╠═╡ =#
 
-# ╔═╡ 4a634cea-cbe4-4454-aee0-1525b526b48a
-isdir(destination)
+# ╔═╡ 499824b9-3f5e-4a77-9f0f-8637b3aa34f6
+#=╠═╡
+isfile(blueprint_path)
+  ╠═╡ =#
 
 # ╔═╡ 9baf5bef-2632-4d4d-8ee6-17a58db86c1a
 function search_and_replace(input_path, output_path, replacements)
@@ -450,6 +458,7 @@ create_fleet(blueprint_path, strategy_paths, shield_path, output_dir)
 # ╠═dcf332e0-2f37-4354-9e71-68529882f2b2
 # ╠═90043fd6-5214-4d4b-8e3f-cd2427a90b28
 # ╠═654632ba-3f6a-4453-81fb-24d7bc566a69
+# ╠═8b72ad52-5e5f-4321-9834-027c8739a215
 # ╠═81a2de17-4954-4110-a39b-b775c85c9dfb
 # ╠═41bd6a0e-d6ff-4e40-8eb7-313eb069c74a
 # ╠═960489b5-d302-4317-bdbe-de8491eaba94
@@ -464,7 +473,7 @@ create_fleet(blueprint_path, strategy_paths, shield_path, output_dir)
 # ╠═97088511-1745-46c0-8e78-4670bac3ce18
 # ╟─a87b61c0-fbf3-464c-ae7c-6aced2b0674d
 # ╠═fade61a9-8136-4a4c-99a2-dee9bf79fd32
-# ╠═4a634cea-cbe4-4454-aee0-1525b526b48a
+# ╠═499824b9-3f5e-4a77-9f0f-8637b3aa34f6
 # ╠═9baf5bef-2632-4d4d-8ee6-17a58db86c1a
 # ╠═a05921d4-4765-44bf-9592-b9d54de3ac65
 # ╠═96aaff55-db70-4e32-b405-decad1a887c0
