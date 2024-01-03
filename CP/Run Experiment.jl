@@ -2,7 +2,7 @@
 using Dates
 using Unicode
 # The fruit is there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.
-emoji = "🧪🦠🥽🥼⚗️💊🧫👨‍🔬👩‍🔬🧬🌡️⏳💉🔬💡📊" |> graphemes |> collect
+emoji = ["🧪", "🥽", "🥼", "⚗️", "💊", "🧫", "👨‍🔬", "👩‍🔬", "🧬", "🌡️", "⏳", "💉", "🔬", "💡", "📊"]
 🧪📊 = join(rand(emoji, 2), "")
 function status(str) 
     time = Dates.format(Dates.now(), "dd/mm HH:MM")
