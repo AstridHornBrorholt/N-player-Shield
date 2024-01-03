@@ -186,6 +186,7 @@ function create_plant(blueprint_path,
 	# Replacements.
 	replacements = Dict{String, String}()
 	replacements["%shield path%"] = shield_path
+	replacements["%model dir%"] = destination
 	replacements["%checks%"] = "$checks"
 
 	# Apply replacements to blueprint

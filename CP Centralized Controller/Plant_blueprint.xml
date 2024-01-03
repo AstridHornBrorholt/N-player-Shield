@@ -457,7 +457,7 @@ system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8
 			<comment/>
 		</query>
 		<query>
-			<formula>saveStrategy("/home/asger/Results/N-player CP/20000 Runs/Repetition 1/Models/unit1.json", centralized)</formula>
+			<formula>saveStrategy("%model dir%/centralized.json", centralized)</formula>
 			<comment/>
 		</query>
 		<query>
