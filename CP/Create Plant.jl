@@ -269,10 +269,10 @@ function queries(number_of_strategies, output_path; checks=1000, skip_training=f
 	# Training or loading strategy
 	i = number_of_strategies + 1
 	if !skip_training
-		result ← "strategy unit$i = minE(cost) [<=100] {}->{t, stored[$i]}: <> time >= 100"
+		result ← "strategy unit$i = minE(cost) [<=100] {}->{t, stored[1], stored[2], stored[3], stored[4], stored[5], stored[6], stored[7], stored[8], stored[9], stored[10]}: <> time >= 100"
 		result ← "saveStrategy(\"$output_path/unit$i.json\", unit$i)"
 	else
-		result ← "strategy unit$i = loadStrategy{}->{t, stored[$i]} (\"$output_path/car1.json\")"
+		result ← "strategy unit$i = loadStrategy{}->{t, stored[1], stored[2], stored[3], stored[4], stored[5], stored[6], stored[7], stored[8], stored[9], stored[10]} (\"$output_path/car1.json\")"
 	end
 	# Learned performance
 	result ← "E[<=100;$checks](max:cost) under unit$i"
