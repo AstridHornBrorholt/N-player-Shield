@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
+<nta>
+	<declaration>/**TODOS:**
+ - Pre-trained production units
+*/
+
+/**
+Every production unit has two outputs which feed into other production units or to outlets.
+If a production unit doesn't receive output from another unit, it receives it from an intake that delivers material according to a cyclic pattern.
+*/
+clock time;    // Used as exit condition for the strategy queries
+clock t;       // I know. This one is a clock that resets each period.
+broadcast chan choose;
+const int N_UNITS = 10; // Number of units
+const int N_provider_out = 10; // Number of providers
+typedef int[1, N_UNITS] unitid_t;
+typedef int[1, N_provider_out] providerid_t;
+
+const double MIN_STORED = 2;       // Unit: L
+const double MAX_STORED = 50;      // Unit: L
+const double RATE = 2.65;    // Flow rate through single pipe. Unit: L/m
+const double VARIANCE = 0.5; // Flow rate diverges with 0 to +VARIANCE at each time-step.
+const double PERIOD = 2.5;    // Length of period for consumer and provider patterns. 
+
+// Material stored in each tank. Unit: L
+clock stored[unitid_t] = {11, 11, 11, 11, 11, 11, 11, 11, 11, 11};
+
+// Current outflow rate from production units. Can be influenced by multiple other  units.  Unit: L/m
+double unit_out[unitid_t];
+
+// Current outflow rate from providers. Used to calculate cost. Can be influence by multiple production units. Unit: L/m
+double provider_out[providerid_t];
+
+// Cost per litre for the given provider. Unit: moneydollars/L
+double cost_multiplier[providerid_t] = { 0.5, 0.5, 0.5, 1.0, 1.0, 3.0, 3.0, 3.0, 5.0, 5.0};
+clock cost;
+
+
+/** Shielding **/
+
+const int INPUT_THREE = 3;
+const int INPUT_TWO = 2;
+const int INPUT_ONE = 1;
+const int WAIT = 0;
+
+import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CP/libcpshield.so"
+{
+    int get_value(double volume);
+};
+
+
+typedef struct {
+    bool wait;
+    bool input_one;
+    bool input_two;
+    bool input_three;
+} allowedActions;
+
+allowedActions intToActions(int bitarray) {
+    allowedActions result = { 
+        (0 != (bitarray &amp; (1 &lt;&lt; 0))),
+        (0 != (bitarray &amp; (1 &lt;&lt; 1))),
+        (0 != (bitarray &amp; (1 &lt;&lt; 2))),
+        (0 != (bitarray &amp; (1 &lt;&lt; 3)))
+    };
+    return result;
+}
+
+int debugUnsafeState = 0;
+
+allowedActions get_allowed(double stored) {
+    allowedActions allowed = intToActions(get_value(stored));
+    allowedActions any = {true, true, true, true};
+    if (!allowed.wait &amp;&amp; !allowed.input_one &amp;&amp; !allowed.input_two &amp;&amp; !allowed.input_three) {
+        debugUnsafeState = 1;
+        return any;
+    }
+    return allowed;
+}
+</declaration>
+	<template>
+		<name x="5" y="5">Consumer</name>
+		<parameter>double&amp; pipe1, const double t0, const double t1, const double t2, const double t3, const double t4</parameter>
+		<location id="id0" x="-433" y="-289">
+		</location>
+		<location id="id1" x="-204" y="-289">
+		</location>
+		<location id="id2" x="17" y="-289">
+		</location>
+		<location id="id3" x="238" y="-289">
+		</location>
+		<location id="id4" x="425" y="-289">
+		</location>
+		<init ref="id0"/>
+		<transition id="id5" controllable="false">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="-408" y="-323">choose?</label>
+			<label kind="assignment" x="-408" y="-306">pipe1=t0</label>
+		</transition>
+		<transition id="id6" controllable="false">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-179" y="-323">choose?</label>
+			<label kind="assignment" x="-179" y="-306">pipe1=t1</label>
+		</transition>
+		<transition id="id7" controllable="false">
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="42" y="-323">choose?</label>
+			<label kind="assignment" x="42" y="-306">pipe1=t2</label>
+		</transition>
+		<transition id="id8" controllable="false">
+			<source ref="id3"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="263" y="-323">choose?</label>
+			<label kind="assignment" x="263" y="-306">pipe1=t3</label>
+		</transition>
+		<transition id="id9" controllable="false">
+			<source ref="id4"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="314" y="-212">choose?</label>
+			<label kind="assignment" x="314" y="-195">pipe1=t4</label>
+			<nail x="382" y="-221"/>
+			<nail x="-357" y="-221"/>
+		</transition>
+	</template>
+	<template>
+		<name>ControllableProductionUnit</name>
+		<parameter>const unitid_t id, double&amp; out, clock&amp; stored, double&amp; pipe1, double&amp; pipe2, double&amp; pipe3</parameter>
+		<declaration>allowedActions allowed = { true, true, true, true };
+
+// inflow
+double in = 0;
+double r1, r2, r3;</declaration>
+		<location id="id10" x="-2235" y="-1938">
+			<name x="-2278" y="-1921">Choosing</name>
+			<label kind="comments" x="-2320" y="-1879">8 possible actions,
+controlling 3 unit_out:
+(Closed/Open)
+CCC, CCO, COC, OCC,
+OOO, COO, OCO, COO</label>
+			<urgent/>
+		</location>
+		<location id="id11" x="-2244" y="-2193">
+			<name x="-2278" y="-2219">Working</name>
+			<label kind="invariant" x="-2320" y="-2244">stored' == in - out</label>
+		</location>
+		<init ref="id11"/>
+		<transition id="id12">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-2669" y="-2142">allowed.input_one</label>
+			<label kind="assignment" x="-2669" y="-2125">pipe3 = pipe3 + RATE + r3,
+in = RATE + r3</label>
+			<nail x="-2456" y="-2134"/>
+		</transition>
+		<transition id="id13">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-2686" y="-2082">allowed.input_one</label>
+			<label kind="assignment" x="-2686" y="-2065">pipe2 = pipe2 + RATE + r2,
+in = RATE + r2</label>
+			<nail x="-2457" y="-2074"/>
+		</transition>
+		<transition id="id14">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-2652" y="-2023">allowed.input_one</label>
+			<label kind="assignment" x="-2660" y="-1997">pipe1 = pipe1 + RATE + r1,
+in = RATE + r1</label>
+			<nail x="-2448" y="-2006"/>
+		</transition>
+		<transition id="id15">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-2533" y="-1955">allowed.wait</label>
+			<label kind="assignment" x="-2533" y="-1938">in = 0</label>
+			<nail x="-2414" y="-1947"/>
+		</transition>
+		<transition id="id16">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-2006" y="-2176">allowed.input_two</label>
+			<label kind="assignment" x="-2006" y="-2159">pipe1 = pipe1 + RATE + r1,
+pipe2 = pipe2 + RATE + r2,
+in = 2*RATE + r1 + r2</label>
+			<nail x="-2014" y="-2168"/>
+		</transition>
+		<transition id="id17">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-2031" y="-2023">allowed.input_two</label>
+			<label kind="assignment" x="-2031" y="-2006">pipe2 = pipe2 + RATE + r2,
+pipe3 = pipe3 + RATE + r3,
+in = 2*RATE + r2 + r3</label>
+			<nail x="-2031" y="-2015"/>
+		</transition>
+		<transition id="id18">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-2006" y="-2100">allowed.input_two</label>
+			<label kind="assignment" x="-2006" y="-2083">pipe1 = pipe1 + RATE + r1,
+pipe3 = pipe3 + RATE + r3,
+in = 2*RATE + r1 + r3</label>
+			<nail x="-2023" y="-2091"/>
+		</transition>
+		<transition id="id19">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-2048" y="-1947">allowed.input_three</label>
+			<label kind="assignment" x="-2048" y="-1930">pipe1 = pipe1 + RATE + r1,
+pipe2 = pipe2 + RATE + r2,
+pipe3 = pipe3 + RATE + r3,
+in = 3*RATE + r1 + r2 + r3</label>
+			<nail x="-2065" y="-1947"/>
+		</transition>
+		<transition id="id20" controllable="false">
+			<source ref="id11"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="-2320" y="-2116">choose?</label>
+			<label kind="assignment" x="-2320" y="-2099">out = 0,
+r1 = random(VARIANCE),
+r2 = random(VARIANCE),
+r3 = random(VARIANCE),
+allowed = get_allowed(stored)</label>
+		</transition>
+	</template>
+	<template>
+		<name>RandomProductionUnit</name>
+		<parameter>const unitid_t id, double&amp; out, clock&amp; stored, double&amp; pipe1, double&amp; pipe2, double&amp; pipe3</parameter>
+		<declaration>allowedActions allowed = { true, true, true, true };
+
+// inflow
+double in = 0;
+double r1, r2, r3;</declaration>
+		<location id="id21" x="179" y="-272">
+			<name x="136" y="-255">Choosing</name>
+			<label kind="comments" x="94" y="-213">8 possible actions,
+controlling 3 unit_out:
+(Closed/Open)
+CCC, CCO, COC, OCC,
+OOO, COO, OCO, COO</label>
+			<urgent/>
+		</location>
+		<location id="id22" x="170" y="-527">
+			<name x="136" y="-553">Working</name>
+			<label kind="invariant" x="94" y="-578">stored' == in - out</label>
+		</location>
+		<init ref="id22"/>
+		<transition id="id23" controllable="false">
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="guard" x="-255" y="-476">allowed.input_one</label>
+			<label kind="assignment" x="-255" y="-459">pipe3 = pipe3 + RATE + r3,
+in = RATE + r3</label>
+			<nail x="-42" y="-468"/>
+		</transition>
+		<transition id="id24" controllable="false">
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="guard" x="-272" y="-416">allowed.input_one</label>
+			<label kind="assignment" x="-272" y="-399">pipe2 = pipe2 + RATE + r2,
+in = RATE + r2</label>
+			<nail x="-43" y="-408"/>
+		</transition>
+		<transition id="id25" controllable="false">
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="guard" x="-238" y="-357">allowed.input_one</label>
+			<label kind="assignment" x="-246" y="-331">pipe1 = pipe1 + RATE + r1,
+in = RATE + r1</label>
+			<nail x="-34" y="-340"/>
+		</transition>
+		<transition id="id26" controllable="false">
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="guard" x="-119" y="-289">allowed.wait</label>
+			<label kind="assignment" x="-119" y="-272">in = 0</label>
+			<nail x="0" y="-281"/>
+		</transition>
+		<transition id="id27" controllable="false">
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="guard" x="408" y="-510">allowed.input_two</label>
+			<label kind="assignment" x="408" y="-493">pipe1 = pipe1 + RATE + r1,
+pipe2 = pipe2 + RATE + r2,
+in = 2*RATE + r1 + r2</label>
+			<nail x="399" y="-484"/>
+		</transition>
+		<transition id="id28" controllable="false">
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="guard" x="383" y="-357">allowed.input_two</label>
+			<label kind="assignment" x="383" y="-340">pipe2 = pipe2 + RATE + r2,
+pipe3 = pipe3 + RATE + r3,
+in = 2*RATE + r2 + r3</label>
+			<nail x="383" y="-349"/>
+		</transition>
+		<transition id="id29" controllable="false">
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="guard" x="408" y="-434">allowed.input_two</label>
+			<label kind="assignment" x="408" y="-417">pipe1 = pipe1 + RATE + r1,
+pipe3 = pipe3 + RATE + r3,
+in = 2*RATE + r1 + r3</label>
+			<nail x="391" y="-425"/>
+		</transition>
+		<transition id="id30" controllable="false">
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="guard" x="366" y="-281">allowed.input_three</label>
+			<label kind="assignment" x="366" y="-264">pipe1 = pipe1 + RATE + r1,
+pipe2 = pipe2 + RATE + r2,
+pipe3 = pipe3 + RATE + r3,
+in = 3*RATE + r1 + r2 + r3</label>
+			<nail x="349" y="-281"/>
+		</transition>
+		<transition id="id31" controllable="false">
+			<source ref="id22"/>
+			<target ref="id21"/>
+			<label kind="synchronisation" x="94" y="-450">choose?</label>
+			<label kind="assignment" x="94" y="-433">out = 0,
+r1 = random(VARIANCE),
+r2 = random(VARIANCE),
+r3 = random(VARIANCE),
+allowed = get_allowed(stored)</label>
+		</transition>
+	</template>
+	<template>
+		<name>Metronome</name>
+		<declaration>clock x;</declaration>
+		<location id="id32" x="0" y="0">
+			<label kind="invariant" x="-25" y="17">x &lt;= 1 &amp;&amp;
+x' == 2 &amp;&amp;
+cost' == sum (i : providerid_t) provider_out[i]*cost_multiplier[i]</label>
+		</location>
+		<init ref="id32"/>
+		<transition id="id33" controllable="false">
+			<source ref="id32"/>
+			<target ref="id32"/>
+			<label kind="guard" x="-42" y="-127">x == 1</label>
+			<label kind="synchronisation" x="-42" y="-110">choose!</label>
+			<label kind="assignment" x="-42" y="-93">x = 0,
+t = t &gt;= PERIOD ? 0 : t</label>
+			<nail x="-43" y="-51"/>
+			<nail x="41" y="-51"/>
+		</transition>
+	</template>
+	<template>
+		<name>Provider</name>
+		<parameter>double&amp; out, double&amp; multiplier, const double t0, const double t1, const double t2, const double t3, const double t4</parameter>
+		<location id="id34" x="-493" y="-459">
+		</location>
+		<location id="id35" x="-264" y="-459">
+		</location>
+		<location id="id36" x="-43" y="-459">
+		</location>
+		<location id="id37" x="178" y="-459">
+		</location>
+		<location id="id38" x="365" y="-459">
+		</location>
+		<init ref="id34"/>
+		<transition id="id39" controllable="false">
+			<source ref="id34"/>
+			<target ref="id35"/>
+			<label kind="synchronisation" x="-476" y="-518">choose?</label>
+			<label kind="assignment" x="-476" y="-501">multiplier=t0,
+out=0</label>
+		</transition>
+		<transition id="id40" controllable="false">
+			<source ref="id35"/>
+			<target ref="id36"/>
+			<label kind="synchronisation" x="-247" y="-518">choose?</label>
+			<label kind="assignment" x="-247" y="-501">multiplier=t1,
+out=0</label>
+		</transition>
+		<transition id="id41" controllable="false">
+			<source ref="id36"/>
+			<target ref="id37"/>
+			<label kind="synchronisation" x="-26" y="-518">choose?</label>
+			<label kind="assignment" x="-26" y="-501">multiplier=t2,
+out=0</label>
+		</transition>
+		<transition id="id42" controllable="false">
+			<source ref="id37"/>
+			<target ref="id38"/>
+			<label kind="synchronisation" x="195" y="-518">choose?</label>
+			<label kind="assignment" x="195" y="-501">multiplier=t3,
+out=0</label>
+		</transition>
+		<transition id="id43" controllable="false">
+			<source ref="id38"/>
+			<target ref="id34"/>
+			<label kind="synchronisation" x="195" y="-382">choose?</label>
+			<label kind="assignment" x="195" y="-365">multiplier=t4,
+out=0</label>
+			<nail x="322" y="-391"/>
+			<nail x="-417" y="-391"/>
+		</transition>
+	</template>
+	<system>/** Layout: https://i.imgur.com/qZdiKOI.png
+Lines show pipes providing material to next layer.
+Boxes signify production units. No box signifies a provider.
+D1 and D2 are consumers.
+*/ 
+
+P1 = Provider(provider_out[1], cost_multiplier[1], 1.0, 0.5, 0.5, 0.0, 3.0);
+P2 = Provider(provider_out[2], cost_multiplier[2], 1.0, 0.5, 0.5, 0.0, 3.0);
+P3 = Provider(provider_out[3], cost_multiplier[3], 1.0, 0.5, 0.5, 0.0, 3.0);
+
+U1 = ControllableProductionUnit(1, unit_out[1], stored[1], provider_out[1], provider_out[1], provider_out[1]);
+U2 = ControllableProductionUnit(2, unit_out[2], stored[2], provider_out[2], provider_out[2], provider_out[2]);
+U3 = ControllableProductionUnit(3, unit_out[3], stored[3], provider_out[3], provider_out[3], provider_out[3]);
+
+P4 = Provider(provider_out[4], cost_multiplier[4], 2.0, 1.5, 1.5, 0.5, 4.0);
+P5 = Provider(provider_out[5], cost_multiplier[5], 2.0, 1.5, 1.5, 0.5, 4.0);
+
+U4 = ControllableProductionUnit(4, unit_out[4], stored[4], provider_out[4], unit_out[1], unit_out[2]);
+U5 = ControllableProductionUnit(5, unit_out[5], stored[5], unit_out[2], unit_out[3], provider_out[5]);
+
+P6 = Provider(provider_out[6], cost_multiplier[6], 3.0, 3.5, 3.5, 2.5, 2.0);
+P7 = Provider(provider_out[7], cost_multiplier[7], 3.0, 3.5, 4.5, 2.5, 2.0);
+P8 = Provider(provider_out[8], cost_multiplier[8], 3.0, 4.5, 2.5, 2.5, 2.0);
+
+U6 = ControllableProductionUnit(6, unit_out[6], stored[6], provider_out[6], provider_out[6], unit_out[4]);
+U7 = ControllableProductionUnit(7, unit_out[7], stored[7], unit_out[4], unit_out[5], provider_out[7]);
+U8 = ControllableProductionUnit(8, unit_out[8], stored[8], unit_out[5], provider_out[8], provider_out[8]);
+
+P9 = Provider(provider_out[9], cost_multiplier[9], 6.0, 6.5, 8.5, 2.5, 2.0);
+P10 = Provider(provider_out[10], cost_multiplier[10], 6.0, 6.5, 8.5, 0.5, 6.0);
+
+U9 = ControllableProductionUnit(9, unit_out[9], stored[9], provider_out[9], unit_out[6], unit_out[7]);
+U10 = ControllableProductionUnit(10, unit_out[10], stored[10], unit_out[7], unit_out[8], provider_out[10]);
+
+D1 = Consumer(unit_out[9], 0.0, 2*RATE, 2*RATE, RATE, 0.0);
+D2 = Consumer(unit_out[10], RATE, RATE, 0.0, 2*RATE, RATE);
+system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8, P9, P10, U9, U10, D1, D2;
+</system>
+	<simulator type="concrete">
+		<plot-widget title="Untitled Plot">
+			<expression>unit_out[1]</expression>
+			<expression>unit_out[3]</expression>
+			<expression>unit_out[2]</expression>
+		</plot-widget>
+	</simulator>
+	<queries>
+		<query>
+			<formula>E[&lt;=100;1000](max:cost)</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>strategy centralized = minE(cost) [&lt;=100] {}-&gt;{
+    t, stored[1], stored[2], stored[3], stored[4], stored[5], stored[6], stored[7], stored[8], stored[9], stored[10]
+}: &lt;&gt; time &gt;= 100</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>saveStrategy("/home/asger/Results/N-player CP/20000 Runs/Repetition 1/Models/unit1.json", unit1)</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[&lt;=100;1000](max:cost) under centralized</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>Pr[&lt;=100;10000] (&lt;&gt; forall (i : unitid_t) (MIN_STORED &lt; stored[i] &amp;&amp; stored[i] &lt; MAX_STORED)) under centralized</formula>
+			<comment/>
+		</query>
+	</queries>
+</nta>
