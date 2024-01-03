@@ -90,7 +90,7 @@ mkpath(models_dir)
 strategy_paths = String[]
 for N in 1:n_units
     status("Running plant with $N optimized produciton units...  (repetition=$repetition)")
-    outfile = query_results_dir ⨝ "Plant $N.txt"
+    outfile = query_results_dir ⨝ "Plant $(N - 1).txt"
     model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, models_dir; checks, skip_training)
     strategy_paths ← (working_dir ⨝ "Models/unit$N.json")
     open(outfile, "w") do io
