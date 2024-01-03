@@ -64,7 +64,7 @@ The shield was able to avoid safety violations in all cases, defined as every ta
 All experiments were repeated 10 times and the mean is reported.
 
 
-= Learned Performance - Default Setup
+== Learned Performance - Default Setup
 
 In the default setup, all production units are shielded at all times, to avoid having either inadequate supply or overflow. 
 Units which have not been optimized yet pick which inflow pipes are enabled, according to a uniformly random distribution.
@@ -88,3 +88,18 @@ The baseline performance, where all production units pick actions randomly, is a
 )
 
 Note that @CP-Learned-Performance cannot be compared to @CC-Learned-Performance even though the two look similar. In the chemical production example, the reward reported is that of the entire system. In the cruise control example, each agent has its own individual reward, which is what is shown.
+
+== Centralized Controller
+
+Turns out a centralized controller is much more effective in this context, perhaps due to the slightly lower dimensionality. Or maybe the mechanics are too simple. The performance for the entire plant under one centralized controller is shown in @CP-Centralized-Controller. The best performance achieved is a mean reward of -578. This is again over a 10 times repetition to avoid random jitter.
+
+This is much more performant than the distributed learning setup. I will have to examine whether this is because central control is better, or if observing the levels of other tanks somehow improves the results.
+
+#grid(columns:(1fr, 1fr),
+
+    [#figure(
+        image("./CP/Centralized Controller.svg", width:100%),
+        caption: "Learned Performance"
+    ) <CP-Centralized-Controller>],
+    [ ]
+)
