@@ -458,37 +458,6 @@ means = let
 end
   ╠═╡ =#
 
-# ╔═╡ ef7d9898-c2be-493b-913e-51a854d74c32
-#=╠═╡
-@bind runs Select(means[!, :runs] |> unique)
-  ╠═╡ =#
-
-# ╔═╡ 8a8ad7a8-94cb-4f94-9e78-7684091272c8
-#=╠═╡
-@info "Repetitions found: $(nrow(filter(:runs => (x -> x == runs), cleandata)))"
-  ╠═╡ =#
-
-# ╔═╡ 65b36dde-10b2-448b-8367-027a5b072d50
-#=╠═╡
-filter(:runs => (x -> x == runs), means)
-  ╠═╡ =#
-
-# ╔═╡ 33d2e7c5-f272-4ecd-93cb-c927ceb735ab
-#=╠═╡
-let 
-	readme = results_dir ⨝ "$runs Runs" ⨝ "readme.txt"
-	if isfile(readme)
-		md"""
-		!!! info "`Readme` found"
-		
-		at $(readme)
-		
-		$(readme |> read |> String |> multiline)
-		"""
-	end
-end
-  ╠═╡ =#
-
 # ╔═╡ 7909f497-55cd-4f9d-b34d-515a80241873
 md"""
 ## Performance for different numbers of runs
@@ -535,10 +504,7 @@ size = (width, height)
 
 # ╔═╡ 3f04b408-1027-4c87-b138-35e63ab4697a
 #=╠═╡
-let
-	df = filter((x -> x[:runs] == runs), means)
-	learned_performance_plot(means; ylims, size)
-end
+learned_performance_plot(means; ylims, size)
   ╠═╡ =#
 
 # ╔═╡ Cell order:
@@ -559,13 +525,9 @@ end
 # ╠═7cd7f277-8388-413a-b993-9b81fdb495b8
 # ╠═5484bf48-11be-4ac7-9557-e6fa36802f1d
 # ╠═a675d6b9-0f2b-4023-af2a-1bb43303f6a7
-# ╠═8a8ad7a8-94cb-4f94-9e78-7684091272c8
-# ╠═65b36dde-10b2-448b-8367-027a5b072d50
 # ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
 # ╠═5d35a941-ea93-45ed-b309-98db9ad9fc47
 # ╠═1f973cbe-a416-44fa-8e3b-e6392f6ddb16
-# ╠═ef7d9898-c2be-493b-913e-51a854d74c32
-# ╟─33d2e7c5-f272-4ecd-93cb-c927ceb735ab
 # ╟─7909f497-55cd-4f9d-b34d-515a80241873
 # ╠═3f04b408-1027-4c87-b138-35e63ab4697a
 # ╠═734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
