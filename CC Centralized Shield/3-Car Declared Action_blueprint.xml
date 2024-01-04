@@ -97,7 +97,7 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Centralized Shield/2-car-declared-action.so"
+import "%shield path%"
 {
     int get_value(double v0, double v1, double d, double front_action);
 };
