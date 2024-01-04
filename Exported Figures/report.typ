@@ -55,6 +55,24 @@ There seems to be a slight trend of the backmost cars performing better in each 
     ) <centralized-controller-mean-performance>],
 )
 
+== Centralized shield
+
+I was not actually able to synthesize a centralized shield for even two cars. This seems strange to me since the worst-case memory consumption is much less than the RAM I have available. Must be some inefficiency in a data strcutre of mine. 
+
+But what I was able to do, was create a shield for two cars whose max distance was only 50m. It did not leave much room for optimization, but it was working. So to match, I made a decentralized sheild with the same max distance. The comparison of training outcomes for the two cars are shown in @centralized-shield.
+
+The front car has similar performance for both configuratoins, but the second car performs much better in the centralized shielding setup. I speculate this is because centralized shielding makes the additional assumption, that cars communicate their actions between each other, allowing  them to match speed perfectly. 
+
+This assumption is not present in the default decentralized configuration, but I'll try to include it, to see if it is the centralized shield, or the additional information, that makes the difference.
+
+#grid(columns:(1fr, 1fr),
+    [#figure(
+        image("./CC/Centralized shield.svg", width:100%),
+        caption: "Centralized shield"
+    ) <centralized-shield>],
+    [ ],
+)
+
 #pagebreak()
 
 = Chemical Production
