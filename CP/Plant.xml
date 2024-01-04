@@ -94,12 +94,14 @@ const int CCC = 3;
 
 import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Strategies/libmoneydollars.so"
 {
-    int get_action_moneydollars(double t, double volume, bool allowed_wait, bool allowed_input_one, bool allowed_input_two, bool allowed_input_three);
+    int get_action_moneydollars(double t, 
+        double stored1, double stored2, double stored3, double stored4, double stored5, double stored6, double stored7, double stored8, double stored9, double stored10,
+        bool allowed_wait, bool allowed_input_one, bool allowed_input_two, bool allowed_input_three);
 };
 
-action_t get_action(unitid_t id, double t, double volume, allowedActions allowed) {
+action_t get_action(unitid_t id, allowedActions allowed) {
     if (id == 1) {
-        return get_action_moneydollars(t, volume, allowed.wait, allowed.input_one, allowed.input_two, allowed.input_three);
+        return get_action_moneydollars(t, stored[1], stored[2], stored[3], stored[4], stored[5], stored[6], stored[7], stored[8], stored[9], stored[10], allowed.wait, allowed.input_one, allowed.input_two, allowed.input_three);
     } else {
         stored[-100] = -100;     //Provoke error: Unexpected ID for production unit.
         return CCC;
@@ -462,7 +464,7 @@ r1 = random(VARIANCE),
 r2 = random(VARIANCE),
 r3 = random(VARIANCE),
 allowed = get_allowed(stored),
-action = get_action(id, t, stored, allowed)</label>
+action = get_action(id, allowed)</label>
 		</transition>
 	</template>
 	<template>
@@ -548,7 +550,7 @@ P2 = Provider(provider_out[2], cost_multiplier[2], 1.0, 0.5, 0.5, 0.0, 3.0);
 P3 = Provider(provider_out[3], cost_multiplier[3], 1.0, 0.5, 0.5, 0.0, 3.0);
 
 U1 = PreTrainedProductionUnit(1, unit_out[1], stored[1], provider_out[1], provider_out[1], provider_out[1]);
-U2 = ControllableProductionUnit(2, unit_out[2], stored[2], provider_out[2], provider_out[2], provider_out[2]);
+U2 = RandomProductionUnit(2, unit_out[2], stored[2], provider_out[2], provider_out[2], provider_out[2]);
 U3 = RandomProductionUnit(3, unit_out[3], stored[3], provider_out[3], provider_out[3], provider_out[3]);
 
 P4 = Provider(provider_out[4], cost_multiplier[4], 2.0, 1.5, 1.5, 0.5, 4.0);
@@ -583,6 +585,11 @@ system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8
 		</plot-widget>
 	</simulator>
 	<queries>
+		<option key="--total-runs" value="1000"/>
+		<option key="--max-iterations" value="1"/>
+		<option key="--good-runs" value="1000"/>
+		<option key="--eval-runs" value="1000"/>
+		<option key="--runs-pr-state" value="1000"/>
 		<query>
 			<formula>simulate[&lt;=100;1] {
     stored[1],
@@ -611,15 +618,15 @@ system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8
 			<comment/>
 		</query>
 		<query>
-			<formula>strategy Moneydollars = minE (cost) [&lt;=100] {} -&gt; {t, stored[1]} : &lt;&gt; time&gt;=100</formula>
+			<formula>strategy Moneydollars = minE (cost) [&lt;=100] {} -&gt; {t, stored[1], stored[2], stored[3], stored[4], stored[5], stored[6], stored[7], stored[8], stored[9], stored[10]} : &lt;&gt; time&gt;=100</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>E[&lt;=100;100] (max:cost)</formula>
+			<formula>E[&lt;=100;1000] (max:cost)</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>E[&lt;=100;100] (max:cost) under Moneydollars</formula>
+			<formula>E[&lt;=100;1000] (max:cost) under Moneydollars</formula>
 			<comment/>
 		</query>
 		<query>

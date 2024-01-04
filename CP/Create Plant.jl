@@ -101,23 +101,10 @@ end
   ╠═╡ =#
 
 # ╔═╡ 6faf4945-da06-4ce8-8f79-2db5fb321ce1
-vars = [
-	"t",
-	"stored"
-]
+vars
 
 # ╔═╡ 9228d33d-bfe8-4c96-9e11-815fa674a5b6
-# "Closed", "Open" for each of the 3 pipes
-actions = Dict(
-	"0" => "CCO",
-	"1" => "COC",
-	"2" => "OCC",
-	"3" => "CCC",
-	"4" => "OOC",
-	"5" => "COO",
-	"6" => "OCO",
-	"7" => "OOO",
-)
+actions
 
 # ╔═╡ 265701e4-9cd6-4834-af7d-df02bbd976ec
 function strategies_to_c(strategy_paths, output_dir)
@@ -214,7 +201,7 @@ function agent_selector(strategies)
 		else
 			result ← "    else if (id == $i)"
 		end
-		result ←     "        return $fname(t, volume, allowed.wait, allowed.input_one, allowed.input_two, allowed.input_three);"
+		result ←     "        return $fname(t, stored[1], stored[2], stored[3], stored[4], stored[5], stored[6], stored[7], stored[8], stored[9], stored[10], allowed.wait,  allowed.input_one, allowed.input_two, allowed.input_three);"
 	end
 	join(result, "\n")
 end
@@ -431,6 +418,9 @@ create_fleet(blueprint_path, strategy_paths, shield_path, output_dir)
 
 # ╔═╡ Cell order:
 # ╠═488ee430-40cf-11ee-3160-1f10b20c5be6
+# ╠═5da6f4cd-96fa-4d58-9381-ca32b917efe5
+# ╠═c9ec1aaa-3a82-4013-bd40-23ec4f06c900
+# ╟─7e71404f-d60f-4042-9098-5522cfd5ee37
 # ╠═d2d9ca40-af15-4a65-910e-0319065cd6bf
 # ╟─73225f3b-eed4-403b-a564-dad605862566
 # ╠═1368afef-875a-4ca0-86eb-ba724a5213f4
@@ -441,9 +431,6 @@ create_fleet(blueprint_path, strategy_paths, shield_path, output_dir)
 # ╠═5daa0ac6-d6c5-4ca7-8f7c-d3efdf89d66b
 # ╠═9c5f6402-1cc5-4922-a3b3-02676c15b36d
 # ╟─303b180c-274c-4a29-b786-660fae7209b8
-# ╠═5da6f4cd-96fa-4d58-9381-ca32b917efe5
-# ╠═c9ec1aaa-3a82-4013-bd40-23ec4f06c900
-# ╟─7e71404f-d60f-4042-9098-5522cfd5ee37
 # ╠═6faf4945-da06-4ce8-8f79-2db5fb321ce1
 # ╠═9228d33d-bfe8-4c96-9e11-815fa674a5b6
 # ╠═265701e4-9cd6-4834-af7d-df02bbd976ec

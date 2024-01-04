@@ -70,14 +70,14 @@ body:not(.___) pluto-cell:focus-within > pluto-trafficlight {
 # ╔═╡ c5cde56e-cd4b-4509-a739-d8281a7c5248
 const ⨝ = joinpath
 
-# ╔═╡ 3bb7e0de-5364-4a52-ab7d-7d5cb9273efa
+# ╔═╡ b727f3d0-11a2-4150-80ad-e6bccd2b7017
 #=╠═╡
-@bind picked_file FilePicker()
+@bind strategy_path TextField(80, default=pwd() ⨝ "../Strategies/moneydollars.json")
   ╠═╡ =#
 
 # ╔═╡ 451b36a9-9712-42ac-b53e-e2031c978ec2
 #=╠═╡
-text = String(picked_file["data"])
+text = strategy_path |> read |> String
   ╠═╡ =#
 
 # ╔═╡ 46d36365-2146-4094-9bd7-15310269e746
@@ -167,7 +167,16 @@ $(join(["    **$k** => $v" for (k,v) in enumerate(json["pointvars"])], "\n\n"))
 # ╔═╡ 4de463bf-8e89-4aa8-ac89-872bc9399d78
 vars = [
 	"t",
-	"stored"
+	"stored1",
+	"stored2",
+	"stored3",
+	"stored4",
+	"stored5",
+	"stored6",
+	"stored7",
+	"stored8",
+	"stored9",
+	"stored10",
 ]
 
 # ╔═╡ f9f09026-dc0d-41cd-af2c-6ca18d3768d0
@@ -505,15 +514,8 @@ function strategy_to_c(strategy_path,
 	return action_decider_signature(name, vars), output_dir
 end;
 
-# ╔═╡ b727f3d0-11a2-4150-80ad-e6bccd2b7017
-#=╠═╡
-# Write a file path here, which will be read from reactively
-@bind strategy_path TextField(80, default="")
-  ╠═╡ =#
-
 # ╔═╡ ae547020-fdda-47c4-baf6-40b69001d7a5
 #=╠═╡
-# Write a file path here, which will be written to reactively
 @bind savepath TextField(80, default=mktempdir())
   ╠═╡ =#
 
@@ -818,7 +820,7 @@ version = "17.4.0+0"
 # ╠═5615668e-7020-43b2-9a97-07dbca4aa115
 # ╟─a63ee558-5b46-4827-ae1a-95fa633e30d5
 # ╠═c5cde56e-cd4b-4509-a739-d8281a7c5248
-# ╠═3bb7e0de-5364-4a52-ab7d-7d5cb9273efa
+# ╠═b727f3d0-11a2-4150-80ad-e6bccd2b7017
 # ╠═451b36a9-9712-42ac-b53e-e2031c978ec2
 # ╠═46d36365-2146-4094-9bd7-15310269e746
 # ╟─c78f40f4-945c-4ee0-ad4e-8b47a734f222
@@ -847,7 +849,6 @@ version = "17.4.0+0"
 # ╠═b80ec1d9-6975-4198-b1c7-46acd5c84544
 # ╠═3058c083-d9de-4b55-aa91-b5b7ded5abca
 # ╠═a9e5461c-7495-476b-a9d9-e18c6912e6f5
-# ╠═b727f3d0-11a2-4150-80ad-e6bccd2b7017
 # ╠═ae547020-fdda-47c4-baf6-40b69001d7a5
 # ╠═2a410a3a-b427-4da4-9e7e-3f86a0ee7365
 # ╠═96d0609b-87a4-428d-aadf-8c996089e6f0
