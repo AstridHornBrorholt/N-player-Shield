@@ -61,14 +61,6 @@ const int PositiveAcceleration = 1;
 const int NegativeAcceleration = 0;
 const int NoAcceleration = 2;
 
-/*
-import "%shield path%"
-{
-    int get_action_car1(double velocity, double velocityFront, double distance);
-};
-*/
-
-
 /* Stubs 
 */
 int get_action_car1(double velocity, double velocityFront, double distance) { return NoAcceleration; }
@@ -97,7 +89,7 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
-import "%shield path%"
+import %shield path%
 {
     int get_value(double v0, double v1, double d, double front_action);
 };
