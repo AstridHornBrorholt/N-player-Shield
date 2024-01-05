@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -150,77 +150,13 @@ begin
 	        v_ego,
 	        action)
 	    
-	    v_ego = apply_action(v_ego, action′, 1)
+	    v_ego = apply_action(v_ego, action′)
 	
 	    new_vel = v_front - v_ego;
 	
 	    distance += (old_vel + new_vel)/2;
 	    (v_ego, v_front, distance)
 	end
-end
-
-# ╔═╡ 3fedd6cd-589b-402b-bc4f-50b863135892
-let
-	initial_velocity = 10
-	trace = [(initial_velocity, initial_velocity, 0.)]
-	for i in 2:40
-		a = i > 2 ? backwards : neutral
-		s′ = simulate_point(m, trace[i-1], -1, a)
-		push!(trace, s′)
-	end
-	📉1 = plot([v_f for (v_e, v_f, d) in trace], 
-		label="v_front", 
-		xlabel="time", 
-		ylabel="velocity")
-	
-	plot!([v_e for (v_e, v_f, d) in trace], label="v_ego")
-	 
-	📉2 = plot([d for (_, _, d) in trace], 
-		label="distance", 
-		xlabel="time", 
-		ylabel="distance")
-	
-	hline!([-200], label="max distance")
-	plot(📉1, 📉2, size=(800, 400))
-end
-
-# ╔═╡ 5a47a6ac-108b-4411-8f6a-a893454ef507
-let
-	distances = []
-	initial_velocities = []
-	for initial_velocity in -10:2:20
-		trace = [(initial_velocity, initial_velocity, 0.)]
-		for i in 2:40
-			a = i > 2 ? backwards : neutral
-			s′ = simulate_point(m, trace[i-1], -1, a)
-			push!(trace, s′)
-		end
-		#=
-		📉1 = plot([v_f for (v_e, v_f, d) in trace], 
-			label="v_front", 
-			xlabel="time", 
-			ylabel="velocity")
-		
-		plot!([v_e for (v_e, v_f, d) in trace], label="v_ego")
-		 
-		📉2 = plot([d for (_, _, d) in trace], 
-			label="distance", 
-			xlabel="time", 
-			ylabel="distance")
-		
-		hline!([-200], label="max distance")
-		plot(📉1, 📉2, size=(800, 400))
-		=#
-		push!(distances, abs(trace[end][3]))
-		push!(initial_velocities, initial_velocity)
-	end
-	plot(initial_velocities, distances,
-		xlabel="initial velocity (both cars)",
-		ylabel="minimum safe distance",
-		#ylim=(0, 250),
-		xtick=[-10:2:20...],
-		label=nothing,
-		title="front: -2m/s, ego: -1m/s")
 end
 
 # ╔═╡ 62e0bad2-9a11-473a-a36f-5ab977df2c44
@@ -524,17 +460,6 @@ let
 	end
 end
 
-# ╔═╡ 0382588a-ac96-4528-9fee-67ab93d4a1f8
-if make_shield_button > 0 let
-	animation = @animate for i in 1:10
-		
-		trace = simulate_sequence(m, 120, s0, shielded_random)
-	
-		plot_sequence(trace..., title="Shielded Trace", legend=:topleft)
-	end
-	gif(animation, fps=1, show_msg=false)
-end end
-
 # ╔═╡ 107b960f-1a75-41f9-9cb9-195877ad6184
 shielded_random = s -> begin
 	if s ∈ shield
@@ -548,6 +473,17 @@ shielded_random = s -> begin
 		return rand(instances(CCAction))
 	end
 end
+
+# ╔═╡ 0382588a-ac96-4528-9fee-67ab93d4a1f8
+if make_shield_button > 0 let
+	animation = @animate for i in 1:10
+		
+		trace = simulate_sequence(m, 120, s0, shielded_random)
+	
+		plot_sequence(trace..., title="Shielded Trace", legend=:topleft)
+	end
+	gif(animation, fps=1, show_msg=false)
+end end
 
 # ╔═╡ c971bbe4-bc6b-49dd-940d-3277017e99bc
 function evaluate(m::CCMechanics, policy; episode_length=120, traces=1000)
@@ -641,8 +577,6 @@ end
 # ╠═0fba5442-bba5-4a82-9821-77068368227e
 # ╠═1431a6cc-1a91-4357-b624-8ed77311a426
 # ╠═d5a28ba8-70fe-4fb2-a9b6-a151ec52fd8b
-# ╠═3fedd6cd-589b-402b-bc4f-50b863135892
-# ╠═5a47a6ac-108b-4411-8f6a-a893454ef507
 # ╠═62e0bad2-9a11-473a-a36f-5ab977df2c44
 # ╟─5db3cdc1-c8ec-4053-a058-b1ed03d2b95e
 # ╟─00b22e0a-7809-4a1e-9997-71e7135d825c
