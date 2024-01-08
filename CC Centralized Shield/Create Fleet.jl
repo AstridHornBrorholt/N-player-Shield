@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -209,6 +209,7 @@ Create model and query files "`NAME.xml`" and "`NAME.q`" at `destination`.
 """
 function create_fleet(blueprint_path,
 		shield_path,
+		declared_action_shield_path,
 		destination;
 		checks=100,
 		name="Fleet of 3 cars")
@@ -227,6 +228,7 @@ function create_fleet(blueprint_path,
 	# Compute replacements
 	replacements = Dict{String, String}()
 	replacements["%shield path%"] = "\"$shield_path\""	
+	replacements["%declared action shield path%"] = "\"$declared_action_shield_path\""	
 
 	# Apply replacements to blueprint
 	model_path = destination ⨝ "$name.xml"
@@ -249,7 +251,7 @@ replace(basename("/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shie
 
 # ╔═╡ dfac541d-214e-4ec5-8b78-b7cbe9b740ad
 #=╠═╡
-create_fleet(blueprint_path, shield_path, output_dir, checks=96, name="3-car")
+create_fleet(blueprint_path, shield_path, shield_path, output_dir, checks=96, name="3-car")
   ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -559,17 +561,17 @@ version = "17.4.0+0"
 # ╠═872039bc-fec7-4338-b466-9faa353be1f0
 # ╟─73225f3b-eed4-403b-a564-dad605862566
 # ╟─c5f3e21f-b929-41e1-81e2-7b0ec2dd0f28
-# ╠═6ba15d9e-1490-47a3-ac77-288eae1dc281
-# ╠═b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb
 # ╟─02e79c81-018d-4362-996a-17ad7da9ce5d
 # ╠═c7baa1ea-5252-4319-adfd-d003aa8ee0df
 # ╠═c5a94d34-c472-49ed-aeda-6b902ec2d173
 # ╟─a87b61c0-fbf3-464c-ae7c-6aced2b0674d
-# ╠═fade61a9-8136-4a4c-99a2-dee9bf79fd32
-# ╠═a0e02d1a-0355-4496-9b18-70f53c67a389
 # ╠═9baf5bef-2632-4d4d-8ee6-17a58db86c1a
 # ╠═a05921d4-4765-44bf-9592-b9d54de3ac65
 # ╠═96aaff55-db70-4e32-b405-decad1a887c0
+# ╠═fade61a9-8136-4a4c-99a2-dee9bf79fd32
+# ╠═a0e02d1a-0355-4496-9b18-70f53c67a389
+# ╠═6ba15d9e-1490-47a3-ac77-288eae1dc281
+# ╠═b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb
 # ╠═4316fe92-24dc-4424-bec5-5e06cc117256
 # ╠═dfac541d-214e-4ec5-8b78-b7cbe9b740ad
 # ╟─00000000-0000-0000-0000-000000000001

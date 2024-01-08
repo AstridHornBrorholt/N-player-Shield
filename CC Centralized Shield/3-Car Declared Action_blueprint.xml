@@ -89,9 +89,14 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
+import %declared action shield path%
+{
+    int get_value_declared(double v0, double v1, double d, double front_action);
+};
+ 
 import %shield path%
 {
-    int get_value(double v0, double v1, double d, double front_action);
+    int get_value(double v0, double v1, double d);
 };
 
 typedef struct {
@@ -142,8 +147,13 @@ void apply_shield(int i) {
     double v = round(velocity[i]+0.0);
     double vFront = round(velocity[i - 1]+0.0);
     double d = round(distance[i - 1]+0.0);
-    double front_action = actionToInt(acceleration[i-1]);
-    allowedActions allowed = intToActions(get_value(v, vFront, d, front_action));
+    allowedActions allowed;
+    if (i == 2) {
+        double front_action = actionToInt(acceleration[i-1]);
+        allowed = intToActions(get_value_declared(v, vFront, d, front_action));
+    } else {
+        allowed = intToActions(get_value(v, vFront, d));
+    }
     if (!allowed.forwards &amp;&amp; !allowed.neutral &amp;&amp; !allowed.backwards)
         return;
     if (acceleration[i] ==  2 &amp;&amp; !allowed.forwards ||

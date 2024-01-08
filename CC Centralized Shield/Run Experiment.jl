@@ -3,7 +3,7 @@
 
 using Dates
 # The emoji are there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.
-emoji = ["🍭", "🎃", "😱", "👿", "👺", "👻", "💀", "👽", "🔮", "🕷", "🕸", "🍫", "🍬", "🖤", "🦇", "🦉", "🥀", "⛓", "🎭", "🗡", "🩸", "🧛", "🧟", "🧞", "🪦", "🥸", "🫀"]
+emoji = ["🍭", "🎃", "😱", "👿", "👺", "👻", "💀", "👽", "🔮", "🕷", "🕸", "🍫", "🍬", "🖤", "🦇", "🦉", "🥀", "⛓", "🎭", "🗡", "🩸", "🪦", "🥸", "🫀"]
 🍭🎃 = join(rand(emoji, 2), "")
 function status(str) 
     time = Dates.format(Dates.now(), "dd/mm HH:MM")
@@ -39,6 +39,8 @@ begin
             default=pwd() ⨝ "../Centralized Shield/3-Car_blueprint.xml"
         "--shield-path"  
             default=pwd() ⨝ "./3-car.so"
+        "--declared-action-shield-path"  
+            default=pwd() ⨝ "./2-car-declared-action.so"
 	end
 end;
 
@@ -56,6 +58,7 @@ isfile(verifyta_path) || error("File verifyta not found at path $verifyta_path")
 
 blueprint_path = args["blueprint-path"]
 shield_path = args["shield-path"]
+declared_action_shield_path = args["declared-action-shield-path"]
 
 isfile(shield_path) || error("Shield file not found at $shield_path")
 
@@ -77,7 +80,7 @@ name = replace(basename(blueprint_path), "_blueprint.xml" => "")
 
 status("Running $name  (repetition=$repetition)")
 outfile = query_results_dir ⨝ "$name.txt"
-model_path, queries_path = create_fleet(blueprint_path, shield_path, models_dir; checks, name)
+model_path, queries_path = create_fleet(blueprint_path, shield_path, declared_action_shield_path, models_dir; checks, name)
 
 verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs --total-runs $runs --runs-pr-state $runs"
 verifyta_call = String[
