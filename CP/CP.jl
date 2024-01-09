@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -162,9 +162,9 @@ end
 m = CPMechanics(;m_inputs...)
 
 # ╔═╡ e945773a-6365-4eb0-a384-5fc7c1dfa70e
-@assert 3*m.flow_rate - 3*m.flow_rate_variance > 
+@assert 3*m.flow_rate > 
 	    2*m.flow_rate + 2*m.flow_rate_variance; (
-	3*m.flow_rate - 3*m.flow_rate_variance, 
+	3*m.flow_rate, 
 	2*m.flow_rate + 2*m.flow_rate_variance)
 
 # ╔═╡ 4dadcdaa-4fce-4a14-9dd7-e4baf141bd42
@@ -627,38 +627,47 @@ simulate_point(m, s, action)
 # ╔═╡ aab9d926-b488-4e78-8789-d311096ce4f0
 [s for s in possible_outcomes(model, partition, action)]
 
+# ╔═╡ 64e93875-0581-457b-b8e8-981aed2797b8
+@bind draw_transition CheckBox(default=false)
+
 # ╔═╡ f73b6e42-c024-4018-83b2-2eac30e96fda
 let
 	# Horrible hack to turn a 1D grid into a 1D grid
-	height = 1 # height of squares
+	width = 30. # width of squares
 	granularity = shield.granularity[1]
-	shield_2d = Grid([granularity, height], 
-		(shield.bounds.lower[1], 0.),
-		(shield.bounds.upper[1], granularity)
+	shield_2d = Grid([width, granularity], 
+		(0., shield.bounds.lower[1]),
+		(width, shield.bounds.upper[1])
 	)
+	
 	for partition in shield
 		shield_2d.array[partition.indices[1]] = get_value(partition)
 	end
 
 	draw(shield_2d; colors=ch_colors, color_labels=ch_color_labels, 
 		#show_grid=true,
-		legend=:outertop,
+		legend=:outerright,
 		aspectratio=:equal,
-		xlabel="Volume",
-		ylim=(0, height),
-		yticks=nothing
+		ylabel="Volume",
+		xlim=(0, width),
+		xticks=nothing
 	)
-	outcomes = [s for s in possible_outcomes(model, partition, action)]
-	outcomes = [s[1] for s in outcomes]
-	scatter!(outcomes, [height/2 for _ in outcomes], 
-		marker=(3, colors.ASBESTOS),
-		markerstrokewidth=0,
-		label=nothing)
-	
-	scatter!([s.volume], [height/2], 
-		marker=(:+, 6, colors.WET_ASPHALT),
-		markerstrokewidth=4,
-		label=nothing)
+
+	if draw_transition
+		outcomes = [s for s in possible_outcomes(model, partition, action)]
+		outcomes = [s[1] for s in outcomes]
+		scatter!(outcomes, [width/2 for _ in outcomes], 
+			marker=(3, colors.ASBESTOS),
+			markerstrokewidth=0,
+			label=nothing)
+		
+		scatter!([s.volume], [width/2], 
+			marker=(:+, 6, colors.WET_ASPHALT),
+			markerstrokewidth=4,
+			label=nothing)
+	else
+		plot!()
+	end
 end
 
 # ╔═╡ 2df83fee-956c-4e01-964c-493b6f5c98d9
@@ -867,6 +876,7 @@ end
 # ╠═939245b5-e393-4b16-b881-b8d5d41b5646
 # ╟─0aee3c2e-44b7-419d-88d3-434d49494835
 # ╟─c9d8a8ea-5ffe-44a6-b8a8-ca955eed3184
+# ╠═64e93875-0581-457b-b8e8-981aed2797b8
 # ╟─f73b6e42-c024-4018-83b2-2eac30e96fda
 # ╠═2df83fee-956c-4e01-964c-493b6f5c98d9
 # ╠═cf64d90e-dd40-4d93-b210-37dd3485c852
