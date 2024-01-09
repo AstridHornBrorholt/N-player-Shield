@@ -76,7 +76,7 @@ end
 @bind distance_max NumberField(0:1000, default = 200)
 
 # ╔═╡ 0fedc544-3a81-45b3-b8b0-94c86d291f1b
-m = CCMechanics(1, 0, distance_max, -10, 14, -10, 14)
+m = CCMechanics(1, 0, distance_max, -10, 20, -10, 20)
 
 # ╔═╡ 6134ef59-6377-466b-952d-bee90e421b80
 s0 = (0, 0, (m.distance_max > 50 ? 50 : 20))
