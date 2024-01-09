@@ -68,6 +68,14 @@ if !isfile(shield_path′) # All of a sudden it seems the tasks get sad when the
 end
 shield_path = shield_path′
 
+isfile(declared_action_shield_path) || error("Shield file not found at $declared_action_shield_path")
+
+shield_path′ = results_dir ⨝ basename(declared_action_shield_path)
+if !isfile(shield_path′) # All of a sudden it seems the tasks get sad when they overwrite each others' shield files
+    cp(declared_action_shield_path, shield_path′, force=true)
+end
+declared_action_shield_path = shield_path′
+
 working_dir = results_dir ⨝ "$runs Runs"
 working_dir = working_dir ⨝ "Repetition $repetition"
 isdir(working_dir) || mkpath(working_dir)
