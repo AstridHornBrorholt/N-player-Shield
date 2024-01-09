@@ -53,7 +53,7 @@ There seems to be a slight trend of the backmost cars performing better in each 
         image("./CC/Centralized controller mean performance.svg", width:60%),
         caption: "Centralized controller mean performance"
     ) <centralized-controller-mean-performance>],
-)
+) 
 
 == Centralized shield
 
@@ -64,14 +64,10 @@ But what I was able to do, was create a shield for two cars whose max distance w
 The front car has similar performance for both configuratoins, but the second car performs much better in the centralized shielding setup. I speculate this is because centralized shielding makes the additional assumption, that cars communicate their actions between each other, allowing  them to match speed perfectly. 
 
 This assumption is not present in the default decentralized configuration, but I'll try to include it, to see if it is the centralized shield, or the additional information, that makes the difference.
-
-#grid(columns:(1fr, 1fr),
-    [#figure(
-        image("./CC/Centralized shield.svg", width:100%),
-        caption: "Centralized shield"
-    ) <centralized-shield>],
-    [ ],
-)
+#figure(
+    image("./CC/Centralized shield.svg", width:50%),
+    caption: "Respectively, centralized shield where actions are co-ordinated, decentralized shield, and decentralized shield where actions are co-ordinated."
+) <centralized-shield>
 
 #pagebreak()
 
@@ -97,7 +93,7 @@ The baseline performance, where all production units pick actions randomly, is a
 
     [#figure(
         image("./CP/Learned Performance.svg", width:100%),
-        caption: "Learned Performance"
+        caption: "Distributed controllers observing only their own state."
     ) <CP-Learned-Performance>],
     [#figure(
         image("./CP/Layout.png", height:170pt),
@@ -109,15 +105,26 @@ Note that @CP-Learned-Performance cannot be compared to @CC-Learned-Performance 
 
 == Centralized Controller
 
-Turns out a centralized controller is much more effective in this context, perhaps due to the slightly lower dimensionality. Or maybe the mechanics are too simple. The performance for the entire plant under one centralized controller is shown in @CP-Centralized-Controller. The best performance achieved is a mean reward of -578. This is again over a 10 times repetition to avoid random jitter.
+Turns out a centralized controller is much more effective in this context, perhaps due to the slightly lower dimensionality. Or maybe the mechanics are too simple. The performance for the entire plant under one centralized controller is shown in @CP-Centralized-Controller. Note that the training times are 10 times as much as those shown in @CP-Learned-Performance, since the training in that figure is repeated for each of the 10 units.
 
+The best performance achieved is a mean reward of -398. This is again over a 10 times repetition to avoid random jitter.
 This is much more performant than the distributed learning setup. I will have to examine whether this is because central control is better, or if observing the levels of other tanks somehow improves the results.
 
 #grid(columns:(1fr, 1fr),
 
     [#figure(
         image("./CP/Centralized Controller.svg", width:100%),
-        caption: "Learned Performance"
+        caption: "Centralized controller."
     ) <CP-Centralized-Controller>],
-    [ ]
+    [#figure(
+        image("./CP/Fully Observable.svg", width:100%),
+        caption: "Distributed controllers observing the full system state."
+    ) <CP-Fully-Observable>]
 )
+
+== Full Observability for Distributed Agents
+
+So seeing as the centralized controller performed so much better, I also tried letting the distributed agents observe the whole state space. The results of this can be seen in @CP-Fully-Observable, and are not much different from @CP-Learned-Performance. 
+
+The best reward obtained was -1511 for the fully observable model, compared to -1360 for the default setup. I suppose the worse outcome is on account of it being given a lot of irrelevant signals which degrades the performance of the partitioning scheme. 
+I wouldn't much like making a version that shows only the levels of neighbouring tanks, since that would be a lot of development work.

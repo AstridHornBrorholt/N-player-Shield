@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -99,29 +99,45 @@ function safety_violation_occured(query_result)
 	end
 end
 
+# ╔═╡ 6ea2994d-83af-493c-802a-7ba687395b2e
+function get_variant(name)
+	name = replace(name, ".txt" => "")
+	if name == "3-Car Centralized"
+		result = "Cent. Co-ord."
+	elseif name == "3-Car"
+		result = "Dec."
+	elseif name == "3-Car Declared Action"
+		result = "Dec. Co-ord."
+	else
+		error("Unexpected experiment name: $name")
+	end
+
+	return "\"$result\""
+end
+
 # ╔═╡ 89e83c9a-74cf-11ee-0c31-0f29a93be587
 function to_csv(results_dir)
 	isdir(results_dir) || error("Not found: $results_dir")
-	header = "runs;repetition;centralized;car;reward"
+	header = "runs;repetition;variant;car;reward"
 	result = String[header]
 	for 🗄️ in glob("* Runs", results_dir)
 		runs = firstcapture(r"(\d+) Runs", 🗄️)
 		for 📁 in glob("Repetition *", 🗄️)
 			repetition = firstcapture(r"Repetition (\d+)", 📁)
 			for 🗎 in glob("Query Results/*.txt", 📁)
-				centralized = occursin(r"Centralized", basename(🗎))
+				variant = get_variant(basename(🗎))
 				query_results = extract_results(🗎 |> read |> String)
+				if length(query_results) != 2
+					@warn "Skipping file with unexpected number of query results" file=🗎 expected=2 actual=length(query_results)
+						continue
+				end
 				if safety_violation_occured(🗎 |> read |> String)
 					@error "Safety violation detected in file" file=🗎
 				end
-				if length(query_results) != 2
-					@warn "Skipping file with unexpected number of query results" file=🗎 expected=2 actual=length(query_results)
-					continue
-				end
 				car1 = query_results[1]
 				car2 = query_results[2]
-				push!(result, "$runs;$repetition;$centralized;1;$car1")
-				push!(result, "$runs;$repetition;$centralized;2;$car2")
+				push!(result, "$runs;$repetition;$variant;1;$car1")
+				push!(result, "$runs;$repetition;$variant;2;$car2")
 			end
 		end
 	end
@@ -141,10 +157,6 @@ raw_data = DataFrame(CSV.File(IOBuffer(csv_string)))
 cleandata = let
 	cleandata = raw_data
 	
-	cleandata = transform(cleandata, :centralized => (
-		xs -> [x ? "Centralized" : "Not Centralized" for x in xs]
-	) => :centralized)
-	
 	cleandata = transform(cleandata, :reward => (
 		xs -> [-x/100 for x in xs]
 	) => :reward)
@@ -152,7 +164,7 @@ end
 
 # ╔═╡ aea564f9-6fc5-4f1d-8699-1ce77be3a38d
 means = let	
-	grouping =  groupby(cleandata, [:runs, :centralized, :car])
+	grouping =  groupby(cleandata, [:runs, :variant, :car])
 	
 	means = combine(grouping, 
 		:reward => mean,
@@ -161,7 +173,7 @@ end
 
 # ╔═╡ 1bf14dff-08e3-4a32-9e5e-dba6438bc670
 standard_deviations = let	
-	grouping =  groupby(cleandata, [:runs, :centralized, :car])
+	grouping =  groupby(cleandata, [:runs, :variant, :car])
 	
 	standard_deviations = combine(grouping, 
 		:reward => std,
@@ -189,10 +201,10 @@ let
 	df = filter(:runs => r -> r == runs, means)
 	
 	df = transform(df, :car => (
-		xs -> ["car $x" for x in xs]
+		xs -> ["Car $x" for x in xs]
 	) => :car)
 	
-	@df df groupedbar(:centralized, :reward, group=:car,
+	@df df groupedbar(:variant, :reward, group=:car,
 		bar_width=0.6,
 		color=[colors.TURQUOISE colors.CARROT],
 		linewidth=4,
@@ -203,8 +215,7 @@ let
 	plot!(;
 		size,
 		ylim,
-		legend=:topright,
-		xlabel="car",
+		legend=:outertop,
 		ylabel="reward",
 	)
 end
@@ -217,6 +228,7 @@ end
 # ╠═5ee442ef-5c0c-41fa-98f7-d81019fd330a
 # ╠═0664e58a-5d05-497c-8203-eceef193e4cb
 # ╠═6565e283-22b5-495f-8635-a49e9af36d37
+# ╠═6ea2994d-83af-493c-802a-7ba687395b2e
 # ╠═89e83c9a-74cf-11ee-0c31-0f29a93be587
 # ╠═cc09735c-596f-480b-aecf-86e4a811615d
 # ╠═b8188561-e6ff-4d4e-8b79-8897a79f8977

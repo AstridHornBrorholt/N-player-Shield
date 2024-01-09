@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -374,12 +374,13 @@ isdir(results_dir)
 
 # ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
 begin
-	function learned_performance_plot!(means::DataFrame;
+	function learned_performance_plot!(means::DataFrame, selected_runs;
 			color=colors.WET_ASPHALT,
 			label=nothing,
 			plotargs...)
-		
-		df = sort(means, :runs)
+
+		df = filter(:runs => (x -> x ∈ selected_runs), means)
+		df = sort(df, :runs)
 		df = transform(df, :runs => ByRow(string) => :runs)
 				
 		@df df plot!(:runs, :reward;
@@ -463,6 +464,22 @@ md"""
 ## Performance for different numbers of runs
 """
 
+# ╔═╡ 9f5ae20f-fcd9-4327-afbd-bbe9378c00de
+#=╠═╡
+unique_runs = means[!, :runs] |> unique |> sort
+  ╠═╡ =#
+
+# ╔═╡ 602415bc-687e-45d9-a96f-afaf1f214eb7
+#=╠═╡
+@bind selected_runs MultiSelect(unique_runs, 
+		default=[r for r in unique_runs if (r > 1000 && r%100==0)])
+  ╠═╡ =#
+
+# ╔═╡ 40e793f8-e34a-466f-80fa-901c4b728a08
+#=╠═╡
+selected_runs
+  ╠═╡ =#
+
 # ╔═╡ 734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
 #=╠═╡
 begin
@@ -504,7 +521,7 @@ size = (width, height)
 
 # ╔═╡ 3f04b408-1027-4c87-b138-35e63ab4697a
 #=╠═╡
-learned_performance_plot(means; ylims, size)
+learned_performance_plot(means, selected_runs; ylims, size)
   ╠═╡ =#
 
 # ╔═╡ Cell order:
@@ -529,6 +546,9 @@ learned_performance_plot(means; ylims, size)
 # ╠═5d35a941-ea93-45ed-b309-98db9ad9fc47
 # ╠═1f973cbe-a416-44fa-8e3b-e6392f6ddb16
 # ╟─7909f497-55cd-4f9d-b34d-515a80241873
+# ╠═9f5ae20f-fcd9-4327-afbd-bbe9378c00de
+# ╠═602415bc-687e-45d9-a96f-afaf1f214eb7
+# ╠═40e793f8-e34a-466f-80fa-901c4b728a08
 # ╠═3f04b408-1027-4c87-b138-35e63ab4697a
 # ╠═734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
 # ╟─64921a92-ce9a-4a79-9349-445c8eb4fe15
