@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -17,7 +17,7 @@ end
 # ╔═╡ c1bdc9f0-3d96-11ee-00af-b341a715281c
 begin
 	using Pkg
-	Pkg.activate(".")
+	Pkg.activate("..")
 	using Plots
 	using PlutoUI
 	using PlutoLinks
@@ -355,6 +355,17 @@ begin
 	@bind make_shield_button CounterButton("Do it.")
 end
 
+# ╔═╡ 96f1cab9-db87-49fb-acd7-37df87463a55
+@bind uploaded_shield FilePicker()
+
+# ╔═╡ ffc75878-aba8-4d7c-89bc-7f492e5dd56c
+uploaded_shield′ = if uploaded_shield != nothing let
+	buf = IOBuffer(uploaded_shield["data"])
+	robust_grid_deserialization(buf)
+	end else
+	nothing
+end
+
 # ╔═╡ 1995a818-3309-458a-b753-0636bc680c27
 md"""
 Try starting at 1 and then stepping through the iterations.
@@ -370,7 +381,7 @@ end;
 
 # ╔═╡ 0f5ee444-afe5-4314-ab8e-a7dfff02964d
 begin
-	shield, max_steps_reached = grid, false
+	shield, max_steps_reached = something(uploaded_shield′, grid), false
 	
 	if make_shield_button > 0
 
@@ -594,6 +605,8 @@ end
 # ╠═4b651d7e-7e05-4cdf-a5d7-734653183e96
 # ╟─da8a843d-b5c7-4155-b90c-3df160996c13
 # ╟─1f9b85b7-43f8-4cf6-90b1-581694f4a8f2
+# ╠═96f1cab9-db87-49fb-acd7-37df87463a55
+# ╟─ffc75878-aba8-4d7c-89bc-7f492e5dd56c
 # ╟─1995a818-3309-458a-b753-0636bc680c27
 # ╠═dfc8cb50-b08f-4006-8e6f-de058ee0bf98
 # ╠═0f5ee444-afe5-4314-ab8e-a7dfff02964d

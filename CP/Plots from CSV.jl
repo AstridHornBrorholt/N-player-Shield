@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -623,6 +623,11 @@ let
 end
   ╠═╡ =#
 
+# ╔═╡ 3c202730-71e2-4cf6-b334-b30a8dfc14a5
+#=╠═╡
+filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
+  ╠═╡ =#
+
 # ╔═╡ Cell order:
 # ╠═d0db8070-41a9-11ee-2b97-818668d7efa8
 # ╟─2bd47b9e-31e3-4ee1-aa87-60dfc40869a9
@@ -662,3 +667,4 @@ end
 # ╟─b1090c8e-9f46-429a-93a7-42cedba24188
 # ╠═8ff26541-30b4-42bb-85a0-1d08e1c8d2aa
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
+# ╠═3c202730-71e2-4cf6-b334-b30a8dfc14a5

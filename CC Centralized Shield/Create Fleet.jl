@@ -97,16 +97,6 @@ md"""
 Fields in the blueprint surrouned with `%`. Functions or variable names here are meant to correspond to field names.
 """
 
-# ╔═╡ 6ba15d9e-1490-47a3-ac77-288eae1dc281
-#=╠═╡
-@bind shield_path TextField(80, default = pwd() ⨝ "2-car.so")
-  ╠═╡ =#
-
-# ╔═╡ b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb
-#=╠═╡
-isfile(shield_path)
-  ╠═╡ =#
-
 # ╔═╡ 02e79c81-018d-4362-996a-17ad7da9ce5d
 md"""
 ## The query files
@@ -135,16 +125,6 @@ queries("/SOME/PATH", checks=96, name="STRAT") |> multiline
 md"""
 ## Applying it to the Blueprint
 """
-
-# ╔═╡ fade61a9-8136-4a4c-99a2-dee9bf79fd32
-#=╠═╡
-@bind blueprint_path TextField(80, default=pwd() ⨝ "3-Car_blueprint.xml")
-  ╠═╡ =#
-
-# ╔═╡ a0e02d1a-0355-4496-9b18-70f53c67a389
-#=╠═╡
-isfile(blueprint_path)
-  ╠═╡ =#
 
 # ╔═╡ 9baf5bef-2632-4d4d-8ee6-17a58db86c1a
 function search_and_replace(input_path, output_path, replacements)
@@ -246,12 +226,42 @@ function create_fleet(blueprint_path,
 	model_path, queries_path
 end;
 
+# ╔═╡ fade61a9-8136-4a4c-99a2-dee9bf79fd32
+#=╠═╡
+@bind blueprint_path TextField(80, default=pwd() ⨝ "3-Car_blueprint.xml")
+  ╠═╡ =#
+
+# ╔═╡ a0e02d1a-0355-4496-9b18-70f53c67a389
+#=╠═╡
+isfile(blueprint_path)
+  ╠═╡ =#
+
+# ╔═╡ 6ba15d9e-1490-47a3-ac77-288eae1dc281
+#=╠═╡
+@bind shield_path TextField(80, default = pwd() ⨝ "2-car.so")
+  ╠═╡ =#
+
+# ╔═╡ b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb
+#=╠═╡
+isfile(shield_path)
+  ╠═╡ =#
+
+# ╔═╡ f295eec4-3dc2-4d47-bad9-60617d512fc3
+#=╠═╡
+@bind declared_action_shield_path TextField(80, default = pwd() ⨝ "2-car-declared-action.so")
+  ╠═╡ =#
+
+# ╔═╡ 71ac1cf4-2e34-4aee-b17c-57174cf137d5
+#=╠═╡
+isfile(declared_action_shield_path)
+  ╠═╡ =#
+
 # ╔═╡ 4316fe92-24dc-4424-bec5-5e06cc117256
 replace(basename("/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Centralized Shield/3-Car_blueprint.xml"), "_blueprint.xml" => "")
 
 # ╔═╡ dfac541d-214e-4ec5-8b78-b7cbe9b740ad
 #=╠═╡
-create_fleet(blueprint_path, shield_path, shield_path, output_dir, checks=96, name="3-car")
+create_fleet(blueprint_path, shield_path, declared_action_shield_path, output_dir, checks=96, name="3-car")
   ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -572,6 +582,8 @@ version = "17.4.0+0"
 # ╠═a0e02d1a-0355-4496-9b18-70f53c67a389
 # ╠═6ba15d9e-1490-47a3-ac77-288eae1dc281
 # ╠═b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb
+# ╠═f295eec4-3dc2-4d47-bad9-60617d512fc3
+# ╠═71ac1cf4-2e34-4aee-b17c-57174cf137d5
 # ╠═4316fe92-24dc-4424-bec5-5e06cc117256
 # ╠═dfac541d-214e-4ec5-8b78-b7cbe9b740ad
 # ╟─00000000-0000-0000-0000-000000000001
