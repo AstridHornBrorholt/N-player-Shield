@@ -440,9 +440,9 @@ int[0, fleetSize] i = 0; </declaration>
 	<template>
 		<name>Dynamics</name>
 		<location id="id36" x="-153" y="-144">
-			<label kind="invariant" x="-314" y="-127">forall (i : int[0, fleetSize - 1]) velocity[i]' == acceleration[i] &amp;&amp;
-forall (j : int[0, fleetSize - 2]) distance[j]' == velocity[j] - velocity[j + 1] &amp;&amp;
-forall (j : int[0, fleetSize - 2]) D[j]' == distance[j]</label>
+			<label kind="invariant" x="-314" y="-127">(forall (i : int[0, fleetSize - 1]) velocity[i]' == acceleration[i]) &amp;&amp;
+(forall (j : int[0, fleetSize - 2]) distance[j]' == velocity[j] - velocity[j + 1]) &amp;&amp;
+(forall (j : int[0, fleetSize - 2]) D[j]' == distance[j])</label>
 		</location>
 		<init ref="id36"/>
 	</template>
