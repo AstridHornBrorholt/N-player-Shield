@@ -70,6 +70,7 @@ struct CCMechanics
 	t_act::Number # Period between actions
 	distance_min::Number
 	distance_max::Number
+	acceleration::Number
 	v_ego_min::Number
 	v_ego_max::Number
 	v_front_min::Number
@@ -78,10 +79,10 @@ end
 
 # ╔═╡ 0fedc544-3a81-45b3-b8b0-94c86d291f1b
 # Default Mechanics
-m = CCMechanics(1, 0, 200, -10, 20, -10, 20)
+m = CCMechanics(1, 0, 200, 2, -10, 20, -10, 20)
 
 # ╔═╡ 6134ef59-6377-466b-952d-bee90e421b80
-s0 = (0, 0, 50)
+s0 = (0, 0, 10)
 
 # ╔═╡ f8a8834e-b8fe-4dc8-8528-4b72148fda6f
 function random_front_behaviour(mechanics::CCMechanics, point, random_variable)
@@ -142,14 +143,14 @@ begin
 			v_front,
 			front_action)
 		
-		v_front = apply_action(v_front, front_action′)
+		v_front = apply_action(v_front, front_action′, mechanics.acceleration)
 	
 	    action′ = speed_limit(mechanics.v_ego_min, 
 	        mechanics.v_ego_max, 
 	        v_ego,
 	        action)
 	    
-	    v_ego = apply_action(v_ego, action′)
+	    v_ego = apply_action(v_ego, action′, mechanics.acceleration)
 	
 	    new_vel = v_front - v_ego;
 	
@@ -272,6 +273,14 @@ Randomness space: The random behaviour of the front car is based on a number bet
 # ╔═╡ f25d9d2d-baae-422a-a56f-9a7491198f00
 randomness_space = Bounds((0,), (1,))
 
+# ╔═╡ a96b2790-b7ee-4ac0-8ea3-19094eeb962b
+simulation_function(p, a, r) = begin
+	v_ego, v_front, distance = simulate_point(m, p, r, a)
+	(   clamp(v_ego, m.v_ego_min, m.v_ego_max),
+		clamp(v_front, m.v_front_min, m.v_front_max),
+		clamp(distance, m.distance_min, m.distance_max))
+end
+
 # ╔═╡ 25e8dc25-5570-4b39-b353-2df981cc8c9a
 model = SimulationModel(simulation_function, randomness_space, samples_per_axis, samples_per_random_axis)
 
@@ -300,69 +309,6 @@ granularity = shield.granularity
 md"""
 ### Inspect imported shield
 """
-
-# ╔═╡ 99aabe32-7c65-4a9d-9397-ba2db2ca5cab
-@bind action Select([backwards, neutral, forwards])
-
-# ╔═╡ 1537138d-1e9a-4c2e-a1ce-0e3b696d5c8d
-md"""
-
-`v_ego =` $(@bind v_ego NumberField(m.v_ego_min:2:m.v_ego_max))
-
-`v_front =` $(@bind v_front NumberField(m.v_front_min:1:m.v_front_max))
-
-`distance =` $(@bind distance NumberField(m.distance_min:granularity[3]:m.distance_max + 1))
-"""
-
-# ╔═╡ 05305c4a-a1e6-40b4-bb94-e15e77929ef3
-begin
-	function draw′(grid)
-		draw′(grid, v_ego, v_front, distance)
-	end
-	function draw′(grid, v_ego, v_front, distance)
-		slice = [box(grid, v_ego, v_front, distance).indices[1], :, :]
-		colors = [v for (k, v) in sort(action_color_dict)]
-		labels = [k for (k, v) in sort(action_color_dict)]
-		labels = [int_to_actions(CCAction, l) for l in labels]
-		labels = [join(l, ", ") for l in labels]
-		labels = ["{$l}" for l in labels]
-		draw(grid, slice, 
-			colors=colors, 
-			color_labels=labels,
-			xlabel="v_front",
-			ylabel="distance",
-			legend=:outerright,
-			clims=(no_action, any_action),
-			size=(800,400))
-	end
-end
-
-# ╔═╡ e400c9d4-4132-431c-aa99-b551b09fbccd
-SupportingPoints(model.samples_per_axis, box(shield, v_ego, v_front, distance)) |> collect
-
-# ╔═╡ b7d66268-8a40-499d-aaca-d6e59f0ee14f
-partition = box(shield, v_ego, v_front, distance)
-
-# ╔═╡ 0018900a-03ed-437f-a4ce-b1e967269ac3
-get_value(partition)
-
-# ╔═╡ 5b3b198d-f0df-4991-8eb7-f208418b0be0
-possible_outcomes(model, partition, action)
-
-# ╔═╡ fa369c7d-ba1b-4aa0-bd83-2e2d4b8486f4
-@bind show_point CheckBox(default=true)
-
-# ╔═╡ 28f000ec-9538-4c9c-afbc-ece4af32d3af
-let
-	draw′(shield)
-	plot!(margin=3mm)
-	slice = [box(shield, v_ego, v_front, distance).indices[1], :, :]
-	if show_point
-		draw_barbaric_transition!(model, partition, action, slice)
-	else
-		plot!()
-	end
-end
 
 # ╔═╡ 107b960f-1a75-41f9-9cb9-195877ad6184
 shielded_random = s -> begin
@@ -454,16 +400,28 @@ The new mechanics are like this
 """
 
 # ╔═╡ 3af3824c-c032-46b6-b6ae-db9f01691183
-m′ = CCMechanics(1, 0, 200, 0, 30, 0, 30)
+m′ = CCMechanics(1, 0, 200, 1, -5, 10, -5, 10)
 
 # ╔═╡ 2b1c93bc-d6f1-4591-8fde-c32a78138325
 s0
 
 # ╔═╡ 38d987a3-eeb8-45fc-a86f-53e5337663c2
-# Projection of the state space
-function π(s)
-	v_ego, v_front, distance = s
-	return (v_ego - 10, v_front - 10, distance)
+begin
+	# Projection of the state space of the modified mechanics to the original mechanics
+	function π(s)
+		v_ego, v_front, distance = s
+		return (v_ego*2, v_front*2, distance*2)
+	end
+
+	# Inverse of the projection
+	function π⁻¹(s)
+		v_ego, v_front, distance = s
+		return (v_ego*0.5, v_front*0.5, distance*0.5)
+	end
+
+	let s = (10, 10, 10)
+		@assert s == π⁻¹(π(s))
+	end
 end
 
 # ╔═╡ 9d64b733-6a09-4997-b363-04281f52fb26
@@ -475,12 +433,13 @@ md"""
 """
 
 # ╔═╡ aea60129-59db-4597-9bb5-715b83560dd0
-# No safety violations here :-)
+# Should be safety violations here :-)
 traces′, safety_violations′, example_of_unsafe_trace′ = 
 	evaluate(m′, shielded_random′, is_safe=s -> is_safe(s, m=m′))
 
 # ╔═╡ ddd02244-044f-480c-833a-bd895f0adb79
-# Notice how shielding m′ with the shield directly leads to safety violations.
+# But this should be unsafe.
+# Because shielding m′ with the original shield leads to safety violations.
 evaluate(m′, shielded_random)
 
 # ╔═╡ 0dd174f4-ca16-4ad3-90e7-783da9f59366
@@ -513,7 +472,7 @@ if safety_violations′ > 0 let
 	
 			First unsafe sate reached: 
 			
-				$(states[first_unsafe])
+				$(states[first_unsafe]) at time  $(times[first_unsafe])
 			
 			The state before that: 
 			
@@ -521,6 +480,91 @@ if safety_violations′ > 0 let
 		""")
 	end
 end end
+
+# ╔═╡ f1347d14-e9c8-469e-bc93-7d10724bb49b
+@bind t NumberField(0:(isnothing(example_of_unsafe_trace′) ? 120 : example_of_unsafe_trace′.times[end]))
+
+# ╔═╡ 1537138d-1e9a-4c2e-a1ce-0e3b696d5c8d
+md"""
+
+`v_ego =` $(@bind v_ego NumberField(m.v_ego_min:2:m.v_ego_max))
+
+`v_front =` $(@bind v_front NumberField(m.v_front_min:1:m.v_front_max))
+
+`distance =` $(@bind distance NumberField(m.distance_min:granularity[3]:m.distance_max + 1))
+"""
+
+# ╔═╡ 05305c4a-a1e6-40b4-bb94-e15e77929ef3
+begin
+	function draw′(grid)
+		draw′(grid, v_ego, v_front, distance)
+	end
+	function draw′(grid, v_ego, v_front, distance)
+		slice = [box(grid, v_ego, v_front, distance).indices[1], :, :]
+		colors = [v for (k, v) in sort(action_color_dict)]
+		labels = [k for (k, v) in sort(action_color_dict)]
+		labels = [int_to_actions(CCAction, l) for l in labels]
+		labels = [join(l, ", ") for l in labels]
+		labels = ["{$l}" for l in labels]
+		draw(grid, slice, 
+			colors=colors, 
+			color_labels=labels,
+			xlabel="v_front",
+			ylabel="distance",
+			legend=:outerright,
+			clims=(no_action, any_action),
+			size=(800,400))
+	end
+end
+
+# ╔═╡ e400c9d4-4132-431c-aa99-b551b09fbccd
+SupportingPoints(model.samples_per_axis, box(shield, v_ego, v_front, distance)) |> collect
+
+# ╔═╡ b7d66268-8a40-499d-aaca-d6e59f0ee14f
+partition = box(shield, v_ego, v_front, distance)
+
+# ╔═╡ 0018900a-03ed-437f-a4ce-b1e967269ac3
+get_value(partition)
+
+# ╔═╡ b59bea05-7e76-4c0c-ab9d-6fbde1269b35
+π((v_ego, v_front, distance))
+
+# ╔═╡ 99aabe32-7c65-4a9d-9397-ba2db2ca5cab
+@bind action Select([backwards, neutral, forwards])
+
+# ╔═╡ 5b3b198d-f0df-4991-8eb7-f208418b0be0
+possible_outcomes(model, partition, action)
+
+# ╔═╡ d20f3aba-e13d-4ff6-9d4d-739945311f19
+simulate_point(m, (v_ego, v_front, distance), 0.5, action)
+
+# ╔═╡ d6c26dbe-f435-4242-9fe4-13cedadea1b0
+simulate_point(m′, (v_ego, v_front, distance), 0.5, action)
+
+# ╔═╡ fa369c7d-ba1b-4aa0-bd83-2e2d4b8486f4
+@bind show_point CheckBox(default=true)
+
+# ╔═╡ ac4c993e-0f18-4829-8dd1-450b79c399b8
+s_t = let
+	if !isnothing(example_of_unsafe_trace′)
+		i = indexof((==(t)), example_of_unsafe_trace′.times)[1]
+		example_of_unsafe_trace′.states[i]
+	end
+end
+
+# ╔═╡ 28f000ec-9538-4c9c-afbc-ece4af32d3af
+	let
+	draw′(shield)
+	plot!(margin=3mm)
+	
+	if show_point && !isnothing(example_of_unsafe_trace′)
+		partition = box(shield, π(s_t...))
+		slice = [partition.indices[1], :, :]
+		draw_barbaric_transition!(model, partition, action, slice)
+	else
+		plot!()
+	end
+end
 
 # ╔═╡ Cell order:
 # ╟─1e159603-fc61-45f8-9595-f75e55318344
@@ -548,6 +592,7 @@ end end
 # ╠═06cb86de-b11b-421e-85ef-7002ecff1cf5
 # ╟─de31fa0c-acc3-42c4-bac2-e9c2ef4065f6
 # ╠═f25d9d2d-baae-422a-a56f-9a7491198f00
+# ╠═a96b2790-b7ee-4ac0-8ea3-19094eeb962b
 # ╠═25e8dc25-5570-4b39-b353-2df981cc8c9a
 # ╠═e400c9d4-4132-431c-aa99-b551b09fbccd
 # ╠═bd4395db-3c26-4235-9a42-fa6a7eca7041
@@ -556,13 +601,9 @@ end end
 # ╠═75dbc088-74a1-4a7a-ae59-f2163b99b6f1
 # ╠═ea83ab65-934a-4734-b562-f9f5223fb34f
 # ╟─2418bf90-b0ec-4cb9-b3fd-bf2b91d2ff33
-# ╠═99aabe32-7c65-4a9d-9397-ba2db2ca5cab
 # ╠═b7d66268-8a40-499d-aaca-d6e59f0ee14f
 # ╠═0018900a-03ed-437f-a4ce-b1e967269ac3
 # ╠═5b3b198d-f0df-4991-8eb7-f208418b0be0
-# ╟─1537138d-1e9a-4c2e-a1ce-0e3b696d5c8d
-# ╠═fa369c7d-ba1b-4aa0-bd83-2e2d4b8486f4
-# ╟─28f000ec-9538-4c9c-afbc-ece4af32d3af
 # ╟─0382588a-ac96-4528-9fee-67ab93d4a1f8
 # ╠═107b960f-1a75-41f9-9cb9-195877ad6184
 # ╠═c971bbe4-bc6b-49dd-940d-3277017e99bc
@@ -573,9 +614,18 @@ end end
 # ╠═3af3824c-c032-46b6-b6ae-db9f01691183
 # ╠═2b1c93bc-d6f1-4591-8fde-c32a78138325
 # ╠═38d987a3-eeb8-45fc-a86f-53e5337663c2
+# ╠═b59bea05-7e76-4c0c-ab9d-6fbde1269b35
 # ╠═9d64b733-6a09-4997-b363-04281f52fb26
 # ╟─38e1e427-6b1f-402c-93d5-8847e2563c32
 # ╠═aea60129-59db-4597-9bb5-715b83560dd0
 # ╠═ddd02244-044f-480c-833a-bd895f0adb79
 # ╠═0dd174f4-ca16-4ad3-90e7-783da9f59366
 # ╟─5aaa1518-652c-4980-9899-0d7ae60008ea
+# ╠═f1347d14-e9c8-469e-bc93-7d10724bb49b
+# ╟─1537138d-1e9a-4c2e-a1ce-0e3b696d5c8d
+# ╠═99aabe32-7c65-4a9d-9397-ba2db2ca5cab
+# ╠═d20f3aba-e13d-4ff6-9d4d-739945311f19
+# ╠═d6c26dbe-f435-4242-9fe4-13cedadea1b0
+# ╠═fa369c7d-ba1b-4aa0-bd83-2e2d4b8486f4
+# ╠═ac4c993e-0f18-4829-8dd1-450b79c399b8
+# ╠═28f000ec-9538-4c9c-afbc-ece4af32d3af
