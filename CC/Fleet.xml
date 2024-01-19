@@ -27,7 +27,7 @@ Kim Guldstrand Larsen, Marius Mikucionis, Jakob Haahr Taankvist.
 */
 clock time;
 
-const int fleetSize = 25;
+const int fleetSize = 4;
 
 const int minVelocity = -10;
 const int maxVelocity = 20;
@@ -42,7 +42,7 @@ broadcast chan tick;    // Signal to check if distance greater than 200
 
 
 hybrid clock velocity[fleetSize];   		// velocity of each car
-hybrid clock distance[fleetSize - 1] = {50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50};
+hybrid clock distance[fleetSize - 1] = {50, 50, 50};
 
 hybrid clock D[fleetSize - 1]; 				// "cost" of distance used in strategy optimization
 
@@ -378,7 +378,16 @@ int[0, fleetSize] i = 0; </declaration>
 	</template>
 	<system>Random0 = Random(0);
 
-system Decisions, Dynamics, Random0;</system>
+PreTrained1 = PreTrained(1);
+Shield1 = Shield(1);
+PreTrained2 = PreTrained(2);
+Shield2 = Shield(2);
+Learner3 = Learner(3);
+Shield3 = Shield(3);
+
+
+system Decisions, Dynamics, 
+Random0, PreTrained1, Shield1, PreTrained2, Shield2, Learner3, Shield3;</system>
 	<queries>
 		<query>
 			<formula>strategy car1 = minE(D[0]) [&lt;=105] {}-&gt;{velocity[1], velocity[0], distance[0]}: &lt;&gt; time &gt;= 100</formula>
@@ -425,7 +434,7 @@ system Decisions, Dynamics, Random0;</system>
 			<comment/>
 		</query>
 		<query>
-			<formula>simulate[&lt;=100;100] {distance[0]}</formula>
+			<formula>simulate[&lt;=100;100] {distance}</formula>
 			<comment/>
 		</query>
 		<query>
