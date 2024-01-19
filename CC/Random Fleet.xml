@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
+<nta>
+	<declaration>/**
+This case study has been published at "Correct System Design"
+Symposium in Honor of Ernst-Rüdiger Olderog on the Occasion of
+His 60th Birthday Oldenburg, Germany, September 8–9, 2015.
+
+The paper "Safe and Optimal Adaptive Cruise Control" by 
+Kim Guldstrand Larsen, Marius Mikucionis, Jakob Haahr Taankvist.
+
+@incollection{cruise,
+    year={2015},
+    isbn={978-3-319-23505-9},
+    booktitle={Correct System Design},
+    volume={9360},
+    series={Lecture Notes in Computer Science},
+    editor={Meyer, Roland and Platzer, André and Wehrheim, Heike},
+    doi={10.1007/978-3-319-23506-6_17},
+    title={Safe and Optimal Adaptive Cruise Control},
+    url={http://dx.doi.org/10.1007/978-3-319-23506-6_17},
+    publisher={Springer International Publishing},
+    author={Larsen, Kim Guldstrand and Miku\v{c}ionis, Marius and Taankvist, Jakob Haahr},
+    pages={260-277},
+    language={English}
+}
+*/
+clock time;
+
+const int fleetSize = 20;
+
+const int minVelocity = -10;
+const int maxVelocity = 20;
+
+const int minDistance = 0;
+const int maxDistance = 200;
+
+int[-2,2] acceleration[fleetSize];   // acceleration of car
+broadcast chan choose[fleetSize];    // signal for car to decide 
+broadcast chan shield;  // Signal for shield to change unsafe actions
+broadcast chan tick;    // Signal to check if distance greater than 200
+
+
+hybrid clock velocity[fleetSize];   		// velocity of each car
+hybrid clock distance[fleetSize - 1] = {50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50};
+
+hybrid clock D[fleetSize - 1]; 				// "cost" of distance used in strategy optimization
+
+/* Hybrid clocks:
+- Usually represent some continuous (dynamical) cost over the system state space.
+- Can be used in rate (derivative) expressions.
+- Cannot be used in constraints (guards and invariants).
+- Are abstracted away and have no effect in symbolic analysis (Symbolic Simulator, queries like A[], E&lt;&gt;, TIGA safety synthesis)
+- Are used in concrete simulations (Concrete Simulator, SMC queries like simulate, Pr, minE, maxE, E[...](max:)).      
+*/
+
+
+
+/** Pre-trained agent */
+
+const int PositiveAcceleration = 1;
+const int NegativeAcceleration = 0;
+const int NoAcceleration = 2;
+
+/*
+import "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/libcar1.so"
+{
+    int get_action_car1(double velocity, double velocityFront, double distance);
+};
+import "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/libcar2.so"
+{
+    int get_action_car2(double velocity, double velocityFront, double distance);
+};
+*/
+
+
+/* Stubs 
+*/
+int get_action_car1(double velocity, double velocityFront, double distance) { return NoAcceleration; }
+int get_action_car2(double velocity, double velocityFront, double distance) { return NoAcceleration; }
+
+int get_action(int i) {
+    if (i == 1)
+        return get_action_car1(velocity[i], velocity[i - 1], distance[i - 1]);
+    else if (i == 2)
+        return get_action_car2(velocity[i], velocity[i - 1], distance[i - 1]);
+    else
+        return acceleration[i - 100]; // Provoke Error: No strategy loaded for i.
+}
+
+void preTrainedChoice(int i) {
+    int action = get_action(i);
+    if (action == NoAcceleration)
+        acceleration[i] = 0;
+    else if (action == PositiveAcceleration)
+        acceleration[i] = 2;
+    else
+        acceleration[i] = -2;
+
+    if (velocity[i] &lt;= minVelocity &amp;&amp; action == NegativeAcceleration)
+        acceleration[i] = 0;
+    else if (velocity[i] &gt;= maxVelocity &amp;&amp; action == PositiveAcceleration)
+        acceleration[i] = 0;
+}
+
+/** Shield */
+ 
+import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Shield/libshield.so"
+{
+    int get_value(double velocity, double velocityFront, double distance);
+};
+
+typedef struct {
+    bool backwards;
+    bool neutral;
+    bool forwards;
+} allowedActions;
+
+allowedActions intToActions(int bitarray) {
+    allowedActions result = { 
+        (0 != (bitarray &amp; (1 &lt;&lt; 0))),
+        (0 != (bitarray &amp; (1 &lt;&lt; 1))),
+        (0 != (bitarray &amp; (1 &lt;&lt; 2)))
+    };
+    return result;
+}
+
+int debugUnsafeState = 0;
+
+int speedLimit(int i) {
+    if (velocity[i] &lt;= minVelocity &amp;&amp; acceleration[i] &lt; 0)
+        return 0;
+    else if (velocity[i] &gt;= maxVelocity &amp;&amp; acceleration [i] &gt; 0)
+        return 0;
+    else
+        return acceleration[i];
+}
+
+int backup_policy(allowedActions allowed) {
+    if (allowed.forwards)
+        return 2;
+    else if (allowed.neutral)
+        return 0;
+    else if (allowed.backwards)
+        return -2;
+    
+    debugUnsafeState = 1;
+    return 0;
+}
+
+void apply_shield(int i) {
+    double v = round(velocity[i]+0.0);
+    double vFront = round(velocity[i - 1]+0.0);
+    double d = round(distance[i - 1]+0.0);
+    allowedActions allowed = intToActions(get_value(v, vFront, d));
+    if (!allowed.forwards &amp;&amp; !allowed.neutral &amp;&amp; !allowed.backwards)
+        return;
+    if (acceleration[i] ==  2 &amp;&amp; !allowed.forwards ||
+        acceleration[i] ==  0 &amp;&amp; !allowed.neutral ||
+        acceleration[i] == -2 &amp;&amp; !allowed.backwards) {
+        acceleration[i] = backup_policy(allowed);
+    }
+    acceleration[i] = speedLimit(i);
+}</declaration>
+	<template>
+		<name>Learner</name>
+		<parameter>int i</parameter>
+		<location id="id0" x="102" y="-136">
+			<name x="119" y="-161">PositiveAcc</name>
+			<label kind="comments" x="119" y="-136">Speeding up</label>
+		</location>
+		<location id="id1" x="102" y="68">
+			<name x="60" y="85">NegativeAcc</name>
+			<label kind="comments" x="60" y="111">Breaking</label>
+		</location>
+		<location id="id2" x="-102" y="68">
+			<name x="-153" y="85">NoAcc</name>
+			<label kind="comments" x="-153" y="111">Maintaining 
+the same speed</label>
+		</location>
+		<location id="id3" x="0" y="-34">
+			<name x="26" y="-59">Choose</name>
+			<label kind="comments" x="-408" y="-178">NB: States may be misleading if shielded. 
+The shield simply intervenes by altering 
+the acceleration once it has been chosen 
+by an agent.
+For this reason, the car might be in the 
+"PositiveAcc" state even though it is at 
+that time reversing.</label>
+			<committed/>
+		</location>
+		<init ref="id2"/>
+		<transition id="id4">
+			<source ref="id1"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-25" y="68">choose[i]?</label>
+			<nail x="0" y="68"/>
+		</transition>
+		<transition id="id5">
+			<source ref="id0"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-17" y="-153">choose[i]?</label>
+			<nail x="0" y="-136"/>
+		</transition>
+		<transition id="id6">
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-93" y="17">choose[i]?</label>
+		</transition>
+		<transition id="id7">
+			<source ref="id3"/>
+			<target ref="id1"/>
+			<label kind="guard" x="26" y="9">velocity[i] &gt; minVelocity</label>
+			<label kind="assignment" x="26" y="26">acceleration[i] = -2</label>
+		</transition>
+		<transition id="id8">
+			<source ref="id3"/>
+			<target ref="id0"/>
+			<label kind="guard" x="26" y="-102">velocity[i] &lt; maxVelocity</label>
+			<label kind="assignment" x="26" y="-85">acceleration[i] = 2</label>
+		</transition>
+		<transition id="id9">
+			<source ref="id3"/>
+			<target ref="id2"/>
+			<label kind="assignment" x="-204" y="-8">acceleration[i] = 0</label>
+			<nail x="-102" y="-8"/>
+		</transition>
+	</template>
+	<template>
+		<name>Shield</name>
+		<parameter>int i</parameter>
+		<location id="id10" x="-17" y="-8">
+		</location>
+		<init ref="id10"/>
+		<transition id="id11" controllable="false">
+			<source ref="id10"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="-85" y="-161">shield?</label>
+			<label kind="assignment" x="-77" y="-144">apply_shield(i)</label>
+			<nail x="25" y="-34"/>
+			<nail x="25" y="-119"/>
+			<nail x="-17" y="-110"/>
+			<nail x="-60" y="-119"/>
+			<nail x="-59" y="-34"/>
+		</transition>
+	</template>
+	<template>
+		<name>PreTrained</name>
+		<parameter>int i</parameter>
+		<location id="id12" x="110" y="-8">
+			<committed/>
+		</location>
+		<location id="id13" x="-76" y="-8">
+		</location>
+		<init ref="id13"/>
+		<transition id="id14" controllable="false">
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="assignment" x="-68" y="-42">preTrainedChoice(i)</label>
+			<nail x="17" y="-25"/>
+		</transition>
+		<transition id="id15" controllable="false">
+			<source ref="id13"/>
+			<target ref="id12"/>
+			<label kind="synchronisation" x="-25" y="8">choose[i]?</label>
+			<nail x="17" y="8"/>
+		</transition>
+	</template>
+	<template>
+		<name>Random</name>
+		<parameter>int i</parameter>
+		<location id="id16" x="102" y="-136">
+			<name x="119" y="-153">Positive_acc</name>
+		</location>
+		<location id="id17" x="102" y="68">
+			<name x="110" y="85">Negative_acc</name>
+		</location>
+		<location id="id18" x="-102" y="68">
+			<name x="-153" y="85">No_acceleration</name>
+		</location>
+		<location id="id19" x="0" y="-34">
+			<name x="-59" y="-42">Choose</name>
+			<committed/>
+		</location>
+		<branchpoint id="id20" x="34" y="-34"/>
+		<init ref="id18"/>
+		<transition id="id21">
+			<source ref="id20"/>
+			<target ref="id18"/>
+			<label kind="assignment" x="-212" y="-68">acceleration[i] = 0</label>
+			<label kind="probability" x="-297" y="-52">1</label>
+			<nail x="8" y="-68"/>
+			<nail x="-51" y="-34"/>
+			<nail x="-102" y="-34"/>
+		</transition>
+		<transition id="id22">
+			<source ref="id20"/>
+			<target ref="id17"/>
+			<label kind="assignment" x="85" y="-24">acceleration[i] = -2</label>
+			<label kind="probability" x="85" y="-8">velocity[i] &gt; minVelocity ? 
+    (velocity[i] &gt; 10 ? 2 : 1) 
+    : 0</label>
+		</transition>
+		<transition id="id23">
+			<source ref="id20"/>
+			<target ref="id16"/>
+			<label kind="assignment" x="93" y="-119">acceleration[i] = 2</label>
+			<label kind="probability" x="93" y="-102">velocity[i] &lt; maxVelocity ? 
+    (velocity[i] &lt; 0 ? 2 : 1)
+    : 0</label>
+		</transition>
+		<transition id="id24" controllable="false">
+			<source ref="id19"/>
+			<target ref="id20"/>
+		</transition>
+		<transition id="id25" controllable="false">
+			<source ref="id17"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-25" y="68">choose[i]?</label>
+			<nail x="0" y="68"/>
+		</transition>
+		<transition id="id26" controllable="false">
+			<source ref="id16"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-17" y="-153">choose[i]?</label>
+			<nail x="0" y="-136"/>
+		</transition>
+		<transition id="id27" controllable="false">
+			<source ref="id18"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-93" y="17">choose[i]?</label>
+		</transition>
+	</template>
+	<template>
+		<name>Decisions</name>
+		<declaration>clock timer;
+int[0, fleetSize] i = 0; </declaration>
+		<location id="id28" x="-238" y="-187">
+			<name x="-255" y="-170">Wait</name>
+			<label kind="invariant" x="-272" y="-153">timer &lt;= 1</label>
+		</location>
+		<location id="id29" x="-314" y="-272">
+			<urgent/>
+		</location>
+		<init ref="id29"/>
+		<transition id="id30" controllable="false">
+			<source ref="id29"/>
+			<target ref="id29"/>
+			<label kind="guard" x="-357" y="-357">i &lt; fleetSize</label>
+			<label kind="synchronisation" x="-357" y="-340">choose[i]!</label>
+			<label kind="assignment" x="-357" y="-374">i++</label>
+			<nail x="-357" y="-314"/>
+			<nail x="-272" y="-314"/>
+		</transition>
+		<transition id="id31" controllable="false">
+			<source ref="id29"/>
+			<target ref="id28"/>
+			<label kind="guard" x="-263" y="-306">i == fleetSize</label>
+			<label kind="synchronisation" x="-263" y="-272">shield!</label>
+			<label kind="assignment" x="-263" y="-289">timer = 0</label>
+			<nail x="-136" y="-272"/>
+		</transition>
+		<transition id="id32" controllable="false">
+			<source ref="id28"/>
+			<target ref="id29"/>
+			<label kind="guard" x="-365" y="-221">timer == 1</label>
+			<label kind="assignment" x="-357" y="-238">i = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>Dynamics</name>
+		<location id="id33" x="-153" y="-144">
+			<label kind="invariant" x="-314" y="-127">(forall (i : int[0, fleetSize - 1]) velocity[i]' == acceleration[i]) &amp;&amp;
+(forall (j : int[0, fleetSize - 2]) distance[j]' == velocity[j] - velocity[j + 1]) &amp;&amp;
+(forall (j : int[0, fleetSize - 2]) D[j]' == distance[j])</label>
+		</location>
+		<init ref="id33"/>
+	</template>
+	<system>Random0 = Random(0);
+
+Random1 = Random(1);
+Shield1 = Shield(1);
+Random2 = Random(2);
+Shield2 = Shield(2);
+Random3 = Random(3);
+Shield3 = Shield(3);
+Random4 = Random(4);
+Shield4 = Shield(4);
+Random5 = Random(5);
+Shield5 = Shield(5);
+Random6 = Random(6);
+Shield6 = Shield(6);
+Random7 = Random(7);
+Shield7 = Shield(7);
+Random8 = Random(8);
+Shield8 = Shield(8);
+Random9 = Random(9);
+Shield9 = Shield(9);
+Random10 = Random(10);
+Shield10 = Shield(10);
+Random11 = Random(11);
+Shield11 = Shield(11);
+Random12 = Random(12);
+Shield12 = Shield(12);
+Random13 = Random(13);
+Shield13 = Shield(13);
+Random14 = Random(14);
+Shield14 = Shield(14);
+Random15 = Random(15);
+Shield15 = Shield(15);
+Random16 = Random(16);
+Shield16 = Shield(16);
+Random17 = Random(17);
+Shield17 = Shield(17);
+Random18 = Random(18);
+Shield18 = Shield(18);
+Random19 = Random(19);
+Shield19 = Shield(19);
+
+
+system Decisions, Dynamics, Random0,
+    Random1, Shield1,
+    Random2, Shield2,
+    Random3, Shield3,
+    Random4, Shield4,
+    Random5, Shield5,
+    Random6, Shield6,
+    Random7, Shield7,
+    Random8, Shield8,
+    Random9, Shield9,
+    Random10, Shield10,
+    Random11, Shield11,
+    Random12, Shield12,
+    Random13, Shield13,
+    Random14, Shield14,
+    Random15, Shield15,
+    Random16, Shield16,
+    Random17, Shield17,
+    Random18, Shield18,
+    Random19, Shield19;</system>
+	<queries>
+		<query>
+			<formula>E[&lt;=100;1000](max:D[0])</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[&lt;=100;1000](max:D[1])</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E[&lt;=100;1000](max: (sum (i : int[0, fleetSize - 2]) D[i])/fleetSize)</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>simulate[&lt;=100;1] {distance}</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance))</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>simulate[&lt;=100;10] {maxVelocity - velocity[0], velocity[0] - minVelocity }</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula/>
+			<comment/>
+		</query>
+		<query>
+			<formula/>
+			<comment/>
+		</query>
+		<query>
+			<formula/>
+			<comment/>
+		</query>
+		<query>
+			<formula/>
+			<comment/>
+		</query>
+		<query>
+			<formula/>
+			<comment/>
+		</query>
+	</queries>
+</nta>
