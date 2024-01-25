@@ -2,7 +2,7 @@
 
 verifyta=${verifyta:-"$HOME/opt/uppaal-5.1.0-beta5-linux64/bin/verifyta.sh"}
 RANDOM_FLEET=${RANDOM_FLEET:-"$PWD/Random Fleet.xml"}
-RESULTS="$HOME/Results/CC Random Shielded"
+RESULTS="$HOME/Results/N-player CC Random Shielded"
 echo "Running single experiment."
 # Create results dir if not exists
 [ -d "$RESULTS" ] || mkdir "$RESULTS"

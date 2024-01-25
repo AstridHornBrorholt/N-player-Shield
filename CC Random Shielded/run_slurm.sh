@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "Scheduling slurm jobs"
 
-RESULTS="$HOME/Results/CC Random Shielded"
+RESULTS="$HOME/Results/N-player CC Random Shielded"
 [ -d "$RESULTS" ] || mkdir "$RESULTS"
 export log_output="$RESULTS/log.txt"
 
