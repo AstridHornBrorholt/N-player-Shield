@@ -64,10 +64,21 @@ But what I was able to do, was create a shield for two cars whose max distance w
 The front car has similar performance for both configuratoins, but the second car performs much better in the centralized shielding setup. I speculate this is because centralized shielding makes the additional assumption, that cars communicate their actions between each other, allowing  them to match speed perfectly. 
 
 This assumption is not present in the default decentralized configuration, but I'll try to include it, to see if it is the centralized shield, or the additional information, that makes the difference.
-#figure(
-    image("./CC/Centralized shield.svg", width:50%),
+
+#grid(columns:(1fr, 1fr),
+    [#figure(
+    image("./CC/Random.svg", width:100%),
+    caption: "Uniformly random sampling of safe actions."
+    ) <cc-random>],
+    [#figure(
+    image("./CC/Centralized shield.svg", width:70%),
     caption: "Respectively, centralized shield where actions are co-ordinated, decentralized shield, and decentralized shield where actions are co-ordinated."
-) <centralized-shield>
+) <centralized-shield>],
+) 
+
+== Random baseline
+
+@cc-random shows a baseline performance. Each agent samples a safe action according to the shield, according to a uniformly random distribution. As we can see, performance is less than stellar. However, it was safe.
 
 #pagebreak()
 
