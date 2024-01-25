@@ -89,14 +89,6 @@ mkpath(models_dir)
 strategy_paths = String[]
 for N in 2:max_cars
     status("Running Fleet of $N Cars...  (repetition=$repetition)")
-    try
-        status("Result of df -h 👇\n"*read(`df -h`, String))
-    catch
-    end
-    try
-        status("Result of du -sh /tmp 👇\n"*read(`du -sh /tmp/*` |> ignorestatus, String))
-    catch
-    end
     outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
     model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, models_dir; checks, skip_training)
     if skip_training
