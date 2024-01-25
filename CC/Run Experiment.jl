@@ -94,7 +94,7 @@ for N in 2:max_cars
     catch
     end
     try
-        status("Result of du -sh /tmp 👇\n"*read(`du -sh /tmp`, String))
+        status("Result of du -sh /tmp 👇\n"*read(`du -sh /tmp/*` |> ignorestatus, String))
     catch
     end
     outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
