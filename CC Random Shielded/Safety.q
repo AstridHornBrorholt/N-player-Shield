@@ -1,0 +1,1 @@
+Pr[<=100;1000](<> forall (i : int[0, fleetSize - 2]) (distance[i] < minDistance || distance[i] > maxDistance))
