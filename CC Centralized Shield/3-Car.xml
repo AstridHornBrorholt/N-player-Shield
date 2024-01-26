@@ -54,7 +54,7 @@ hybrid clock D[fleetSize - 1]; 				// "cost" of distance used in strategy optimi
 
 /** Shield */
  
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Centralized Shield/2-car.so"
+import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Centralized Shield/2-car.so"
 {
     int get_value(double velocity, double velocityFront, double distance);
 };
