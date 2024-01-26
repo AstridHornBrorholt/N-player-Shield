@@ -349,10 +349,10 @@ And lastly, something similar happens with the time-step. If the time-step is ha
 
 # ╔═╡ de7136f9-32ed-4042-b649-1bdfb9624685
 begin
-	t_act_multiplier = 0.8
+	t_act_multiplier = 1
 	acceleration_multiplier = 0.5
-	distance_add = 25
-	velocity_add = 5
+	distance_add = 10
+	velocity_add = 10
 end
 
 # ╔═╡ 3af3824c-c032-46b6-b6ae-db9f01691183
@@ -461,7 +461,7 @@ end
 
 # ╔═╡ 6134ef59-6377-466b-952d-bee90e421b80
 # s0′ = π(s0)
-s0′ = (0, 0, m′.distance_min + m′.distance_min/2)
+s0′ = (0, 0, m′.distance_min + 5*m′.t_act*m′.acceleration)
 
 # ╔═╡ 38d987a3-eeb8-45fc-a86f-53e5337663c2
 begin
@@ -492,6 +492,9 @@ end
 
 # ╔═╡ 223fc1d3-6b1c-4807-bc74-7bf4a63ed859
 π((m′.v_ego_max, m′.v_front_max, m′.distance_max))
+
+# ╔═╡ 765a72ed-79af-4745-a26b-e2ff85992913
+π((10, 10, 10))
 
 # ╔═╡ 9d64b733-6a09-4997-b363-04281f52fb26
 shielded_random′ = s -> shielded_random(π(s))
@@ -640,6 +643,38 @@ example_trace′.times[trace_index]
 	end
 end
 
+# ╔═╡ 3c7e4225-019a-4b85-b537-5eb30f919bcb
+md"""
+# Trying to work out why this doesn't work in the UPPAAL model
+"""
+
+# ╔═╡ 83cb3b97-3de0-4399-8c25-e03e44927053
+function get_allowed(shield, state)
+	partition = box(shield, state)
+	allowed = int_to_actions(CCAction, get_value(partition))
+end
+
+# ╔═╡ 6bcb093f-5be3-4766-b27c-ada4e67d4f22
+first_unsafe = (2, 1, 6.4995)
+
+# ╔═╡ 1ea15fc0-24b8-4788-9d59-52188d2a63b2
+before_that = (2, 1, 7.49957)
+
+# ╔═╡ 77fe6669-459d-4ba1-afc9-03efbdc18d86
+π(first_unsafe), (π(before_that))
+
+# ╔═╡ 28a464da-dc99-40c0-867d-ae0216d7c0c6
+get_allowed(shield, round.(π(first_unsafe)))
+
+# ╔═╡ 51bf476a-2276-41db-bb40-5756ab53993f
+get_allowed(shield, round.(π(before_that)))
+
+# ╔═╡ 5eeaaebc-34d5-4445-8517-ac20e3f05d80
+a = get_allowed(shield, π(before_that))[1]
+
+# ╔═╡ 79c26f94-45a5-4c8f-8982-0f5642686eb5
+unique(simulate_point(m′, before_that, r, a) for r in 0:0.01:1)
+
 # ╔═╡ Cell order:
 # ╠═c1bdc9f0-3d96-11ee-00af-b341a715281c
 # ╟─da8a843d-b5c7-4155-b90c-3df160996c13
@@ -696,6 +731,7 @@ end
 # ╠═38d987a3-eeb8-45fc-a86f-53e5337663c2
 # ╠═7854e7a3-0749-45b9-85b9-ab43bcca10d1
 # ╠═223fc1d3-6b1c-4807-bc74-7bf4a63ed859
+# ╠═765a72ed-79af-4745-a26b-e2ff85992913
 # ╠═9d64b733-6a09-4997-b363-04281f52fb26
 # ╠═aea60129-59db-4597-9bb5-715b83560dd0
 # ╠═71155dd3-0abc-4119-9e31-885663a32cec
@@ -712,3 +748,12 @@ end
 # ╠═ac4c993e-0f18-4829-8dd1-450b79c399b8
 # ╠═c5de5e40-571d-4385-86ac-3f30f9aa6566
 # ╠═28f000ec-9538-4c9c-afbc-ece4af32d3af
+# ╟─3c7e4225-019a-4b85-b537-5eb30f919bcb
+# ╠═83cb3b97-3de0-4399-8c25-e03e44927053
+# ╠═6bcb093f-5be3-4766-b27c-ada4e67d4f22
+# ╠═1ea15fc0-24b8-4788-9d59-52188d2a63b2
+# ╠═77fe6669-459d-4ba1-afc9-03efbdc18d86
+# ╠═28a464da-dc99-40c0-867d-ae0216d7c0c6
+# ╠═51bf476a-2276-41db-bb40-5756ab53993f
+# ╠═5eeaaebc-34d5-4445-8517-ac20e3f05d80
+# ╠═79c26f94-45a5-4c8f-8982-0f5642686eb5

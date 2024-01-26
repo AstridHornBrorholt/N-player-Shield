@@ -27,22 +27,27 @@ Kim Guldstrand Larsen, Marius Mikucionis, Jakob Haahr Taankvist.
 */
 clock time;
 
-const int fleetSize = 20;
+const int fleetSize = 2;
 
-const int minVelocity = -10;
-const int maxVelocity = 20;
+const double t_act = 0.8;
 
-const int minDistance = 0;
-const int maxDistance = 200;
+// Abhorrent naming: `acc` is the constant determining the rate of acceleration. `acceleration` is an array containing the current accelerations of the cars in a given time-step.
+const int acc = 1;
 
-int[-2,2] acceleration[fleetSize];   // acceleration of car
+const double minDistance = 10;
+const double maxDistance = 90;
+
+const double minVelocity = -2;
+const double maxVelocity = 10;
+
+int[-acc,acc] acceleration[fleetSize];   // acceleration of car
 broadcast chan choose[fleetSize];    // signal for car to decide 
 broadcast chan shield;  // Signal for shield to change unsafe actions
 broadcast chan tick;    // Signal to check if distance greater than 200
 
 
 hybrid clock velocity[fleetSize];   		// velocity of each car
-hybrid clock distance[fleetSize - 1] = {50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50};
+hybrid clock distance[fleetSize - 1] = {15};
 
 hybrid clock D[fleetSize - 1]; 				// "cost" of distance used in strategy optimization
 
@@ -93,9 +98,9 @@ void preTrainedChoice(int i) {
     if (action == NoAcceleration)
         acceleration[i] = 0;
     else if (action == PositiveAcceleration)
-        acceleration[i] = 2;
+        acceleration[i] = acc;
     else
-        acceleration[i] = -2;
+        acceleration[i] = -acc;
 
     if (velocity[i] &lt;= minVelocity &amp;&amp; action == NegativeAcceleration)
         acceleration[i] = 0;
@@ -138,33 +143,46 @@ int speedLimit(int i) {
 
 int backup_policy(allowedActions allowed) {
     if (allowed.forwards)
-        return 2;
+        return acc;
     else if (allowed.neutral)
         return 0;
     else if (allowed.backwards)
-        return -2;
+        return -acc;
     
-    debugUnsafeState = 1;
-    return 0;
+    return acceleration[-1];    // Provoke error: No safe actions in this state.
+}
+
+const double t_act_multiplier = 0.8;
+const double acceleration_multiplier = 0.5;
+const double distance_add = 25;
+const double velocity_add = 5;
+
+double projection_v(double v) {
+    return v/t_act_multiplier/acceleration_multiplier - velocity_add;
+}
+
+double projection_d(double d) {
+    return d/t_act_multiplier/acceleration_multiplier - distance_add;
 }
 
 void apply_shield(int i) {
-    double v = round(velocity[i]+0.0);
-    double vFront = round(velocity[i - 1]+0.0);
-    double d = round(distance[i - 1]+0.0);
+    double v = projection_v(round(velocity[i]+0.0));
+    double vFront = projection_v(round(velocity[i - 1]+0.0));
+    double d = projection_d(round(distance[i - 1]+0.0));
     allowedActions allowed = intToActions(get_value(v, vFront, d));
     if (!allowed.forwards &amp;&amp; !allowed.neutral &amp;&amp; !allowed.backwards)
+        debugUnsafeState = 1;
         return;
-    if (acceleration[i] ==  2 &amp;&amp; !allowed.forwards ||
+    if (acceleration[i] ==  acc &amp;&amp; !allowed.forwards ||
         acceleration[i] ==  0 &amp;&amp; !allowed.neutral ||
-        acceleration[i] == -2 &amp;&amp; !allowed.backwards) {
+        acceleration[i] == -acc &amp;&amp; !allowed.backwards) {
         acceleration[i] = backup_policy(allowed);
     }
     acceleration[i] = speedLimit(i);
 }</declaration>
 	<template>
 		<name>Learner</name>
-		<parameter>int i</parameter>
+		<parameter>const int i</parameter>
 		<location id="id0" x="102" y="-136">
 			<name x="119" y="-161">PositiveAcc</name>
 			<label kind="comments" x="119" y="-136">Speeding up</label>
@@ -211,13 +229,13 @@ that time reversing.</label>
 			<source ref="id3"/>
 			<target ref="id1"/>
 			<label kind="guard" x="26" y="9">velocity[i] &gt; minVelocity</label>
-			<label kind="assignment" x="26" y="26">acceleration[i] = -2</label>
+			<label kind="assignment" x="26" y="26">acceleration[i] = -acc</label>
 		</transition>
 		<transition id="id8">
 			<source ref="id3"/>
 			<target ref="id0"/>
 			<label kind="guard" x="26" y="-102">velocity[i] &lt; maxVelocity</label>
-			<label kind="assignment" x="26" y="-85">acceleration[i] = 2</label>
+			<label kind="assignment" x="26" y="-85">acceleration[i] = acc</label>
 		</transition>
 		<transition id="id9">
 			<source ref="id3"/>
@@ -228,7 +246,7 @@ that time reversing.</label>
 	</template>
 	<template>
 		<name>Shield</name>
-		<parameter>int i</parameter>
+		<parameter>const int i</parameter>
 		<location id="id10" x="-17" y="-8">
 		</location>
 		<init ref="id10"/>
@@ -268,7 +286,7 @@ that time reversing.</label>
 	</template>
 	<template>
 		<name>Random</name>
-		<parameter>int i</parameter>
+		<parameter>const int i</parameter>
 		<location id="id16" x="102" y="-136">
 			<name x="119" y="-153">Positive_acc</name>
 		</location>
@@ -296,7 +314,7 @@ that time reversing.</label>
 		<transition id="id22">
 			<source ref="id20"/>
 			<target ref="id17"/>
-			<label kind="assignment" x="85" y="-24">acceleration[i] = -2</label>
+			<label kind="assignment" x="85" y="-24">acceleration[i] = -acc</label>
 			<label kind="probability" x="85" y="-8">velocity[i] &gt; minVelocity ? 
     (velocity[i] &gt; 10 ? 2 : 1) 
     : 0</label>
@@ -304,7 +322,7 @@ that time reversing.</label>
 		<transition id="id23">
 			<source ref="id20"/>
 			<target ref="id16"/>
-			<label kind="assignment" x="93" y="-119">acceleration[i] = 2</label>
+			<label kind="assignment" x="93" y="-119">acceleration[i] = acc</label>
 			<label kind="probability" x="93" y="-102">velocity[i] &lt; maxVelocity ? 
     (velocity[i] &lt; 0 ? 2 : 1)
     : 0</label>
@@ -337,7 +355,7 @@ that time reversing.</label>
 int[0, fleetSize] i = 0; </declaration>
 		<location id="id28" x="-238" y="-187">
 			<name x="-255" y="-170">Wait</name>
-			<label kind="invariant" x="-272" y="-153">timer &lt;= 1</label>
+			<label kind="invariant" x="-272" y="-153">timer &lt;= t_act</label>
 		</location>
 		<location id="id29" x="-314" y="-272">
 			<urgent/>
@@ -363,7 +381,7 @@ int[0, fleetSize] i = 0; </declaration>
 		<transition id="id32" controllable="false">
 			<source ref="id28"/>
 			<target ref="id29"/>
-			<label kind="guard" x="-365" y="-221">timer == 1</label>
+			<label kind="guard" x="-365" y="-221">timer &gt;= t_act</label>
 			<label kind="assignment" x="-357" y="-238">i = 0</label>
 		</transition>
 	</template>
@@ -378,67 +396,36 @@ int[0, fleetSize] i = 0; </declaration>
 	</template>
 	<system>Random0 = Random(0);
 
-Random1 = Random(1);
-Shield1 = Shield(1);
-Random2 = Random(2);
-Shield2 = Shield(2);
-Random3 = Random(3);
-Shield3 = Shield(3);
-Random4 = Random(4);
-Shield4 = Shield(4);
-Random5 = Random(5);
-Shield5 = Shield(5);
-Random6 = Random(6);
-Shield6 = Shield(6);
-Random7 = Random(7);
-Shield7 = Shield(7);
-Random8 = Random(8);
-Shield8 = Shield(8);
-Random9 = Random(9);
-Shield9 = Shield(9);
-Random10 = Random(10);
-Shield10 = Shield(10);
-Random11 = Random(11);
-Shield11 = Shield(11);
-Random12 = Random(12);
-Shield12 = Shield(12);
-Random13 = Random(13);
-Shield13 = Shield(13);
-Random14 = Random(14);
-Shield14 = Shield(14);
-Random15 = Random(15);
-Shield15 = Shield(15);
-Random16 = Random(16);
-Shield16 = Shield(16);
-Random17 = Random(17);
-Shield17 = Shield(17);
-Random18 = Random(18);
-Shield18 = Shield(18);
-Random19 = Random(19);
-Shield19 = Shield(19);
+Random1 = Random(1); Shield1 = Shield(1);
+Random2 = Random(2); Shield2 = Shield(2);
+Random3 = Random(3); Shield3 = Shield(3);
+Random4 = Random(4); Shield4 = Shield(4);
+Random5 = Random(5); Shield5 = Shield(5);
+Random6 = Random(6); Shield6 = Shield(6);
+Random7 = Random(7); Shield7 = Shield(7);
+Random8 = Random(8); Shield8 = Shield(8);
+Random9 = Random(9); Shield9 = Shield(9);
+Random10 = Random(10); Shield10 = Shield(10);
+Random11 = Random(11); Shield11 = Shield(11);
+Random12 = Random(12); Shield12 = Shield(12);
+Random13 = Random(13); Shield13 = Shield(13);
+Random14 = Random(14); Shield14 = Shield(14);
+Random15 = Random(15); Shield15 = Shield(15);
+Random16 = Random(16); Shield16 = Shield(16);
+Random17 = Random(17); Shield17 = Shield(17);
+Random18 = Random(18); Shield18 = Shield(18);
+Random19 = Random(19); Shield19 = Shield(19);
 
 
 system Decisions, Dynamics, Random0,
-    Random1, Shield1,
-    Random2, Shield2,
-    Random3, Shield3,
-    Random4, Shield4,
-    Random5, Shield5,
-    Random6, Shield6,
-    Random7, Shield7,
-    Random8, Shield8,
-    Random9, Shield9,
-    Random10, Shield10,
-    Random11, Shield11,
-    Random12, Shield12,
-    Random13, Shield13,
-    Random14, Shield14,
-    Random15, Shield15,
-    Random16, Shield16,
-    Random17, Shield17,
-    Random18, Shield18,
-    Random19, Shield19;</system>
+    Random1, Shield1;</system>
+	<simulator type="concrete">
+		<plot-widget title="debugUnsafeState">
+			<expression>debugUnsafeState</expression>
+		</plot-widget>
+	</simulator>
 	<queries>
+		<option key="--diagnostic" value="0"/>
 		<query>
 			<formula>E[&lt;=100;1000](max:D[0])</formula>
 			<comment/>
