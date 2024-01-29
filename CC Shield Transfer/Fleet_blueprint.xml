@@ -27,7 +27,7 @@ Kim Guldstrand Larsen, Marius Mikucionis, Jakob Haahr Taankvist.
 */
 clock time;
 
-const int fleetSize = 2;
+const int fleetSize = %fleet size%;
 
 
 /** Modified mechanics */
@@ -56,7 +56,7 @@ broadcast chan tick;    // Signal to check if distance greater than 200
 
 
 hybrid clock velocity[fleetSize];   		// velocity of each car
-hybrid clock distance[fleetSize - 1] = {15};
+hybrid clock distance[fleetSize - 1] = {%distances%};
 
 hybrid clock D[fleetSize - 1]; 				// "cost" of distance used in strategy optimization
 
@@ -76,16 +76,7 @@ const int PositiveAcceleration = 1;
 const int NegativeAcceleration = 0;
 const int NoAcceleration = 2;
 
-/*
-import "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/libcar1.so"
-{
-    int get_action_car1(double velocity, double velocityFront, double distance);
-};
-import "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/libcar2.so"
-{
-    int get_action_car2(double velocity, double velocityFront, double distance);
-};
-*/
+%imports%
 
 
 /* Stubs 
@@ -94,11 +85,7 @@ int get_action_car1(double velocity, double velocityFront, double distance) { re
 int get_action_car2(double velocity, double velocityFront, double distance) { return NoAcceleration; }
 
 int get_action(int i) {
-    if (i == 1)
-        return get_action_car1(velocity[i], velocity[i - 1], distance[i - 1]);
-    else if (i == 2)
-        return get_action_car2(velocity[i], velocity[i - 1], distance[i - 1]);
-    else
+    %agent selector%
         return fint(acceleration[-1]); // Provoke Error: No strategy loaded for i.
 }
 
@@ -119,7 +106,7 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Shield/libshield.so"
+import %shield path%
 {
     int get_value(double velocity, double velocityFront, double distance);
 };
@@ -400,31 +387,7 @@ that time reversing.</label>
 		</location>
 		<init ref="id32"/>
 	</template>
-	<system>Random0 = Random(0);
-
-Random1 = Random(1); Shield1 = Shield(1);
-Random2 = Random(2); Shield2 = Shield(2);
-Random3 = Random(3); Shield3 = Shield(3);
-Random4 = Random(4); Shield4 = Shield(4);
-Random5 = Random(5); Shield5 = Shield(5);
-Random6 = Random(6); Shield6 = Shield(6);
-Random7 = Random(7); Shield7 = Shield(7);
-Random8 = Random(8); Shield8 = Shield(8);
-Random9 = Random(9); Shield9 = Shield(9);
-Random10 = Random(10); Shield10 = Shield(10);
-Random11 = Random(11); Shield11 = Shield(11);
-Random12 = Random(12); Shield12 = Shield(12);
-Random13 = Random(13); Shield13 = Shield(13);
-Random14 = Random(14); Shield14 = Shield(14);
-Random15 = Random(15); Shield15 = Shield(15);
-Random16 = Random(16); Shield16 = Shield(16);
-Random17 = Random(17); Shield17 = Shield(17);
-Random18 = Random(18); Shield18 = Shield(18);
-Random19 = Random(19); Shield19 = Shield(19);
-
-
-system Decisions, Dynamics, Random0,
-    Random1, Shield1;</system>
+	<system>%system declaration%</system>
 	<queries>
 		<option key="--diagnostic" value="0"/>
 		<query>
