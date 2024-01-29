@@ -379,16 +379,22 @@ And then it doesn't matter if the distance is between 0 and 200, or if it's betw
 And lastly, something similar happens with the time-step. If the time-step is halved, in essence this is the same as halving the acceleration and velocity or something.
 """
 
+# ╔═╡ 9dc03739-4704-4710-b6f5-7fab0e33a6f2
+m
+
 # ╔═╡ de7136f9-32ed-4042-b649-1bdfb9624685
 begin
-	t_act_multiplier = 1
+	t_act_multiplier = 0.8
 	acceleration_multiplier = 0.5
-	distance_add = 10
+	distance_add = 25
 	velocity_add = 10
 end
 
-# ╔═╡ 9dc03739-4704-4710-b6f5-7fab0e33a6f2
-m
+# ╔═╡ b96b370d-adef-485d-9efd-2d15148be70d
+fieldnames(typeof(m))
+
+# ╔═╡ 18b71e15-9485-4019-9c4b-b400b7e823d6
+getfield(m, :t_act)
 
 # ╔═╡ 3af3824c-c032-46b6-b6ae-db9f01691183
 m′ =  CCMechanics(m.t_act*t_act_multiplier,
@@ -399,6 +405,18 @@ m′ =  CCMechanics(m.t_act*t_act_multiplier,
 			(m.v_ego_max + velocity_add)*t_act_multiplier*acceleration_multiplier,
 			(m.v_front_min + velocity_add)*t_act_multiplier*acceleration_multiplier,
 			(m.v_front_max + velocity_add)*t_act_multiplier*acceleration_multiplier)
+
+# ╔═╡ 877bcf32-eed1-42ef-80b5-87c13cbf6ea3
+Markdown.parse("""
+	// Copy this into the UPPAAL model
+
+	// $(join(["$f=$(getfield(m′, f))" for f in fieldnames(typeof(m′))],
+		", "))
+	const double t_act_multiplier = $t_act_multiplier;
+	const double acceleration_multiplier = $acceleration_multiplier;
+	const double distance_add = $distance_add;
+	const double velocity_add = $velocity_add;
+""")
 
 # ╔═╡ 4c6fac5d-86b9-47d0-a654-77e3adc679f4
 @assert length(m.v_ego_min:m.acceleration*m.t_act:m.v_ego_max) ==
@@ -750,6 +768,9 @@ end
 # ╟─6ed54088-757e-4906-ab95-769563050ef9
 # ╠═9dc03739-4704-4710-b6f5-7fab0e33a6f2
 # ╠═de7136f9-32ed-4042-b649-1bdfb9624685
+# ╠═b96b370d-adef-485d-9efd-2d15148be70d
+# ╠═18b71e15-9485-4019-9c4b-b400b7e823d6
+# ╠═877bcf32-eed1-42ef-80b5-87c13cbf6ea3
 # ╠═3af3824c-c032-46b6-b6ae-db9f01691183
 # ╠═4c6fac5d-86b9-47d0-a654-77e3adc679f4
 # ╠═a9b3ccc3-58f6-4b65-9923-b4c213df6752

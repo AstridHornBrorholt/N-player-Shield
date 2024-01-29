@@ -32,14 +32,15 @@ const int fleetSize = 2;
 
 /** Modified mechanics */
 
-const double t_act_multiplier = 1;
+// t_act=0.8, distance_min=10.0, distance_max=90.0, acceleration=1.0, v_ego_min=0.0, v_ego_max=12.0, v_front_min=0.0, v_front_max=12.0
+const double t_act_multiplier = 0.8;
 const double acceleration_multiplier = 0.5;
-const double distance_add = 10;
+const double distance_add = 25;
 const double velocity_add = 10;
 
 const double t_act = 1*t_act_multiplier;
 // Abhorrent naming: `acc` is the constant determining the rate of acceleration. `acceleration` is an array containing the current accelerations of the cars in a given time-step.
-const int acc = fint(2*acceleration_multiplier);
+const double acc = fint(2*acceleration_multiplier);
 const double minDistance = (0 + distance_add)*t_act_multiplier*acceleration_multiplier;
 const double maxDistance = (200 + distance_add)*t_act_multiplier*acceleration_multiplier;
 
@@ -48,7 +49,7 @@ const double maxVelocity = (20 + velocity_add)*t_act_multiplier*acceleration_mul
 
 /** End of modified mechanics. The rest of the stuff: */
 
-int[-acc,acc] acceleration[fleetSize];   // acceleration of car
+double acceleration[fleetSize];   // acceleration of car
 broadcast chan choose;    // signal for car to decide 
 broadcast chan shield;  // Signal for shield to change unsafe actions
 broadcast chan tick;    // Signal to check if distance greater than 200
@@ -98,7 +99,7 @@ int get_action(int i) {
     else if (i == 2)
         return get_action_car2(velocity[i], velocity[i - 1], distance[i - 1]);
     else
-        return acceleration[i - 100]; // Provoke Error: No strategy loaded for i.
+        return fint(acceleration[-1]); // Provoke Error: No strategy loaded for i.
 }
 
 void preTrainedChoice(int i) {
@@ -146,7 +147,7 @@ allowedActions intToActions(int bitarray) {
 
 int debugUnsafeState = 0;
 
-int speedLimit(int i) {
+double speedLimit(int i) {
     if (velocity[i] &lt;= minVelocity &amp;&amp; acceleration[i] &lt; 0)
         return 0;
     else if (velocity[i] &gt;= maxVelocity &amp;&amp; acceleration [i] &gt; 0)
@@ -155,7 +156,7 @@ int speedLimit(int i) {
         return acceleration[i];
 }
 
-int backup_policy(allowedActions allowed) {
+double backup_policy(allowedActions allowed) {
     if (allowed.forwards)
         return acc;
     else if (allowed.neutral)
@@ -445,10 +446,6 @@ system Decisions, Dynamics, Random0,
 		<query>
 			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance))</formula>
 			<comment/>
-			<result outcome="success" type="interval" value="≤ 0.00368208 (95% CI)" timestamp="2024-01-26 15:30:00 +0100">
-				<option key="--diagnostic" value="0"/>
-				<details>≤ 0.00368208 (95% CI)</details>
-			</result>
 		</query>
 		<query>
 			<formula>simulate[&lt;=500;10] {velocity}</formula>
