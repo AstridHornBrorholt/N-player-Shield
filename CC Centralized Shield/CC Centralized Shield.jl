@@ -239,7 +239,7 @@ function plot_sequence(points, times; m=m, plotargs...)
 		distances = [point[n + m.fleet_size] for point in points]
 		p1 = plot(times, distances; 
 			label="distance $n",
-			ylabel="v",
+			ylabel="distance",
 			xlabel="t", 
 			linewidth=linewidth,
 			linecolor=colors.ALIZARIN,
@@ -670,16 +670,37 @@ if max_steps_reached
 		The method reached a maximum iteration steps of $max_steps before a fixed point was reached. The strategy is only safe for a finite horizon of $max_steps steps.""")
 end
 
+# ╔═╡ bc55b7aa-a2b0-4307-9130-42d6327c34bf
+gradient = let
+	numbers = shield.array |> unique |> sort
+	highest = max(numbers...)
+	color_list = [colors[1 + i%length(colors)] for (i, v) in enumerate(numbers)]
+	color_list[1] = colorant"#000000"
+	cgrad(color_list, length(color_list), categorical=true)
+end
+
 # ╔═╡ 05305c4a-a1e6-40b4-bb94-e15e77929ef3
-begin
-	function draw′(grid, point, slice)
-		draw(grid, slice, 
-			colors=cgrad(:glasbey_category10_n256),
-			clims=(no_action, any_action),
-			size=(800,400),
-			legend=nothing,
-			colorbar=:right)
-	end
+function draw′(grid, point)
+
+	slice = vcat(
+		[:],
+		[box(grid, point).indices[i + 1] 
+			for i in 1:m.fleet_size - 1], 
+		[:],
+		[box(grid, point).indices[i + 1] 
+			for i in m.fleet_size + 1:m.fleet_size + 1 + m.fleet_size - 3], 
+	)
+
+	numbers = grid.array |> unique
+	clims = (min(numbers...), max(numbers...))
+	
+	draw(grid, slice;
+		colors=gradient,
+		clims,
+		size=(800,400),
+		legend=nothing,
+		colorbar_ticks=nothing,
+		colorbar=nothing)
 end
 
 # ╔═╡ f22987f2-acf7-4a48-b296-f20f81881a49
@@ -778,6 +799,25 @@ SupportingPoints(model.samples_per_axis, box(grid, point)) |> collect
 # ╔═╡ 7a26f7f8-043a-4d0a-aeff-b46194c313ca
 reachability_function(box(grid, point), action)
 
+# ╔═╡ 99e4dde5-4239-45d9-82b1-b21eda494b3d
+# I can't get it to properly draw the actual shield, seeing as there is such 
+#a big numberical difference between some of the actions.
+# I can't get the heatmap to draw the value 0 as black, but 1 as non-black 
+#when the maximum value is > 1000
+shield_to_draw = let
+	result = Grid(shield.granularity, shield.bounds, data_type=Int64)
+	numbers = shield.array |> unique |> sort
+	for partition in result
+		value = get_value(GridShielding.Partition(shield, partition.indices))
+		new_value = findfirst((==(value)), numbers)
+		set_value!(partition, new_value)
+	end
+	result
+end
+
+# ╔═╡ 12ac5894-d531-4d89-b066-38648174a6a3
+[int_to_joint_action(a, m.fleet_size - 1) for a in int_to_actions(Int64, get_value(partition))]
+
 # ╔═╡ dd5faeb3-42f2-43ca-ace4-493e578bca77
 Bounds(partition)
 
@@ -793,33 +833,31 @@ slice = vcat(
 
 # ╔═╡ 28f000ec-9538-4c9c-afbc-ece4af32d3af
 let
-	draw′(shield, point, slice)
+	draw′(shield_to_draw, point)
 	if show_point
 		draw_barbaric_transition!(model, partition, joint_action_to_int(action), slice)
 	end
 	plot!(xlabel="v_front",
-			ylabel="distance",)
+			ylabel="distance",
+			size=(600, 400))
 end
+
+# ╔═╡ c9904b3d-061c-47ec-8ed7-2655f08f6883
+unique(possible_outcomes(model, box(shield, point), action))
 
 # ╔═╡ e4397487-050e-4531-b356-cd855136bd56
 [get_value(box(shield, p))
 	for p in possible_outcomes(model, box(shield, point), action)]
 
-# ╔═╡ c9904b3d-061c-47ec-8ed7-2655f08f6883
-[p
-	for p in possible_outcomes(model, box(shield, point), action)]
-
 # ╔═╡ 7930c464-6404-4855-ab73-0ab7ce5a24dd
-shield.array |> unique
+shield.array |> unique |> sort
 
 # ╔═╡ 2c030279-eedd-45cc-92e0-1570e3ba74c2
-model.simulation_function(point, action, [0.5])
+[model.simulation_function(point, action, r) 
+	for r in 0:0.1:1] |> unique
 
 # ╔═╡ b4e94daf-4ca4-4460-8868-d58ef706a1ef
 get_value(partition)
-
-# ╔═╡ 12ac5894-d531-4d89-b066-38648174a6a3
-[int_to_joint_action(a, m.fleet_size - 1) for a in int_to_actions(Int64, get_value(partition))]
 
 # ╔═╡ 107b960f-1a75-41f9-9cb9-195877ad6184
 shielded_random = s -> begin
@@ -839,7 +877,7 @@ shielded_random = s -> begin
 end
 
 # ╔═╡ 0382588a-ac96-4528-9fee-67ab93d4a1f8
-if make_shield_button > 0 let
+if make_shield_button > 0 || !isnothing(imported_shield) let
 	animation = @animate for i in 1:10
 		
 		trace = simulate_sequence(m, 120, starting_point, shielded_random)
@@ -851,6 +889,30 @@ end end
 
 # ╔═╡ 614c630a-f0e5-44a3-bdce-ee28b7a3e220
 shielded_random(point)
+
+# ╔═╡ fe395e1f-96a8-4cc7-b11e-0fb902934e05
+trace = simulate_sequence(m, 120, starting_point, shielded_random)
+
+# ╔═╡ 33c7afd2-ce38-4158-afbd-7aae25cc0f8c
+@bind i NumberField(1:length(trace.states))
+
+# ╔═╡ 6d736288-c2a1-4307-9022-4c5e093e9438
+trace.states[i]
+
+# ╔═╡ f4cc7c54-b0d7-41f3-bd13-1c5a3a9c0836
+let point = trace.states[i]
+	
+	draw′(shield_to_draw, point)
+
+	scatter!([point[1]], [point[4]])
+	plot!(xlabel="v_front",
+			ylabel="distance",
+			size=(600, 400))
+end
+
+# ╔═╡ be63e7be-5647-4d22-b08c-0b9f1228d352
+allowed = [int_to_joint_action(a, m.fleet_size - 1) 
+			for a in int_to_actions(Int64, get_value(box(shield, trace.states[i])))]
 
 # ╔═╡ b62e8995-0ce7-4685-845a-17e60e80be99
 md"""
@@ -1074,22 +1136,29 @@ end
 # ╠═8d6cd687-0964-4060-a6b2-4947d595d576
 # ╠═0f5ee444-afe5-4314-ab8e-a7dfff02964d
 # ╟─85e07e50-a0fc-42bb-813c-8d0ab6af2b4c
+# ╠═bc55b7aa-a2b0-4307-9130-42d6327c34bf
 # ╠═05305c4a-a1e6-40b4-bb94-e15e77929ef3
 # ╠═f22987f2-acf7-4a48-b296-f20f81881a49
 # ╟─99aabe32-7c65-4a9d-9397-ba2db2ca5cab
 # ╟─84236123-88d6-4f15-af8e-8b5cc4632606
-# ╟─28f000ec-9538-4c9c-afbc-ece4af32d3af
+# ╠═99e4dde5-4239-45d9-82b1-b21eda494b3d
+# ╠═28f000ec-9538-4c9c-afbc-ece4af32d3af
+# ╠═12ac5894-d531-4d89-b066-38648174a6a3
 # ╠═dd5faeb3-42f2-43ca-ace4-493e578bca77
 # ╠═6f8a09ac-bfa4-4ecc-ba85-5340d2ae5976
-# ╠═e4397487-050e-4531-b356-cd855136bd56
 # ╠═c9904b3d-061c-47ec-8ed7-2655f08f6883
+# ╠═e4397487-050e-4531-b356-cd855136bd56
 # ╠═7930c464-6404-4855-ab73-0ab7ce5a24dd
 # ╠═2c030279-eedd-45cc-92e0-1570e3ba74c2
 # ╠═b4e94daf-4ca4-4460-8868-d58ef706a1ef
-# ╠═12ac5894-d531-4d89-b066-38648174a6a3
-# ╠═0382588a-ac96-4528-9fee-67ab93d4a1f8
 # ╠═107b960f-1a75-41f9-9cb9-195877ad6184
+# ╠═0382588a-ac96-4528-9fee-67ab93d4a1f8
 # ╠═614c630a-f0e5-44a3-bdce-ee28b7a3e220
+# ╠═fe395e1f-96a8-4cc7-b11e-0fb902934e05
+# ╠═33c7afd2-ce38-4158-afbd-7aae25cc0f8c
+# ╠═6d736288-c2a1-4307-9022-4c5e093e9438
+# ╠═f4cc7c54-b0d7-41f3-bd13-1c5a3a9c0836
+# ╠═be63e7be-5647-4d22-b08c-0b9f1228d352
 # ╟─b62e8995-0ce7-4685-845a-17e60e80be99
 # ╠═8899dd63-121c-4207-a7cf-47424bc18a22
 # ╠═8766f219-5703-4528-867f-17fac21ec2a5
