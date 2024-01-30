@@ -148,7 +148,7 @@ int backup_policy(allowedActions allowed) {
 double actionToInt(int a) {
     return  a == -2 ? 0 : 
             a == 0 ? 1 :
-            a == 2 ? 2 : velocity[-100]; // Provoke error: unexpected acceleration.
+            a == 2 ? 2 : fint(velocity[-100]); // Provoke error: unexpected acceleration.
 }
 
 void apply_shield(int i) {

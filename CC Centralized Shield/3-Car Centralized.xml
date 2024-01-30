@@ -97,7 +97,7 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Centralized Shield/3-car.so"
+import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Centralized Shield/3-car.so"
 {
     int get_value(double v0, double v1, double v2, double d0, double d1);
 };
