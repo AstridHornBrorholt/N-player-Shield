@@ -78,12 +78,6 @@ const int NoAcceleration = 2;
 
 %imports%
 
-
-/* Stubs 
-*/
-int get_action_car1(double velocity, double velocityFront, double distance) { return NoAcceleration; }
-int get_action_car2(double velocity, double velocityFront, double distance) { return NoAcceleration; }
-
 int get_action(int i) {
     %agent selector%
         return fint(acceleration[-1]); // Provoke Error: No strategy loaded for i.
