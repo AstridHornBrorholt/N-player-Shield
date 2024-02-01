@@ -2,10 +2,11 @@
 using Dates
 # The fruit is there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.
 emoji = ["🍇", "🍈", "🍉", "🍊", "🍋", "🍌", "🍍", "🥭", "🍎", "🍏", "🍐", "🍑", "🍒", "🍓", "🫐", "🥝", "🍅", "🫒", "🥥"]
-🍎 = join(rand(emoji, 2), "")
+🍎🍐 = join(rand(emoji, 2), "")
+node = get(ENV, "SLURMD_NODENAME", "local")
 function status(str) 
     time = Dates.format(Dates.now(), "dd/mm HH:MM")
-    println("$time $🍎 $str")
+    println("$time $node $🍎🍐 $str")
     flush(stdout)
 end
 using Pkg
@@ -85,22 +86,31 @@ mkpath(query_results_dir)
 models_dir = working_dir ⨝ "Models"
 mkpath(models_dir)
 
-## Mainmatter ##
-strategy_paths = String[]
-for N in 2:max_cars
-    status("Running Fleet of $N Cars...  (repetition=$repetition)")
-    outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
-    model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, models_dir; checks, skip_training)
-    if skip_training
-        strategy_paths ← (working_dir ⨝ "Models/car1.json")
-    else
-        strategy_paths ← (working_dir ⨝ "Models/car$(N - 1).json")
-    end
-    open(outfile, "w") do io
-        result = [verifyta_call..., model_path, queries_path] |> Cmd |> read |> String
-        write(io, result)
-    end
-    status("Done running Fleet of $N Cars.  (repetition=$repetition)")
+struct ExceptionWithNodeID <: Exception
+    captured_exception
+    node_id
 end
 
-status("All done.")
+## Mainmatter ##
+try
+    strategy_paths = String[]
+    for N in 2:max_cars
+        status("Running Fleet of $N Cars...  (repetition=$repetition)")
+        outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
+        model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, models_dir; checks, skip_training)
+        if skip_training
+            strategy_paths ← (working_dir ⨝ "Models/car1.json")
+        else
+            strategy_paths ← (working_dir ⨝ "Models/car$(N - 1).json")
+        end
+        open(outfile, "w") do io
+            result = [verifyta_call..., model_path, queries_path] |> Cmd |> read |> String
+            write(io, result)
+        end
+        status("Done running Fleet of $N Cars.  (repetition=$repetition)")
+    end
+
+    status("All done.")
+catch e
+    throw(ExceptionWithNodeID(e, node))
+end
