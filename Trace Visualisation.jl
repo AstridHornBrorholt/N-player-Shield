@@ -153,17 +153,25 @@ simulate[<=100;1] {velocity[0], velocity[1], velocity[2], distance[0], distance[
 """ |> multiline
 
 # ╔═╡ 6e56fdba-627a-4200-8e2e-25970f67e8b4
-query; query_file = tempdir() ⨝ "temp_query.q"
+begin 
+	query # reactivity
+	
+	query_file = tempdir() ⨝ "temp_query.q"
 
-# ╔═╡ d2f942c1-647f-408e-a100-12c6399811b8
-open(query_file, "w") do f
-	println(f, query)
+	# Write query to query_file.
+	open(query_file, "w") do f
+		println(f, query)
+	end
+	query_file
 end
+
+# ╔═╡ efd196bd-7b62-48b0-8072-72851be42d06
+@bind verifyta TextField(80, default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta")
 
 # ╔═╡ 3bbf5c96-3ed9-4a40-83ae-6cc97e57e86e
 if isfile(query_file) && isfile(model_file)
 	output = Cmd([
-		"verifyta",
+		verifyta,
 		"-s",
 		model_file,
 		query_file
@@ -286,10 +294,12 @@ get_traces(output, "velocity")
 
 # ╔═╡ c00efc32-c7fe-4af8-acda-79725f83521b
 function plot_cars(distances::T, time::Int64) where T <: Dict{Int64, Vector{Float64}}
-	sorted = sort(collect(distances), by=(x -> x[1]))
-	distances = [ d[time + 1] for (i, d) in sorted]
 	# Distance is bumper to bumper
 	car_width = 8 
+	# Distance from front to 0
+	
+	sorted = sort(collect(distances), by=(x -> x[1]))
+	distances = [ d[time + 1] for (i, d) in sorted]
 	
 	positions = [ sum(distances[1:i]) + car_width*i 
 		for (i, _) in enumerate(distances)]
@@ -302,7 +312,7 @@ function plot_cars(distances::T, time::Int64) where T <: Dict{Int64, Vector{Floa
 		legend=:outertop,
 		size=(600, 200),
 		label="cars",
-		xlabel="distance to front")
+		xlabel="distance to \"🚙\"")
 	
 	annotate!([(0, 1, "🚙", 10)])
 	annotate!([(p, 1, "🚗", 10) for p in positions])
@@ -320,7 +330,7 @@ end
 t*Δt
 
 # ╔═╡ 54d59378-6e5a-4daa-b386-4f4057f9dde6
-@bind distance_covered NumberField(0:10000)
+@bind distance_covered NumberField(0:10000, default=150)
 
 # ╔═╡ 30a5d12f-490c-481b-8ab0-92f3c79c7ca7
 function plot_landscape(distance_covered, ncars)
@@ -334,11 +344,39 @@ function plot_landscape(distance_covered, ncars)
 	annotate!([((distance_covered + x*0.64)%x, 1.6, "🌳")])
 	annotate!([((distance_covered + x*0.69)%x, 1.8, "⛺")])
 	annotate!([((distance_covered + x*0.83)%x, 0.3, "🌳")])
+	annotate!([((distance_covered + x*0.85)%x, 1.3, "🌳")])
+	annotate!([((distance_covered + x*0.93)%x, 0.4, "🌳")])
+	annotate!([((distance_covered + x*0.95)%x, 1.5, "🌲")])
+	annotate!([((distance_covered + x*0.99)%x, 1.4, "🌳")])
+end
+
+# ╔═╡ 489e0dfb-19dd-42e5-8aa2-0d07eaa7465d
+rectangle(x, y, w, h) = Shape([(x, y), (x+w, y), (x+w, y+h), (x, y+h)])
+
+# ╔═╡ 1715ace1-7a76-4d10-975f-7cc5f074078c
+function plot_road(distance_covered, ncars)
+	draw_limit = ncars*distance_per_car
+	w = 15 # Width of the rectangle
+	g = 0 # gap between rectangles
+	
+	road_segments = [rectangle((distance_covered + x)%draw_limit, 0.7, w, .2)
+		for x in 1:w + g:draw_limit]
+	
+	plot!(road_segments, linealpha=1, color=:gray, label=nothing)
+	
+	w = 5 # Width of the rectangle
+	g = 10 # gap between rectangles
+	
+	stripes = [rectangle((distance_covered + x)%draw_limit, 0.83, w, .05)
+		for x in 1:w + g:draw_limit]
+	
+	plot!(stripes, linealpha=1, color=:white, label=nothing)
 end
 
 # ╔═╡ ec3c9513-1f8d-4f7e-83ef-7d976ae19546
 let
 	plot_cars(distances, round(Int64, t))
+	plot_road(distance_covered, length(distances))
 	plot_landscape(distance_covered, length(distances))
 end
 
@@ -355,6 +393,7 @@ function animate_cars(distances, velocities)
 	anim = @animate for t in 1:t_max
 		plot_cars(distances, t)
 		distance_covered += velocities[t + 1]*Δt # I don't remember why it was + 1
+		#plot_road(distance_covered, length(distances))
 		plot_landscape(distance_covered, length(distances))
 	end
 	# Add a delay before reset
@@ -1429,7 +1468,7 @@ version = "1.4.1+0"
 # ╠═d18a9ac3-9cc8-45f3-9e86-3509a743eb78
 # ╟─5f09b9ed-8218-4a34-a12d-f4ec65e382c4
 # ╠═6e56fdba-627a-4200-8e2e-25970f67e8b4
-# ╠═d2f942c1-647f-408e-a100-12c6399811b8
+# ╠═efd196bd-7b62-48b0-8072-72851be42d06
 # ╠═3bbf5c96-3ed9-4a40-83ae-6cc97e57e86e
 # ╠═de5ffb24-d55a-47bc-a1df-fe03c2662856
 # ╠═30529eb4-b8a0-4b65-9098-e24ebe6655e0
@@ -1459,6 +1498,8 @@ version = "1.4.1+0"
 # ╠═54d59378-6e5a-4daa-b386-4f4057f9dde6
 # ╠═ec3c9513-1f8d-4f7e-83ef-7d976ae19546
 # ╠═30a5d12f-490c-481b-8ab0-92f3c79c7ca7
+# ╠═1715ace1-7a76-4d10-975f-7cc5f074078c
+# ╠═489e0dfb-19dd-42e5-8aa2-0d07eaa7465d
 # ╠═2d67a7a2-6ea7-4bb1-aa87-b12e516f161b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
