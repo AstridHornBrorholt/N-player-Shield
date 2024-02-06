@@ -32,11 +32,11 @@ const int fleetSize = %fleet size%;
 
 /** Modified mechanics */
 
-// t_act=0.8, distance_min=10.0, distance_max=90.0, acceleration=1.0, v_ego_min=0.0, v_ego_max=12.0, v_front_min=0.0, v_front_max=12.0
-const double t_act_multiplier = 0.8;
-const double acceleration_multiplier = 0.5;
-const double distance_add = 25;
-const double velocity_add = 10;
+// No modification, hopefully. Test to troubleshoot inconsistency in how strategies are applied.
+const double t_act_multiplier = 1;
+const double acceleration_multiplier = 1;
+const double distance_add = 0;
+const double velocity_add = 0;
 
 const double t_act = 1*t_act_multiplier;
 // Abhorrent naming: `acc` is the constant determining the rate of acceleration. `acceleration` is an array containing the current accelerations of the cars in a given time-step.
