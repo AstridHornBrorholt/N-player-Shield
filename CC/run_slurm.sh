@@ -4,9 +4,11 @@ echo "Scheduling slurm jobs"
 export log_output="$HOME/Results/N-player CC/log.txt"
 
 date >> "$log_output"
-ARGS="--out=/dev/null --exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4] --partition=cpu -n1 --mem=16G --job-name StdCC"
 
-export max_cars=50
+#sinfo -h -o %N >> dhabi[01-09],naples[01-09],rome[01-07],turing[01-02],vmware[01-04]
+ARGS="--out=/dev/null --exclude=dhabi[01-09],naples[01-09],turing[01-02],vmware[01-04] --partition=cpu -n1 --mem=16G --job-name CC"
+
+export max_cars=30
 repetitions=10
 
 for ((r=1; r<=$repetitions; r++))
