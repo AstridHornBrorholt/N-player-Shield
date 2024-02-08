@@ -6,7 +6,7 @@ RESULTS="$HOME/Results/N-player CC Random Shielded"
 export log_output="$RESULTS/log.txt"
 
 date >> "$log_output"
-ARGS="--out=/dev/null --exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4] --partition=cpu -n1 --mem=16G --job-name StdCC"
+ARGS="--out=/dev/null --exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4] --partition=cpu -n1 --mem=16G --job-name 'CC Random Shielded'"
 
 # Make a copy of the thing. The uppaal file.
 export RANDOM_FLEET="$RESULTS/Random Fleet.xml"
