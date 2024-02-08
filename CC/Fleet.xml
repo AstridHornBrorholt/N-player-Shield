@@ -27,7 +27,7 @@ Kim Guldstrand Larsen, Marius Mikucionis, Jakob Haahr Taankvist.
 */
 clock time;
 
-const int fleetSize = 4;
+const int fleetSize = 10;
 
 const int minVelocity = -10;
 const int maxVelocity = 20;
@@ -36,13 +36,13 @@ const int minDistance = 0;
 const int maxDistance = 200;
 
 int[-2,2] acceleration[fleetSize];   // acceleration of car
-broadcast chan choose[fleetSize];    // signal for car to decide 
+broadcast chan choose;    // signal for car to decide 
 broadcast chan shield;  // Signal for shield to change unsafe actions
 broadcast chan tick;    // Signal to check if distance greater than 200
 
 
 hybrid clock velocity[fleetSize];   		// velocity of each car
-hybrid clock distance[fleetSize - 1] = {50, 50, 50};
+hybrid clock distance[fleetSize - 1] = {50, 50, 50, 50, 50, 50, 50, 50, 50};
 
 hybrid clock D[fleetSize - 1]; 				// "cost" of distance used in strategy optimization
 
@@ -193,19 +193,19 @@ that time reversing.</label>
 		<transition id="id4">
 			<source ref="id1"/>
 			<target ref="id3"/>
-			<label kind="synchronisation" x="-25" y="68">choose[i]?</label>
+			<label kind="synchronisation" x="-25" y="68">choose?</label>
 			<nail x="0" y="68"/>
 		</transition>
 		<transition id="id5">
 			<source ref="id0"/>
 			<target ref="id3"/>
-			<label kind="synchronisation" x="-17" y="-153">choose[i]?</label>
+			<label kind="synchronisation" x="-17" y="-153">choose?</label>
 			<nail x="0" y="-136"/>
 		</transition>
 		<transition id="id6">
 			<source ref="id2"/>
 			<target ref="id3"/>
-			<label kind="synchronisation" x="-93" y="17">choose[i]?</label>
+			<label kind="synchronisation" x="-93" y="17">choose?</label>
 		</transition>
 		<transition id="id7">
 			<source ref="id3"/>
@@ -262,7 +262,7 @@ that time reversing.</label>
 		<transition id="id15" controllable="false">
 			<source ref="id13"/>
 			<target ref="id12"/>
-			<label kind="synchronisation" x="-25" y="8">choose[i]?</label>
+			<label kind="synchronisation" x="-25" y="8">choose?</label>
 			<nail x="17" y="8"/>
 		</transition>
 	</template>
@@ -316,19 +316,19 @@ that time reversing.</label>
 		<transition id="id25" controllable="false">
 			<source ref="id17"/>
 			<target ref="id19"/>
-			<label kind="synchronisation" x="-25" y="68">choose[i]?</label>
+			<label kind="synchronisation" x="-25" y="68">choose?</label>
 			<nail x="0" y="68"/>
 		</transition>
 		<transition id="id26" controllable="false">
 			<source ref="id16"/>
 			<target ref="id19"/>
-			<label kind="synchronisation" x="-17" y="-153">choose[i]?</label>
+			<label kind="synchronisation" x="-17" y="-153">choose?</label>
 			<nail x="0" y="-136"/>
 		</transition>
 		<transition id="id27" controllable="false">
 			<source ref="id18"/>
 			<target ref="id19"/>
-			<label kind="synchronisation" x="-93" y="17">choose[i]?</label>
+			<label kind="synchronisation" x="-93" y="17">choose?</label>
 		</transition>
 	</template>
 	<template>
@@ -339,55 +339,78 @@ int[0, fleetSize] i = 0; </declaration>
 			<name x="-255" y="-170">Wait</name>
 			<label kind="invariant" x="-272" y="-153">timer &lt;= 1</label>
 		</location>
-		<location id="id29" x="-314" y="-272">
+		<location id="id29" x="-238" y="-272">
 			<urgent/>
 		</location>
 		<init ref="id29"/>
 		<transition id="id30" controllable="false">
 			<source ref="id29"/>
-			<target ref="id29"/>
-			<label kind="guard" x="-357" y="-357">i &lt; fleetSize</label>
-			<label kind="synchronisation" x="-357" y="-340">choose[i]!</label>
-			<label kind="assignment" x="-357" y="-374">i++</label>
-			<nail x="-357" y="-314"/>
-			<nail x="-272" y="-314"/>
+			<target ref="id28"/>
+			<label kind="synchronisation" x="-221" y="-314">shield!</label>
+			<label kind="assignment" x="-221" y="-297">timer = 0</label>
+			<nail x="-153" y="-272"/>
 		</transition>
 		<transition id="id31" controllable="false">
-			<source ref="id29"/>
-			<target ref="id28"/>
-			<label kind="guard" x="-263" y="-306">i == fleetSize</label>
-			<label kind="synchronisation" x="-263" y="-272">shield!</label>
-			<label kind="assignment" x="-263" y="-289">timer = 0</label>
-			<nail x="-136" y="-272"/>
-		</transition>
-		<transition id="id32" controllable="false">
 			<source ref="id28"/>
 			<target ref="id29"/>
-			<label kind="guard" x="-365" y="-221">timer == 1</label>
-			<label kind="assignment" x="-357" y="-238">i = 0</label>
+			<label kind="guard" x="-331" y="-238">timer == 1</label>
+			<label kind="synchronisation" x="-331" y="-255">choose!</label>
 		</transition>
 	</template>
 	<template>
 		<name>Dynamics</name>
-		<location id="id33" x="-153" y="-144">
+		<location id="id32" x="-153" y="-144">
 			<label kind="invariant" x="-314" y="-127">(forall (i : int[0, fleetSize - 1]) velocity[i]' == acceleration[i]) &amp;&amp;
 (forall (j : int[0, fleetSize - 2]) distance[j]' == velocity[j] - velocity[j + 1]) &amp;&amp;
 (forall (j : int[0, fleetSize - 2]) D[j]' == distance[j])</label>
 		</location>
-		<init ref="id33"/>
+		<init ref="id32"/>
 	</template>
 	<system>Random0 = Random(0);
 
-PreTrained1 = PreTrained(1);
 Shield1 = Shield(1);
-PreTrained2 = PreTrained(2);
 Shield2 = Shield(2);
-Learner3 = Learner(3);
 Shield3 = Shield(3);
+Shield4 = Shield(4);
+Shield5 = Shield(5);
+Shield6 = Shield(6);
+Shield7 = Shield(7);
+Shield8 = Shield(8);
+Shield9 = Shield(9);
+Shield10 = Shield(10);
 
+Learner1 = Learner(1);
+Learner2 = Learner(2);
+Learner3 = Learner(3);
+Learner4 = Learner(4);
+Learner5 = Learner(5);
+Learner6 = Learner(6);
+Learner7 = Learner(7);
+Learner8 = Learner(8);
+Learner9 = Learner(9);
+Learner10 = Learner(10);
 
-system Decisions, Dynamics, 
-Random0, PreTrained1, Shield1, PreTrained2, Shield2, Learner3, Shield3;</system>
+PreTrained1 = PreTrained(1);
+PreTrained2 = PreTrained(2);
+PreTrained3 = PreTrained(3);
+PreTrained4 = PreTrained(4);
+PreTrained5 = PreTrained(5);
+PreTrained6 = PreTrained(6);
+PreTrained7 = PreTrained(7);
+PreTrained8 = PreTrained(8);
+PreTrained9 = PreTrained(9);
+PreTrained10 = PreTrained(10);
+
+system Decisions, Dynamics, Random0, 
+    Learner1, Shield1,
+    Learner2, Shield2,
+    Learner3, Shield3,
+    Learner4, Shield4,
+    Learner5, Shield5,
+    Learner6, Shield6,
+    Learner7, Shield7,
+    Learner8, Shield8,
+    Learner9, Shield9;</system>
 	<queries>
 		<query>
 			<formula>strategy car1 = minE(D[0]) [&lt;=105] {}-&gt;{velocity[1], velocity[0], distance[0]}: &lt;&gt; time &gt;= 100</formula>
