@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -31,7 +31,7 @@ $(@doc strategy_to_c)
 html"""
 <style>
 pluto-editor {
-	background-image: url("https://i.imgur.com/VqU9gsd.png");
+	background-image: url("https://www.freevector.com/uploads/vector/preview/30278/Red_Flower_Pattern.jpg");
 }
 pluto-notebook {
 	background: none;
@@ -135,7 +135,8 @@ end
 # ╔═╡ 8f6f9a4a-19d6-4a6f-b7f2-14bf6f47490e
 function matches(actions::Dict, uppaal_actions::Dict; show_msg=true)
 	for k in keys(actions)
-		action, uppaal_action = actions[k], uppaal_actions[k]
+		action = actions[k]
+		uppaal_action = uppaal_actions[k]
 		if !matches(action, uppaal_action; show_msg)
 			show_msg && @error "Mismatch in action number $k, $action and UPPAAL action $uppaal_action."
 			return false
@@ -532,7 +533,7 @@ end
 # ╔═╡ d0e68988-6e25-47bf-8352-7fda76a7f2fe
 #=╠═╡
 get_action_unit1(t, stored) = 
-	@ccall savefile.get_action_moneydollars(t::Float64, stored::Float64, true::Bool, true::Bool, true::Bool, true::Bool)::Int64
+	@ccall savefile.get_action_car1(t::Float64, stored::Float64, true::Bool, true::Bool, true::Bool, true::Bool)::Int64
   ╠═╡ =#
 
 # ╔═╡ b49c646e-5e1a-40c3-bac5-66599b5225fe
@@ -826,7 +827,7 @@ version = "17.4.0+0"
 # ╟─c78f40f4-945c-4ee0-ad4e-8b47a734f222
 # ╠═f2b82444-77da-4ec5-9991-186f609d9576
 # ╟─74ff2ba2-dbf6-45c4-bba9-ea7c38269666
-# ╟─8f6f9a4a-19d6-4a6f-b7f2-14bf6f47490e
+# ╠═8f6f9a4a-19d6-4a6f-b7f2-14bf6f47490e
 # ╟─0981acdc-1c81-4e64-8542-c0686eb5f618
 # ╟─36031e3c-ff0d-4f29-99f3-316b7b2992e5
 # ╠═4de463bf-8e89-4aa8-ac89-872bc9399d78

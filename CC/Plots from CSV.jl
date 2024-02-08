@@ -248,7 +248,8 @@ html"""
 html"""
 <style>
 pluto-editor {
-	background-image: url("https://i.imgur.com/VqU9gsd.png");
+	background-image: url("https://i.kym-cdn.com/photos/images/original/000/511/922/ea9.jpg");
+	background-size: 100%;
 }
 pluto-notebook {
 	background: none;
@@ -258,12 +259,12 @@ pluto-output  {
 	border-radius: 4pt 4pt 0 0;
 	padding: 4pt;
 	background: none;
-	backdrop-filter: blur(5px)brightness(104%);
+	backdrop-filter: blur(5px)brightness(150%)grayscale(60%);
 }
 
 pluto-input .cm-editor {
 	background: none;
-	backdrop-filter: blur(5px)brightness(98%);
+	backdrop-filter: blur(15px)brightness(180%)grayscale(60%);
 }
 
 pluto-cell.code_differs .cm-editor .cm-gutters {
@@ -362,6 +363,11 @@ Plots.default(fontfamily="serif-roman")
 # ╔═╡ ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 ⨝ = joinpath
 
+# ╔═╡ 1f3a2bee-2817-4314-901e-7dd3743fbab9
+#=╠═╡
+@bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CC")
+  ╠═╡ =#
+
 # ╔═╡ db1720fb-1134-4d81-b0b0-7da700d38798
 # String to vector
 function to_vector(str::T, element_type=Float64) where T<:AbstractString
@@ -426,7 +432,7 @@ begin
 				df′ = filter(:fleet_size => (x -> x == f), df)
 				other_cars = df′[!, :other_cars_reward]
 				other_cars = get(other_cars, 1, [])
-				scatter!(2:length(other_cars), other_cars, plotargs...; marker..., label=nothing)
+				scatter!(2:length(other_cars), other_cars, plotargs...; marker..., label= f == fleet_min ? "Performance measured when re-imported for subsequent training" : nothing)
 			end
 		end
 		plot!(;plotargs...)
@@ -453,19 +459,6 @@ This is because I don't support labels for the experiments beyond the number of 
 @bind refresh_button CounterButton("Refresh")
   ╠═╡ =#
 
-# ╔═╡ 1f973cbe-a416-44fa-8e3b-e6392f6ddb16
-#=╠═╡
-# Discard all experiment repetitions except the first
-# Essentially avoids taking the mean of the data
-# and just shows result for single run.
-@bind only_first_repetition CheckBox(default=false)
-  ╠═╡ =#
-
-# ╔═╡ 1f3a2bee-2817-4314-901e-7dd3743fbab9
-#=╠═╡
-@bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CC")
-  ╠═╡ =#
-
 # ╔═╡ 62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 #=╠═╡
 refresh_button; csv_string = to_csv(results_dir)
@@ -479,6 +472,14 @@ csv_string |> multiline
 # ╔═╡ 7cd7f277-8388-413a-b993-9b81fdb495b8
 #=╠═╡
 raw_results = CSV.read(IOBuffer(csv_string), DataFrame)
+  ╠═╡ =#
+
+# ╔═╡ 1f973cbe-a416-44fa-8e3b-e6392f6ddb16
+#=╠═╡
+# Discard all experiment repetitions except the first
+# Essentially avoids taking the mean of the data
+# and just shows result for single run.
+@bind only_first_repetition CheckBox(default=false)
   ╠═╡ =#
 
 # ╔═╡ 5484bf48-11be-4ac7-9557-e6fa36802f1d
@@ -778,6 +779,7 @@ end
 # ╠═15f0808f-8424-4d27-9247-274c7751bf8e
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
+# ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
 # ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 # ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
 # ╠═7cd7f277-8388-413a-b993-9b81fdb495b8
@@ -792,7 +794,6 @@ end
 # ╟─24408d9e-de30-4e1e-805b-07ee138371e0
 # ╠═5d35a941-ea93-45ed-b309-98db9ad9fc47
 # ╠═1f973cbe-a416-44fa-8e3b-e6392f6ddb16
-# ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
 # ╟─9a298f2a-5194-41c9-813d-afbf56ef92eb
 # ╠═ef7d9898-c2be-493b-913e-51a854d74c32
 # ╟─33d2e7c5-f272-4ecd-93cb-c927ceb735ab

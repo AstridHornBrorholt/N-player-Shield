@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -360,10 +360,19 @@ begin
 end
   ╠═╡ =#
 
+# ╔═╡ b80ec1d9-6975-4198-b1c7-46acd5c84544
+excluding_extension(file::String) = file[1:findlast(==('.'), file) - 1]
+
+# ╔═╡ 3058c083-d9de-4b55-aa91-b5b7ded5abca
+excluding_extension("foo.bar.baz")
+
+# ╔═╡ c5cde56e-cd4b-4509-a739-d8281a7c5248
+⨝ = joinpath
+
 # ╔═╡ ae547020-fdda-47c4-baf6-40b69001d7a5
 #=╠═╡
 # Write a file path here, which will be written to reactively
-@bind savepath TextField(80, default="")
+@bind savepath TextField(80, default=tempdir() ⨝ "car1.c")
   ╠═╡ =#
 
 # ╔═╡ 6d3d2412-e8a9-4bf0-92df-21973375e7fb
@@ -375,15 +384,6 @@ if isdir(dirname(savepath))
 	@info "saved to '$savepath'"
 end
   ╠═╡ =#
-
-# ╔═╡ b80ec1d9-6975-4198-b1c7-46acd5c84544
-excluding_extension(file::String) = file[1:findlast(==('.'), file) - 1]
-
-# ╔═╡ 3058c083-d9de-4b55-aa91-b5b7ded5abca
-excluding_extension("foo.bar.baz")
-
-# ╔═╡ c5cde56e-cd4b-4509-a739-d8281a7c5248
-⨝ = joinpath
 
 # ╔═╡ a9e5461c-7495-476b-a9d9-e18c6912e6f5
 """
