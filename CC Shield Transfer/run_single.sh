@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "Warning: There's a bug here that I won't address. These results may be useless. See TODO.txt"
+
 julia=${julia:-"$HOME/julia-1.9.2/bin/julia"}
 log_output=${log_output:-"$(realpath "log.txt")"}
 blueprint_path=${blueprint_path:-"$(realpath "Fleet_blueprint.xml")"}

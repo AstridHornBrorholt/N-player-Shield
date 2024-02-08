@@ -1,0 +1,4 @@
+Ok I'm just writing this note now to say, that the shield transfer works fine for safety, but there is another bug:
+For some reason, when the mechanics are altered in the blueprint, importing strategies for further training doesn't work. Seems like the strategies are being read back in incorrectly. That would be the strategies which are exported from UPPAAL as JSON, converted to a C-function and compiled into a shared-object library. Even though this should be mechanics-agnostic, it seems that chagning the mechanics messes up how the re-imported strategies are applied. Maybe the altered mechanics are hitting an otherwise dormant bug.
+
+In either case, I don't want to fix it since safety is the main thing here. We do not learn anything new from doing training on this.
