@@ -36,7 +36,7 @@ const int minDistance = 0;
 const int maxDistance = 200;
 
 int[-2,2] acceleration[fleetSize];   // acceleration of car
-broadcast chan choose[fleetSize];    // signal for car to decide 
+broadcast chan choose;    // signal for car to decide 
 broadcast chan shield;  // Signal for shield to change unsafe actions
 broadcast chan tick;    // Signal to check if distance greater than 200
 
@@ -173,19 +173,19 @@ that time reversing.</label>
 		<transition id="id4">
 			<source ref="id1"/>
 			<target ref="id3"/>
-			<label kind="synchronisation" x="-25" y="68">choose[i]?</label>
+			<label kind="synchronisation" x="-25" y="68">choose?</label>
 			<nail x="0" y="68"/>
 		</transition>
 		<transition id="id5">
 			<source ref="id0"/>
 			<target ref="id3"/>
-			<label kind="synchronisation" x="-17" y="-153">choose[i]?</label>
+			<label kind="synchronisation" x="-17" y="-153">choose?</label>
 			<nail x="0" y="-136"/>
 		</transition>
 		<transition id="id6">
 			<source ref="id2"/>
 			<target ref="id3"/>
-			<label kind="synchronisation" x="-93" y="17">choose[i]?</label>
+			<label kind="synchronisation" x="-93" y="17">choose?</label>
 		</transition>
 		<transition id="id7">
 			<source ref="id3"/>
@@ -242,7 +242,7 @@ that time reversing.</label>
 		<transition id="id15" controllable="false">
 			<source ref="id13"/>
 			<target ref="id12"/>
-			<label kind="synchronisation" x="-25" y="8">choose[i]?</label>
+			<label kind="synchronisation" x="-25" y="8">choose?</label>
 			<nail x="17" y="8"/>
 		</transition>
 	</template>
@@ -296,19 +296,19 @@ that time reversing.</label>
 		<transition id="id25" controllable="false">
 			<source ref="id17"/>
 			<target ref="id19"/>
-			<label kind="synchronisation" x="-25" y="68">choose[i]?</label>
+			<label kind="synchronisation" x="-25" y="68">choose?</label>
 			<nail x="0" y="68"/>
 		</transition>
 		<transition id="id26" controllable="false">
 			<source ref="id16"/>
 			<target ref="id19"/>
-			<label kind="synchronisation" x="-17" y="-153">choose[i]?</label>
+			<label kind="synchronisation" x="-17" y="-153">choose?</label>
 			<nail x="0" y="-136"/>
 		</transition>
 		<transition id="id27" controllable="false">
 			<source ref="id18"/>
 			<target ref="id19"/>
-			<label kind="synchronisation" x="-93" y="17">choose[i]?</label>
+			<label kind="synchronisation" x="-93" y="17">choose?</label>
 		</transition>
 	</template>
 	<template>
@@ -319,42 +319,32 @@ int[0, fleetSize] i = 0; </declaration>
 			<name x="-255" y="-170">Wait</name>
 			<label kind="invariant" x="-272" y="-153">timer &lt;= 1</label>
 		</location>
-		<location id="id29" x="-314" y="-272">
+		<location id="id29" x="-238" y="-272">
 			<urgent/>
 		</location>
 		<init ref="id29"/>
 		<transition id="id30" controllable="false">
 			<source ref="id29"/>
-			<target ref="id29"/>
-			<label kind="guard" x="-357" y="-357">i &lt; fleetSize</label>
-			<label kind="synchronisation" x="-357" y="-340">choose[i]!</label>
-			<label kind="assignment" x="-357" y="-374">i++</label>
-			<nail x="-357" y="-314"/>
-			<nail x="-272" y="-314"/>
+			<target ref="id28"/>
+			<label kind="synchronisation" x="-221" y="-314">shield!</label>
+			<label kind="assignment" x="-221" y="-297">timer = 0</label>
+			<nail x="-153" y="-272"/>
 		</transition>
 		<transition id="id31" controllable="false">
-			<source ref="id29"/>
-			<target ref="id28"/>
-			<label kind="guard" x="-263" y="-306">i == fleetSize</label>
-			<label kind="synchronisation" x="-263" y="-272">shield!</label>
-			<label kind="assignment" x="-263" y="-289">timer = 0</label>
-			<nail x="-136" y="-272"/>
-		</transition>
-		<transition id="id32" controllable="false">
 			<source ref="id28"/>
 			<target ref="id29"/>
-			<label kind="guard" x="-365" y="-221">timer == 1</label>
-			<label kind="assignment" x="-357" y="-238">i = 0</label>
+			<label kind="guard" x="-331" y="-238">timer == 1</label>
+			<label kind="synchronisation" x="-331" y="-255">choose!</label>
 		</transition>
 	</template>
 	<template>
 		<name>Dynamics</name>
-		<location id="id33" x="-153" y="-144">
+		<location id="id32" x="-153" y="-144">
 			<label kind="invariant" x="-314" y="-127">(forall (i : int[0, fleetSize - 1]) velocity[i]' == acceleration[i]) &amp;&amp;
 (forall (j : int[0, fleetSize - 2]) distance[j]' == velocity[j] - velocity[j + 1]) &amp;&amp;
 (forall (j : int[0, fleetSize - 2]) D[j]' == distance[j])</label>
 		</location>
-		<init ref="id33"/>
+		<init ref="id32"/>
 	</template>
 	<system>%system declaration%</system>
 	<queries>
