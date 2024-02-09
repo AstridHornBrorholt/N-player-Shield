@@ -12,6 +12,10 @@ The learned performance of car1 is compiled into the model when training and eva
 
 It is interesting to note that performance drops with the number of cars added to the chain. This could be due to the real fenomenon of congestion forming even without obstacles. (https://www.youtube.com/watch?v=7wm-pZp_mi0)
 
+== More Cars
+
+I actually have results for 20 cars trained for 2500 episodes each. After applying an optimization to the UPPAAL model, I want to see if that number can go up to 30 in a reasonable time. There is also an optimization waiting in a new release of UPPAAL which should take it beyond that.
+
 == Comparison to non-specialized model
 
 It is interesting to see whether training specific agents for each car in the fleet actually results in better performance, or if using the same policy for all cars gives a similar result. In fact it is better to train a specialized policy for each position in the fleet.
@@ -80,7 +84,32 @@ This assumption is not present in the default decentralized configuration, but I
 
 @cc-random shows a baseline performance. Each agent samples a safe action according to the shield, according to a uniformly random distribution. As we can see, performance is less than stellar. However, it was safe.
 
-#pagebreak()
+
+== Shield Transfer
+
+Transferring a shield from one agent to the other doesn't have to be as simple as "renaming the variables." In this experiment, we showed how a safety strategy can be transferred to an agent with completely different mechanics (under certain circumstances). 
+
+A shield of 10 cars all acting randomly was created with the default mechanics: 
+
+
+
+Transferring a shield from one agent to the other doesn't have to be as simple as "renaming the variables." In this experiment, we showed how a safety strategy can be transferred to an agent with completely different mechanics (under certain circumstances). 
+
+A shield of 10 cars all acting randomly was created with the default mechanics: 
+
+`(t_act = 1, distance_min = 0, distance_max = 200, acceleration = 2, v_min = -10, v_max = 20)`
+
+These cars were observed to be safe for 1000 traces. Then the mechanics were altered: 
+
+`(t_act = 0.8, distance_min = 10.0, distance_max = 90.0, acceleration = 1.0, v_ego_min = 0.0, v_ego_max = 12.0, v_front_min = 0.0, v_front_max = 12.0)`
+
+And a projection was worked out: $p vec(v_1, v_2, d) =  vec((v_1 + 10)*0.4, (v_2 + 10)*0.4, (d + 25)*0.4)$
+Applying the projection, the cars were safe under the new mechanics for another 1000 traces.
+
+#let act = "act"
+
+TODO: Probably shouldn't alter $t_act$ since this adds cofusion without really proving anything else
+
 
 = Chemical Production
 
@@ -97,7 +126,7 @@ One productoin unit is trained at a time, to minimize overall cost of the system
 Training happens sequentially according to the numbers on the production units (squares) of @Layout.
 
 @CP-Learned-Performance shows the gradual improvement of the reward (negative cost) resulting from this training. 
-Unsurprisingly, the reward is improved with each unit trained.
+Unsurprisingly, the reward is improved with each unit trained. 
 The baseline performance, where all production units pick actions randomly, is a reward of -2336. The average reward achieved after training each production unit for 20000 episodes is -1360.
 
 #grid(columns:(1fr, 1fr),
