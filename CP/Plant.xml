@@ -549,29 +549,29 @@ P1 = Provider(provider_out[1], cost_multiplier[1], 1.0, 0.5, 0.5, 0.0, 3.0);
 P2 = Provider(provider_out[2], cost_multiplier[2], 1.0, 0.5, 0.5, 0.0, 3.0);
 P3 = Provider(provider_out[3], cost_multiplier[3], 1.0, 0.5, 0.5, 0.0, 3.0);
 
-U1 = PreTrainedProductionUnit(1, unit_out[1], stored[1], provider_out[1], provider_out[1], provider_out[1]);
-U2 = RandomProductionUnit(2, unit_out[2], stored[2], provider_out[2], provider_out[2], provider_out[2]);
-U3 = RandomProductionUnit(3, unit_out[3], stored[3], provider_out[3], provider_out[3], provider_out[3]);
+U1 = ControllableProductionUnit(1, unit_out[1], stored[1], provider_out[1], provider_out[1], provider_out[1]);
+U2 = ControllableProductionUnit(2, unit_out[2], stored[2], provider_out[2], provider_out[2], provider_out[2]);
+U3 = ControllableProductionUnit(3, unit_out[3], stored[3], provider_out[3], provider_out[3], provider_out[3]);
 
 P4 = Provider(provider_out[4], cost_multiplier[4], 2.0, 1.5, 1.5, 0.5, 4.0);
 P5 = Provider(provider_out[5], cost_multiplier[5], 2.0, 1.5, 1.5, 0.5, 4.0);
 
-U4 = RandomProductionUnit(4, unit_out[4], stored[4], provider_out[4], unit_out[1], unit_out[2]);
-U5 = RandomProductionUnit(5, unit_out[5], stored[5], unit_out[2], unit_out[3], provider_out[5]);
+U4 = ControllableProductionUnit(4, unit_out[4], stored[4], provider_out[4], unit_out[1], unit_out[2]);
+U5 = ControllableProductionUnit(5, unit_out[5], stored[5], unit_out[2], unit_out[3], provider_out[5]);
 
 P6 = Provider(provider_out[6], cost_multiplier[6], 3.0, 3.5, 3.5, 2.5, 2.0);
 P7 = Provider(provider_out[7], cost_multiplier[7], 3.0, 3.5, 4.5, 2.5, 2.0);
 P8 = Provider(provider_out[8], cost_multiplier[8], 3.0, 4.5, 2.5, 2.5, 2.0);
 
-U6 = RandomProductionUnit(6, unit_out[6], stored[6], provider_out[6], provider_out[6], unit_out[4]);
-U7 = RandomProductionUnit(7, unit_out[7], stored[7], unit_out[4], unit_out[5], provider_out[7]);
-U8 = RandomProductionUnit(8, unit_out[8], stored[8], unit_out[5], provider_out[8], provider_out[8]);
+U6 = ControllableProductionUnit(6, unit_out[6], stored[6], provider_out[6], provider_out[6], unit_out[4]);
+U7 = ControllableProductionUnit(7, unit_out[7], stored[7], unit_out[4], unit_out[5], provider_out[7]);
+U8 = ControllableProductionUnit(8, unit_out[8], stored[8], unit_out[5], provider_out[8], provider_out[8]);
 
 P9 = Provider(provider_out[9], cost_multiplier[9], 6.0, 6.5, 8.5, 2.5, 2.0);
 P10 = Provider(provider_out[10], cost_multiplier[10], 6.0, 6.5, 8.5, 0.5, 6.0);
 
-U9 = RandomProductionUnit(9, unit_out[9], stored[9], provider_out[9], unit_out[6], unit_out[7]);
-U10 = RandomProductionUnit(10, unit_out[10], stored[10], unit_out[7], unit_out[8], provider_out[10]);
+U9 = ControllableProductionUnit(9, unit_out[9], stored[9], provider_out[9], unit_out[6], unit_out[7]);
+U10 = ControllableProductionUnit(10, unit_out[10], stored[10], unit_out[7], unit_out[8], provider_out[10]);
 
 D1 = Consumer(unit_out[9], 0.0, 2*RATE, 2*RATE, RATE, 0.0);
 D2 = Consumer(unit_out[10], RATE, RATE, 0.0, 2*RATE, RATE);
