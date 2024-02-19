@@ -36,7 +36,7 @@ begin
         "--verifyta-path"
             default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta.sh"
         "--blueprint-path"  
-            default=pwd() ⨝ "../Fleet_blueprint.xml"
+            default=pwd() ⨝ "../CC/Fleet_blueprint.xml"
         "--shield-path"  
             default=pwd() ⨝ "../CC Shield/libshield.so"
         "--skip-training"

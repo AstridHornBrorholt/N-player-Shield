@@ -11,15 +11,27 @@ repetitions=10
 
 for ((r=1; r<=$repetitions; r++))
 do
+    export repetition=$r
+    export fleet_size=$max_cars
 
-    for ((f=8; f<=$max_cars; f++))
-    do
-        export repetition=$r
-        export fleet_size=$f
+    # Yes the "runs" parameter is multiplied by fleet size.
+    export runs=2500
+    export checks=1000
+    sbatch $ARGS ./run_single.sh
+    echo "Job scheduled."
 
-        export runs=20000
-        export checks=1000
-        sbatch $ARGS ./run_single.sh
-        echo "Job scheduled."
-    done
+    export runs=5000
+    export checks=1000
+    sbatch $ARGS ./run_single.sh
+    echo "Job scheduled."
+
+    export runs=10000
+    export checks=1000
+    sbatch $ARGS ./run_single.sh
+    echo "Job scheduled."
+
+    export runs=20000
+    export checks=1000
+    sbatch $ARGS ./run_single.sh
+    echo "Job scheduled."
 done
