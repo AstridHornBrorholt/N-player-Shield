@@ -34,7 +34,7 @@ double provider_out[providerid_t];
 
 // Cost per litre for the given provider. Unit: moneydollars/L
 double cost_multiplier[providerid_t] = { 0.5, 0.5, 0.5, 1.0, 1.0, 3.0, 3.0, 3.0, 5.0, 5.0};
-clock cost;
+clock cost[providerid_t];
 
 
 /** Shielding **/
@@ -473,7 +473,7 @@ action = get_action(id, allowed)</label>
 		<location id="id43" x="0" y="0">
 			<label kind="invariant" x="-25" y="17">x &lt;= 1 &amp;&amp;
 x' == 2 &amp;&amp;
-cost' == sum (i : providerid_t) provider_out[i]*cost_multiplier[i]</label>
+(forall (i : providerid_t) (cost[i]' == provider_out[i]*cost_multiplier[i]))</label>
 		</location>
 		<init ref="id43"/>
 		<transition id="id44" controllable="false">

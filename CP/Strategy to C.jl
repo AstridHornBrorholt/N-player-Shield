@@ -166,6 +166,7 @@ $(join(["    **$k** => $v" for (k,v) in enumerate(json["pointvars"])], "\n\n"))
   ╠═╡ =#
 
 # ╔═╡ 4de463bf-8e89-4aa8-ac89-872bc9399d78
+# The newest version of the experiment may have other observations, e.g. just t and stored[i].
 vars = [
 	"t",
 	"stored1",

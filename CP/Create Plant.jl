@@ -101,13 +101,33 @@ end
   ╠═╡ =#
 
 # ╔═╡ 6faf4945-da06-4ce8-8f79-2db5fb321ce1
-vars
+# Not used – maybe at some point I make full observability an option in the experiment.
+vars_fully_observable = [
+	"t",
+	"stored1",
+	"stored2",
+	"stored3",
+	"stored4",
+	"stored5",
+	"stored6",
+	"stored7",
+	"stored8",
+	"stored9",
+	"stored10",
+]
+
+# ╔═╡ efadb6e4-e1ea-4d5f-87f0-85e4532d3fbc
+vars = [
+	"t",
+	"stored"
+]
 
 # ╔═╡ 9228d33d-bfe8-4c96-9e11-815fa674a5b6
+# From "Strategy to C.jl"
 actions
 
 # ╔═╡ 265701e4-9cd6-4834-af7d-df02bbd976ec
-function strategies_to_c(strategy_paths, output_dir)
+function strategies_to_c(strategy_paths, vars, output_dir)
 	result = Tuple{String, String}[]
 	for strategy_path in strategy_paths
 		!isfile(strategy_path) && error("No such file: $strategy_path")
@@ -120,7 +140,7 @@ end
 # ╔═╡ 91f00f7e-43b7-47c5-970b-ee4f0c6100b4
 #=╠═╡
 if all(isfile(strategy_path) for strategy_path in strategy_paths) && isdir(output_dir)
-	strategies = strategies_to_c(strategy_paths, output_dir)
+	strategies = strategies_to_c(strategy_paths, vars, output_dir)
 else
 	strategies = [
 		("int get_action_somestrategy1(double velocity, etc etc)", "path/to/lib1.so")
@@ -201,7 +221,7 @@ function agent_selector(strategies)
 		else
 			result ← "    else if (id == $i)"
 		end
-		result ←     "        return $fname(t, stored[1], stored[2], stored[3], stored[4], stored[5], stored[6], stored[7], stored[8], stored[9], stored[10], allowed.wait,  allowed.input_one, allowed.input_two, allowed.input_three);"
+		result ←     "        return $fname(t, stored[$i], allowed.wait,  allowed.input_one, allowed.input_two, allowed.input_three);"
 	end
 	join(result, "\n")
 end
@@ -251,20 +271,22 @@ These will be easiest to generate in the same swoop.
 # ╔═╡ c7baa1ea-5252-4319-adfd-d003aa8ee0df
 function queries(number_of_strategies, output_path; checks=1000, skip_training=false)
 	result = String[]
-	# Cross-checking outcomes of previous (c-compiled) strategies
-	result ← "E[<=100;$checks](max:cost)"
 	# Training or loading strategy
 	i = number_of_strategies + 1
+	# Cross-checking outcomes of previous (c-compiled) strategies
+	result ← "E[<=100;$checks](max:cost[$i])"
+	result ← "E[<=100;$checks](max:sum (i : providerid_t) cost[i])"
 	if !skip_training
-		result ← "strategy unit$i = minE(cost) [<=100] {}->{t, stored[1], stored[2], stored[3], stored[4], stored[5], stored[6], stored[7], stored[8], stored[9], stored[10]}: <> time >= 100"
+		result ← "strategy unit$i = minE(cost[$i]) [<=100] {}->{t, stored[$i]}: <> time >= 100"
 		result ← "saveStrategy(\"$output_path/unit$i.json\", unit$i)"
 	else
-		result ← "strategy unit$i = loadStrategy{}->{t, stored[1], stored[2], stored[3], stored[4], stored[5], stored[6], stored[7], stored[8], stored[9], stored[10]} (\"$output_path/car1.json\")"
+		result ← "strategy unit$i = loadStrategy{}->{t, stored[$i]} (\"$output_path/unit$i.json\")"
 	end
 	# Learned performance
-	result ← "E[<=100;$checks](max:cost) under unit$i"
+	result ← "E[<=100;$checks](max:cost[$i]) under unit$i"
+	result ← "E[<=100;$checks](max:sum (i : providerid_t) cost[i]) under unit$i"
 	# Probability of safety violation
-	result ← "Pr[<=100;10000] (<> forall (i : unitid_t) (MIN_STORED < stored[i] && stored[i] < MAX_STORED)) under unit$i"
+	result ← "Pr[<=100;$checks] (<> forall (i : unitid_t) (MIN_STORED < stored[i] && stored[i] < MAX_STORED)) under unit$i"
 
 	join(result, "\n")
 end
@@ -385,7 +407,7 @@ function create_fleet(blueprint_path,
 	
 
 	# Compile strategies
-	strategies = strategies_to_c(strategy_paths, destination)
+	strategies = strategies_to_c(strategy_paths, vars, destination)
 
 	# Compute replacements
 	replacements = Dict{String, String}()
@@ -432,6 +454,7 @@ create_fleet(blueprint_path, strategy_paths, shield_path, output_dir)
 # ╠═9c5f6402-1cc5-4922-a3b3-02676c15b36d
 # ╟─303b180c-274c-4a29-b786-660fae7209b8
 # ╠═6faf4945-da06-4ce8-8f79-2db5fb321ce1
+# ╠═efadb6e4-e1ea-4d5f-87f0-85e4532d3fbc
 # ╠═9228d33d-bfe8-4c96-9e11-815fa674a5b6
 # ╠═265701e4-9cd6-4834-af7d-df02bbd976ec
 # ╠═91f00f7e-43b7-47c5-970b-ee4f0c6100b4
