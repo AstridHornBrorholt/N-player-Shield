@@ -248,22 +248,19 @@ html"""
 html"""
 <style>
 pluto-editor {
-	background-image: url("https://i.imgur.com/VqU9gsd.png");
+	background-image: url("https://www.freevector.com/uploads/vector/preview/30278/Red_Flower_Pattern.jpg");
 }
 pluto-notebook {
 	background: none;
 }
 
 pluto-output  {
-	border-radius: 4pt 4pt 0 0;
+	border-radius: 4pt;
 	padding: 4pt;
-	background: none;
-	backdrop-filter: blur(5px)brightness(104%);
 }
 
 pluto-input .cm-editor {
-	background: none;
-	backdrop-filter: blur(5px)brightness(98%);
+	background: #fafafafa;
 }
 
 pluto-cell.code_differs .cm-editor .cm-gutters {
@@ -276,36 +273,12 @@ body:not(.___) pluto-cell.code_differs > pluto-trafficlight {
 }
 
 body:not(.___) pluto-cell.errored > pluto-trafficlight {
-	background: #EC8B8B;
+	background: #ffa18a;
 }
 
 body:not(.___) pluto-cell:focus-within > pluto-trafficlight {
 	background: #b4caed;
 }
-
-body:not(.___) pluto-cell.queued>pluto-trafficlight:after {
-  animation-duration:30s;
-  background:repeating-linear-gradient(-45deg,transparent,transparent 8px,var(--normal-cell-color) 8px,var(--normal-cell-color) 16px);
-  background-clip:padding-box;
-  background-size:4px var(--patternHeight);
-  opacity:.99
-}
-
-body:not(.___) pluto-cell.running>pluto-trafficlight:after {
-  background:repeating-linear-gradient(-45deg,var(--normal-cell-color),var(--normal-cell-color) 8px,var(--dark-normal-cell-color) 8px,var(--dark-normal-cell-color) 16px);
-  background-clip:content-box;
-  background-size:4px var(--patternHeight);
-  opacity:.99
-}
-
-body:not(.___) pluto-cell.queued.errored>pluto-trafficlight:after,
-body:not(.___) pluto-cell.running.errored>pluto-trafficlight:after {
-  background:repeating-linear-gradient(-45deg,#EC8B8B,#EC8B8B 8px,#CF8A8A 8px,#CF8A8A 16px);
-  background-clip:content-box;
-  background-size:4px var(--patternHeight);
-  opacity:.99
-}
-
 </style>
 
 <p>🎨 Custom style sheet loaded.</p>
@@ -392,54 +365,6 @@ function elementwise_mean(vec)
 	result |> string
 end
 
-# ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
-begin
-	function learned_performance_plot!(means::DataFrame, 
-			runs;
-			color=colors.POMEGRANATE,
-			label=nothing,
-			plotargs...)
-		
-		df = filter(:runs => (x -> x == runs), means)
-		trained_unit_counts = df[!, :trained_units]
-		df = sort(df, :trained_units)
-		trained_min = min(trained_unit_counts...)
-		trained_max = max(trained_unit_counts...)
-		
-		xticks = (collect(trained_min:trained_max), ["$x" for x in 1:trained_max])
-		xlims = (trained_min - 1, trained_max + 1)
-		
-		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
-		
-		@df df plot!(:trained_units, :reward;
-			color=color,
-			linewidth=2,
-			xticks,
-			xlims,
-			xlabel="Number of Trained Units",
-			ylabel="Reward",
-			label=something(label, "Trained for $runs runs each"),
-			legend=:outertop,
-			#marker...,
-			plotargs...)
-	end
-	function learned_performance_plot(x...; plotargs...)
-		plot(;plotargs...)
-		learned_performance_plot!(x...)
-	end
-end
-
-# ╔═╡ 24408d9e-de30-4e1e-805b-07ee138371e0
-md"""
-### NB
-
-I have been using `x001 Runs` as a shorthand for "non-specialized variant of the experiment." 
-
-If there is a readme in the root of the folder, it will be displayed in the below cell.
-
-This is because I don't support labels for the experiments beyond the number of runs used. This is a bit of a mess. Other values like x003 and x004 have no set definitions. I don't remember what those are.
-"""
-
 # ╔═╡ 5d35a941-ea93-45ed-b309-98db9ad9fc47
 #=╠═╡
 @bind refresh_button CounterButton("Refresh")
@@ -480,7 +405,7 @@ cleandata = let
 	episode_length = 100
 	
 	cleandata = transform(cleandata, 
-		:trained_performance => ByRow(p -> -p) => :reward,
+		:trained_global_performance => ByRow(p -> -p) => :reward,
 		:pre_trained_units => ByRow(p -> p + 1) => :trained_units,
 	)
 	
@@ -494,74 +419,35 @@ means = let
 	grouping =  groupby(cleandata, [:runs, :trained_units])
 	
 	means = combine(grouping, 
-		:trained_performance => mean, 
-		:untrained_performance => mean,
+		:untrained_global_performance => mean, 
+		:trained_global_performance => mean, 
+		:trained_individual_performance => mean,
+		:untrained_individual_performance => mean,
 		:reward => mean,
 		renamecols=false)
 end
   ╠═╡ =#
 
-# ╔═╡ 9a298f2a-5194-41c9-813d-afbf56ef92eb
+# ╔═╡ 85625fdb-5ad9-4021-a601-1d50c420902a
 md"""
-## Performance compared to when it is imported
+## Reward Plot
 """
 
-# ╔═╡ ef7d9898-c2be-493b-913e-51a854d74c32
+# ╔═╡ e4d4e047-c252-4d2f-b48d-29e4e6266012
 #=╠═╡
-@bind runs Select(means[!, :runs] |> unique)
+max_trained_units = max(cleandata[!, :trained_units]...)
   ╠═╡ =#
-
-# ╔═╡ 8a8ad7a8-94cb-4f94-9e78-7684091272c8
-#=╠═╡
-@info "Repetitions found: $(nrow(filter(:pre_trained_units => (x -> x == 1), filter(:runs => (x -> x == runs), cleandata))))"
-  ╠═╡ =#
-
-# ╔═╡ 65b36dde-10b2-448b-8367-027a5b072d50
-#=╠═╡
-filter(:runs => (x -> x == runs), 
-			means)
-  ╠═╡ =#
-
-# ╔═╡ 33d2e7c5-f272-4ecd-93cb-c927ceb735ab
-#=╠═╡
-let 
-	readme = results_dir ⨝ "$runs Runs" ⨝ "readme.txt"
-	if isfile(readme)
-		md"""
-		!!! info "`Readme` found"
-		
-		at $(readme)
-		
-		$(readme |> read |> String |> multiline)
-		"""
-	end
-end
-  ╠═╡ =#
-
-# ╔═╡ 5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
-#=╠═╡
-unique_runs = means[!, :runs] |> unique |> sort
-  ╠═╡ =#
-
-# ╔═╡ 977e914e-3995-463c-ab74-d8f256adec27
-#=╠═╡
-@bind selected_runs MultiSelect(unique_runs, 
-		default=[r for r in unique_runs if (r > 1000 && r%100==0)])
-  ╠═╡ =#
-
-# ╔═╡ 7909f497-55cd-4f9d-b34d-515a80241873
-md"""
-## Performance for different numbers of runs
-"""
 
 # ╔═╡ 734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
 #=╠═╡
-begin
-	default_y_min = min(means[!, :reward]...) - 100
+default_y_min, default_y_max = let
+	df = filter(:trained_units => t -> t == max_trained_units, means)
 	
-	default_y_max = max(means[!, :reward]...) + 100
+	default_y_min = min(df[!, :reward]...) - 100
 	
-	(;default_y_min, default_y_max)
+	default_y_max = max(df[!, :reward]...) + 100
+	
+	default_y_min, default_y_max
 end
   ╠═╡ =#
 
@@ -593,12 +479,111 @@ md"""
 size = (width, height)
   ╠═╡ =#
 
-# ╔═╡ 3f04b408-1027-4c87-b138-35e63ab4697a
+# ╔═╡ 7909f497-55cd-4f9d-b34d-515a80241873
+md"""
+## Individual performance
+"""
+
+# ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
+begin
+	function individual_performance_plot!(means::DataFrame, 
+			runs;
+			color=colors.POMEGRANATE,
+			label=nothing,
+			plotargs...)
+		
+		df = filter(:runs => (x -> x == runs), means)
+		trained_unit_counts = df[!, :trained_units]
+		df = sort(df, :trained_units)
+		trained_min = min(trained_unit_counts...)
+		trained_max = max(trained_unit_counts...)
+		
+		xticks = (collect(trained_min:trained_max), ["$x" for x in 1:trained_max])
+		xlims = (trained_min - 1, trained_max + 1)
+		
+		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
+		
+		@df df plot!(:trained_units, :trained_individual_performance;
+			color=color,
+			linewidth=2,
+			xticks,
+			xlims,
+			xlabel="Unit ID",
+			ylabel="Individual Reward",
+			label=something(label, "Trained for $runs runs each"),
+			legend=:outertop,
+			#marker...,
+			plotargs...)
+	end
+	function individual_performance_plot(x...; plotargs...)
+		plot(;plotargs...)
+		individual_performance_plot!(x...)
+	end
+end
+
+# ╔═╡ 37e95259-e575-45c3-a0a3-4b0115c12694
+#=╠═╡
+unique_runs = means[!, :runs] |> unique |> sort
+  ╠═╡ =#
+
+# ╔═╡ 48cdb277-800b-4f12-bf20-5a7d48af5fff
+#=╠═╡
+@bind runs Select(unique_runs)
+  ╠═╡ =#
+
+# ╔═╡ 8a8ad7a8-94cb-4f94-9e78-7684091272c8
+#=╠═╡
+@info "Repetitions found: $(nrow(filter(:pre_trained_units => (x -> x == 1), filter(:runs => (x -> x == runs), cleandata))))"
+  ╠═╡ =#
+
+# ╔═╡ 65b36dde-10b2-448b-8367-027a5b072d50
+#=╠═╡
+filter(:runs => (x -> x == runs), 
+			means)
+  ╠═╡ =#
+
+# ╔═╡ 109601c9-4c25-4b39-b059-47c2255c9159
+#=╠═╡
+let 
+	readme = results_dir ⨝ "$runs Runs" ⨝ "readme.txt"
+	if isfile(readme)
+		md"""
+		!!! info "`Readme` found"
+		
+		at $(readme)
+		
+		$(readme |> read |> String |> multiline)
+		"""
+	else
+		md"""No readme found.
+		
+		If there is a file `readme.txt` in the Runs folder, it will be displayed here."""
+	end
+end
+  ╠═╡ =#
+
+# ╔═╡ 46892975-b58b-4d27-87a5-83dc5ab23965
+#=╠═╡
+@bind selected_runs MultiSelect(unique_runs, 
+		default=[r for r in unique_runs if (r > 1000 && r%100==0)])
+  ╠═╡ =#
+
+# ╔═╡ 275f6004-3c83-4ffd-b5da-1425edd99dce
 #=╠═╡
 let
-	df = filter((x -> x[:runs] == runs), means)
-	
-	learned_performance_plot(means, runs; ylims, size)
+	df = sort(means, :runs)
+	df = filter(:trained_units => t -> t == max_trained_units, df)
+	df = filter(:runs => r -> r ∈ selected_runs, df)
+	df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
+	@df df plot(:runs, :reward;
+		size,
+		ylims,
+		color=colors.POMEGRANATE,
+		marker=:square,
+		markerstrokewidth=0,
+		label=nothing,
+		xlabel="Episodes per unit",
+		ylabel="Total reward")
 end
   ╠═╡ =#
 
@@ -607,14 +592,14 @@ end
 let
 	df = filter((x -> x[:runs] ∈ selected_runs), means)
 	
-	plot(;ylims, size)
+	plot(;size)
 
 	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.CARROT, colors.WISTERIA, colors.EMERALD, colors.SUNFLOWER, colors.PETER_RIVER]
 	
 	strokes = [:dashdot, :dash, :dot, :solid, ]
 	
 	for (i, r) in enumerate(selected_runs)
-		learned_performance_plot!(means, r, 
+		individual_performance_plot!(means, r, 
 			color=c[1 + (i - 1)%length(c)],
 			line=strokes[1 + (i - 1)%length(strokes)],
 			markerstrokecolor=:white)
@@ -650,21 +635,21 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╠═a675d6b9-0f2b-4023-af2a-1bb43303f6a7
 # ╠═8a8ad7a8-94cb-4f94-9e78-7684091272c8
 # ╠═65b36dde-10b2-448b-8367-027a5b072d50
-# ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
-# ╟─24408d9e-de30-4e1e-805b-07ee138371e0
 # ╠═5d35a941-ea93-45ed-b309-98db9ad9fc47
+# ╠═48cdb277-800b-4f12-bf20-5a7d48af5fff
+# ╟─109601c9-4c25-4b39-b059-47c2255c9159
 # ╠═1f973cbe-a416-44fa-8e3b-e6392f6ddb16
-# ╟─9a298f2a-5194-41c9-813d-afbf56ef92eb
-# ╠═ef7d9898-c2be-493b-913e-51a854d74c32
-# ╟─33d2e7c5-f272-4ecd-93cb-c927ceb735ab
-# ╠═3f04b408-1027-4c87-b138-35e63ab4697a
-# ╠═5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
-# ╠═977e914e-3995-463c-ab74-d8f256adec27
-# ╟─7909f497-55cd-4f9d-b34d-515a80241873
+# ╟─85625fdb-5ad9-4021-a601-1d50c420902a
+# ╠═e4d4e047-c252-4d2f-b48d-29e4e6266012
 # ╠═734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
 # ╟─64921a92-ce9a-4a79-9349-445c8eb4fe15
 # ╟─2b5eb5be-3e34-4eca-84c9-18a32aacdfab
 # ╟─b1090c8e-9f46-429a-93a7-42cedba24188
 # ╠═8ff26541-30b4-42bb-85a0-1d08e1c8d2aa
+# ╠═46892975-b58b-4d27-87a5-83dc5ab23965
+# ╠═275f6004-3c83-4ffd-b5da-1425edd99dce
+# ╟─7909f497-55cd-4f9d-b34d-515a80241873
+# ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
+# ╠═37e95259-e575-45c3-a0a3-4b0115c12694
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
 # ╠═3c202730-71e2-4cf6-b334-b30a8dfc14a5

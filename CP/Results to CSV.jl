@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -438,7 +438,7 @@ function to_csv(results_dir)
 	isdir(results_dir) || error("Not found: results_dir")
 	
 	header = 
-		"runs;repetition;pre_trained_units;untrained_performance;trained_performance"
+		"runs;repetition;pre_trained_units;untrained_individual_performance;untrained_global_performance;trained_individual_performance;trained_global_performance"
 	
 	result = String[header]
 	for 🗄️ in glob("* Runs", results_dir)
@@ -449,16 +449,18 @@ function to_csv(results_dir)
 				pre_trained_units = firstcapture(r"Plant (\d+).txt", 🗎)
 				pre_trained_units = parse(Int64, pre_trained_units)
 				query_results = extract_results(🗎 |> read |> String)
-				if length(query_results) != 3 
-					@warn "Skipping file with unexpected number of query results" file=🗎 expected=3 actual=length(query_results)
+				if length(query_results) != 4
+					@warn "Skipping file with unexpected number of query results" file=🗎 expected=4 actual=length(query_results)
 					continue
 				end
-				untrained_performance = query_results[1]
-				trained_performance = query_results[2]
+				untrained_individual_performance, untrained_global_performance, trained_individual_performance, trained_global_performance = query_results
 				
 				push!(result, join(
 					[runs, repetition, pre_trained_units,
-						untrained_performance, trained_performance], ";"))
+						untrained_individual_performance, 
+						untrained_global_performance, 
+						trained_individual_performance, 
+						trained_global_performance], ";"))
 			end
 		end
 	end
