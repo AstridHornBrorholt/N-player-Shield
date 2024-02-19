@@ -61,7 +61,7 @@ Find with command
 
 # ╔═╡ 519819cb-f080-4f65-a873-3f87199700d7
 timestamp_matches = 
-	eachmatch(r"(\d+)/(\d+) (\d+):(\d+) 🍏🥝 Running", logs) |> collect
+	eachmatch(r"(\d+)/(\d+) (\d+):(\d+).*🍓🍓 Running", logs) |> collect
 
 # ╔═╡ cbe103e5-c2d9-46e3-ae2a-d0363ce17629
 timestamp_matches′ = [[parse(Int, i) for i in m] for m in timestamp_matches]
@@ -70,7 +70,7 @@ timestamp_matches′ = [[parse(Int, i) for i in m] for m in timestamp_matches]
 timestamps = [DateTime(2024, m[2], m[1], m[3], m[4]) for m in timestamp_matches′]
 
 # ╔═╡ 96557a4b-a4a2-4cf8-b1eb-0ff029be66e8
-runtimes = [timestamps[i] - timestamps[i - 1]
+runtimes = [Minute(timestamps[i] - timestamps[i - 1])
 	for i in 2:length(timestamps)]
 
 # ╔═╡ f77f3c7b-1331-46d9-80c0-6fae9de8a2cd

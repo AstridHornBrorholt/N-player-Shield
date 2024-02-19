@@ -559,6 +559,8 @@ let
 		
 		$(readme |> read |> String |> multiline)
 		"""
+	else
+		md"""No readme found in this subfolder"""
 	end
 end
   ╠═╡ =#

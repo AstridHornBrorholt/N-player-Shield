@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -239,7 +239,6 @@ html"""
 })();
 </script>
 
-<marquee> uwu Purr eow mrow purr purr uwu owo meow purr owo uwu meow purr purr owo mrow uwu uwu meow purr mrow mew owo uwu owo uwu mrow mew purr owo uwu puirr mrow meow mew mmmeoww purr uwu owo mrow meow mew ow purr hsss *scratches you* mrow meow purr uwu purr uwu owo mrow mew ow purr meow uwu </marquee>
 """
 
 # ╔═╡ 4e4caf8c-e5d0-4ba0-bfa6-359d924a3261
@@ -418,7 +417,7 @@ function safety_violation_occured(query_result)
 	else
 		re_check = r"\(\d+/\d+ runs\)"
 		matches = match(re_check, query_result)
-		@warn "Didn't find a query showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." matches
+		@error "Didn't find a query showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." matches
 		return true
 	end
 end
@@ -440,11 +439,13 @@ function to_csv(results_dir)
 			for 🗎 in glob("Query Results/Fleet of * Cars.txt", 📁)
 				fleet_size = firstcapture(r"Fleet of (\d+) Cars.txt", 🗎)
 				fleet_size = parse(Int64, fleet_size)
-				query_results = extract_results(🗎 |> read |> String)
+				query_result_str = 🗎 |> read |> String
+				query_results = extract_results(query_result_str)
 				if length(query_results) != fleet_size - 1 
 					@warn "Skipping file with unexpected number of query results" file=🗎 expected=fleet_size - 1 actual=length(query_results)
 					continue
 				end
+				safety_violation_occured(query_result_str)
 				learned_performance = query_results[end]
 				other_cars = query_results[1:end - 1]
 				if length(other_cars) == 0

@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -19,6 +19,25 @@ end;
 # ╠═╡ skip_as_script = true
 #=╠═╡
 using PlutoUI; TableOfContents(title="Create Plant")
+  ╠═╡ =#
+
+# ╔═╡ 5da6f4cd-96fa-4d58-9381-ca32b917efe5
+#=╠═╡
+@bind output_dir TextField(70, default=mktempdir())
+  ╠═╡ =#
+
+# ╔═╡ c9ec1aaa-3a82-4013-bd40-23ec4f06c900
+#=╠═╡
+@bind open_output_dir_button CounterButton("Open output_dir")
+  ╠═╡ =#
+
+# ╔═╡ 7e71404f-d60f-4042-9098-5522cfd5ee37
+#=╠═╡
+if open_output_dir_button > 0
+	run(`nautilus $output_dir`, wait=false);
+else
+	"code that opens output_dir"
+end
   ╠═╡ =#
 
 # ╔═╡ 73225f3b-eed4-403b-a564-dad605862566
@@ -79,25 +98,6 @@ end
 # ╔═╡ 9c5f6402-1cc5-4922-a3b3-02676c15b36d
 #=╠═╡
 [isfile(s) for s in strategy_paths]
-  ╠═╡ =#
-
-# ╔═╡ 5da6f4cd-96fa-4d58-9381-ca32b917efe5
-#=╠═╡
-@bind output_dir TextField(70, default=mktempdir())
-  ╠═╡ =#
-
-# ╔═╡ c9ec1aaa-3a82-4013-bd40-23ec4f06c900
-#=╠═╡
-@bind open_output_dir_button CounterButton("Open output_dir")
-  ╠═╡ =#
-
-# ╔═╡ 7e71404f-d60f-4042-9098-5522cfd5ee37
-#=╠═╡
-if open_output_dir_button > 0
-	run(`nautilus $output_dir`, wait=false);
-else
-	"code that opens output_dir"
-end
   ╠═╡ =#
 
 # ╔═╡ 6faf4945-da06-4ce8-8f79-2db5fb321ce1
