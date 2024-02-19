@@ -373,10 +373,10 @@ Plots.default(fontfamily="serif-roman")
 function to_vector(str::T, element_type=Float64) where T<:AbstractString
 	🐟 = match(r"\[(.*)\]", str)[1]
 	if 🐟 == ""
-		return []
+		return Float64[]
 	else
 		🎣 = split(🐟, ", ")
-	 	return [parse(element_type, 🍣) for 🍣 in 🎣]
+	 	return Float64[parse(element_type, 🍣) for 🍣 in 🎣]
 	end
 end
 
@@ -443,17 +443,6 @@ begin
 	end
 end
 
-# ╔═╡ 24408d9e-de30-4e1e-805b-07ee138371e0
-md"""
-### NB
-
-I have been using x001 as a shorthand for "non-specialized variant of the experiment that was trained for x000 runs." 
-
-If there is a readme in the root of the folder, it will be displayed in the below cell.
-
-This is because I don't support labels for the experiments beyond the number of runs used. This is a bit of a mess. Other values like x003 and x004 have no set definitions. I don't remember what those are.
-"""
-
 # ╔═╡ 5d35a941-ea93-45ed-b309-98db9ad9fc47
 #=╠═╡
 @bind refresh_button CounterButton("Refresh")
@@ -488,7 +477,7 @@ cleandata = let
 	cleandata = raw_results
 	
 	cleandata = transform(cleandata, 
-		:other_cars => ByRow(to_vector) => :other_cars_performance)
+		:other_cars => ByRow(to_vector) => :other_cars)
 	
 	if only_first_repetition
 		cleandata = filter(:repetition => (x -> x == 1), cleandata)
@@ -500,7 +489,12 @@ cleandata = let
 		:learned_performance => ByRow(p -> -p/episode_length) => :reward)
 	
 	cleandata = transform(cleandata, 
-		:other_cars_performance => ByRow(v -> [-p/episode_length for p in v]) => :other_cars_reward)
+		:other_cars => ByRow(v -> [-p/episode_length for p in v]) => :other_cars_reward)
+
+	# Global reward: Negative total accumulated distance. 
+	# Only makes sense to compute for the last car.
+	cleandata = transform(cleandata,
+		[:reward, :other_cars_reward] => ByRow((r, s) -> (r + sum(s))) => :global_reward)
 	
 	cleandata
 end
@@ -513,17 +507,68 @@ means = let
 	
 	means = combine(grouping, 
 		:learned_performance => mean, 
-		:other_cars_performance => (elementwise_mean), 
+		:other_cars => (elementwise_mean), 
 		:other_cars_reward => (elementwise_mean), 
 		:reward => mean,
+		:global_reward => mean, 
 		renamecols=false)
 
 	# elementwise_mean returns a string because otherwise it creates a row for each element in returned vector
 	means = transform(means, 
 		:other_cars_reward => ByRow(to_vector), 
-		:other_cars_performance => ByRow(to_vector), 
+		:other_cars => ByRow(to_vector), 
 		renamecols=false)
 end
+  ╠═╡ =#
+
+# ╔═╡ a0a064b3-0abf-4277-aaeb-3f8551436f5e
+md"""
+## Global reward
+"""
+
+# ╔═╡ 846b023b-5fda-4112-b1d9-64a0477199c1
+#=╠═╡
+means_fully_trained  = filter(:fleet_size => f -> f == 10, means)
+  ╠═╡ =#
+
+# ╔═╡ 734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
+#=╠═╡
+default_y_min, default_y_max = let
+	
+	default_y_min = min(means_fully_trained[!, :global_reward]...) - 30
+	
+	default_y_max = max(means_fully_trained[!, :global_reward]...) + 30
+	
+	default_y_min, default_y_max
+end
+  ╠═╡ =#
+
+# ╔═╡ 64921a92-ce9a-4a79-9349-445c8eb4fe15
+#=╠═╡
+md"""
+`y_min` = $(@bind y_min NumberField(-100000.:1.:100000., default=default_y_min))
+
+`y_max` = $(@bind y_max NumberField(-100000.:1.:100000., default=default_y_max))
+"""
+  ╠═╡ =#
+
+# ╔═╡ 2b5eb5be-3e34-4eca-84c9-18a32aacdfab
+#=╠═╡
+ylims = (y_min, y_max)
+  ╠═╡ =#
+
+# ╔═╡ b1090c8e-9f46-429a-93a7-42cedba24188
+#=╠═╡
+md"""
+`width` = $(@bind width NumberField(0:10:typemax(Int64), default=350))
+
+`height` = $(@bind height NumberField(0:10:typemax(Int64), default=250))
+"""
+  ╠═╡ =#
+
+# ╔═╡ 8ff26541-30b4-42bb-85a0-1d08e1c8d2aa
+#=╠═╡
+size = (width, height)
   ╠═╡ =#
 
 # ╔═╡ 9a298f2a-5194-41c9-813d-afbf56ef92eb
@@ -547,6 +592,19 @@ filter(:runs => (x -> x == runs),
 			means)
   ╠═╡ =#
 
+# ╔═╡ 0c7a6078-b795-4f85-99a8-3c1d47f49500
+#=╠═╡
+ylims_local = let
+	default_y_min = min(means[!, :reward]..., 
+		Iterators.flatten(means[!, :other_cars_reward])...) - 2
+	
+	default_y_max = max(means[!, :reward]..., 
+		Iterators.flatten(means[!, :other_cars_reward])...) + 2
+	
+	default_y_min, default_y_max
+end
+  ╠═╡ =#
+
 # ╔═╡ 33d2e7c5-f272-4ecd-93cb-c927ceb735ab
 #=╠═╡
 let 
@@ -565,6 +623,15 @@ let
 end
   ╠═╡ =#
 
+# ╔═╡ 3f04b408-1027-4c87-b138-35e63ab4697a
+#=╠═╡
+let
+	df = filter((x -> x[:runs] == runs), means)
+	
+	learned_performance_plot(means, runs; ylims=ylims_local, size)
+end
+  ╠═╡ =#
+
 # ╔═╡ 5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
 #=╠═╡
 unique_runs = means[!, :runs] |> unique |> sort
@@ -576,67 +643,35 @@ unique_runs = means[!, :runs] |> unique |> sort
 		default=[r for r in unique_runs if (r > 1000 && r%100==0)])
   ╠═╡ =#
 
+# ╔═╡ 3db1a697-2600-4316-ac35-db5c7fc2b665
+#=╠═╡
+let
+	df = sort(means_fully_trained, :runs)
+	df = filter(:runs => r -> r ∈ selected_runs, df)
+	df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
+	@df df plot(:runs, :global_reward;
+		size,
+		ylims,
+		color=colors.NEPHRITIS,
+		marker=:circle,
+		markerstrokewidth=0,
+		label=nothing,
+		xlabel="Episodes per car",
+		ylabel="Total reward")
+end
+  ╠═╡ =#
+
 # ╔═╡ 7909f497-55cd-4f9d-b34d-515a80241873
 md"""
 ## Performance for different numbers of runs
 """
-
-# ╔═╡ 734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
-#=╠═╡
-begin
-	default_y_min = min(means[!, :reward]..., 
-		Iterators.flatten(means[!, :other_cars_reward])...) - 2
-	
-	default_y_max = max(means[!, :reward]..., 
-		Iterators.flatten(means[!, :other_cars_reward])...) + 2
-	
-	(;default_y_min, default_y_max)
-end
-  ╠═╡ =#
-
-# ╔═╡ 64921a92-ce9a-4a79-9349-445c8eb4fe15
-#=╠═╡
-md"""
-`y_min` = $(@bind y_min NumberField(-100000.:1.:100000., default=default_y_min))
-
-`y_max` = $(@bind y_max NumberField(-100000.:1.:100000., default=default_y_max))
-"""
-  ╠═╡ =#
-
-# ╔═╡ 2b5eb5be-3e34-4eca-84c9-18a32aacdfab
-#=╠═╡
-ylims = (y_min, y_max)
-  ╠═╡ =#
-
-# ╔═╡ b1090c8e-9f46-429a-93a7-42cedba24188
-#=╠═╡
-md"""
-`width` = $(@bind width NumberField(0:10:typemax(Int64), default=600))
-
-`height` = $(@bind height NumberField(0:10:typemax(Int64), default=400))
-"""
-  ╠═╡ =#
-
-# ╔═╡ 8ff26541-30b4-42bb-85a0-1d08e1c8d2aa
-#=╠═╡
-size = (width, height)
-  ╠═╡ =#
-
-# ╔═╡ 3f04b408-1027-4c87-b138-35e63ab4697a
-#=╠═╡
-let
-	df = filter((x -> x[:runs] == runs), means)
-	
-	learned_performance_plot(means, runs; ylims, size)
-end
-  ╠═╡ =#
 
 # ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
 #=╠═╡
 let
 	df = filter((x -> x[:runs] ∈ selected_runs), means)
 	
-	plot(;ylims, size)
+	plot(;ylims=ylims_local, size)
 
 	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.CARROT, colors.WISTERIA, colors.EMERALD, colors.SUNFLOWER, colors.PETER_RIVER]
 	
@@ -665,7 +700,7 @@ The specialized and non-specialized have been hard-coded to 20k and 20k+1 respec
 let
 	specialized = 20000
 	non_specialized = 20001
-	plot(;ylims, size)
+	plot(;ylims=ylims_local, size)
 	learned_performance_plot!(means, non_specialized,
 		color=colors.SUNFLOWER, 
 		linestyle=:dashdotdot,
@@ -715,7 +750,7 @@ let
 		
 		plot!([row[:other_cars_reward]..., row[:reward]];
 			label,
-			ylims,
+			ylims=ylims_local,
 			size,
 			color,
 			marker,
@@ -746,7 +781,7 @@ let
 	xlims = (1, fleet_max + 1)
 	
 	plot(;
-		ylims,
+		ylims=ylims_local,
 		size,
 		xticks,
 		xlims,
@@ -793,21 +828,24 @@ end
 # ╠═8a8ad7a8-94cb-4f94-9e78-7684091272c8
 # ╠═65b36dde-10b2-448b-8367-027a5b072d50
 # ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
-# ╟─24408d9e-de30-4e1e-805b-07ee138371e0
 # ╠═5d35a941-ea93-45ed-b309-98db9ad9fc47
 # ╠═1f973cbe-a416-44fa-8e3b-e6392f6ddb16
-# ╟─9a298f2a-5194-41c9-813d-afbf56ef92eb
-# ╠═ef7d9898-c2be-493b-913e-51a854d74c32
-# ╟─33d2e7c5-f272-4ecd-93cb-c927ceb735ab
-# ╠═3f04b408-1027-4c87-b138-35e63ab4697a
-# ╠═5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
-# ╠═977e914e-3995-463c-ab74-d8f256adec27
-# ╟─7909f497-55cd-4f9d-b34d-515a80241873
-# ╟─734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
+# ╟─a0a064b3-0abf-4277-aaeb-3f8551436f5e
+# ╠═846b023b-5fda-4112-b1d9-64a0477199c1
+# ╠═734ffc56-5fac-4ede-b0d4-b2a9ecde09aa
 # ╟─64921a92-ce9a-4a79-9349-445c8eb4fe15
 # ╟─2b5eb5be-3e34-4eca-84c9-18a32aacdfab
 # ╟─b1090c8e-9f46-429a-93a7-42cedba24188
 # ╠═8ff26541-30b4-42bb-85a0-1d08e1c8d2aa
+# ╠═977e914e-3995-463c-ab74-d8f256adec27
+# ╠═3db1a697-2600-4316-ac35-db5c7fc2b665
+# ╟─9a298f2a-5194-41c9-813d-afbf56ef92eb
+# ╠═ef7d9898-c2be-493b-913e-51a854d74c32
+# ╠═0c7a6078-b795-4f85-99a8-3c1d47f49500
+# ╟─33d2e7c5-f272-4ecd-93cb-c927ceb735ab
+# ╠═3f04b408-1027-4c87-b138-35e63ab4697a
+# ╠═5a0cac52-ed7d-4177-b8b1-3e6abd2bd8d8
+# ╟─7909f497-55cd-4f9d-b34d-515a80241873
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
 # ╟─ff362535-2cc2-4784-88b8-1b3ae48d6293
 # ╠═7e493642-9343-4c21-9100-093c9e8e11f2
