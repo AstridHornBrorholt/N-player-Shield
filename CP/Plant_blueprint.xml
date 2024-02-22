@@ -476,7 +476,7 @@ x' == 2 &amp;&amp;
 			<label kind="guard" x="-42" y="-127">x == 1</label>
 			<label kind="synchronisation" x="-42" y="-110">choose!</label>
 			<label kind="assignment" x="-42" y="-93">x = 0,
-t = t &gt;= PERIOD ? 0 : t</label>
+t = t &gt;= PERIOD+0.0 ? 0.0 : t+0.0</label>
 			<nail x="-43" y="-51"/>
 			<nail x="41" y="-51"/>
 		</transition>
@@ -579,5 +579,9 @@ system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8
 		</plot-widget>
 	</simulator>
 	<queries>
+		<query>
+			<formula/>
+			<comment/>
+		</query>
 	</queries>
 </nta>
