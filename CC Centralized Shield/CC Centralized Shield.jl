@@ -367,7 +367,7 @@ permutations_with_replacement = Iterators.product([instances(CCAction) for _ in 
 permutations_with_replacement |> powerset |> collect |> length
 
 # ╔═╡ 7db236df-8918-4ad2-887e-a053327e2338
-function joint_action_to_int(joint_action::Union{Tuple, Vector})
+function joint_action_to_int(joint_action::Union{Tuple, Vector})::Int64
 	bits = 2 # Number of bits used to represent each action
 	l = length(joint_action)
 	result::Int64 = 0
@@ -395,10 +395,10 @@ instances(CCAction)
 bitify(x::Int64) = string(x, base=2, pad=64)
 
 # ╔═╡ 7c436a91-c2a2-49d1-94c9-828b53b7a901
-no_action = actions_to_int([])
+const no_action = actions_to_int([])
 
 # ╔═╡ 97d2cfda-ab59-42fb-9fe5-ad1d9c25f6e3
-any_action = actions_to_int([joint_action_to_int(a) 
+const any_action = actions_to_int([joint_action_to_int(a) 
 	for a in permutations_with_replacement])
 
 # ╔═╡ c2546161-03c9-47a4-ad77-9eb852aecd3d
@@ -409,17 +409,19 @@ any_action |> bitify
 int_to_actions(Int64, typemax(Int64))
 
 # ╔═╡ 9c8154f4-fc4d-49e9-bed0-257c5abce2c0
-function int_to_joint_action(int::Int64, joint_action_length)
+function int_to_joint_action(int::Int64, joint_action_length)::Vector{CCAction}
 	bits = 2 # Number of bits used to represent each action
 	result = CCAction[]
 	for i in 1:joint_action_length
 		shift = bits*(i - 1)
 		action = (0b11<<shift & int)>>shift # trust me on this one.
-		action = action |> CCAction
-		result ← action
+		result ← action |> CCAction
 	end
 	result
 end
+
+# ╔═╡ 93b82d88-d967-4caa-a7a2-83a64d4833b3
+int_to_joint_action(0, m.fleet_size - 1)
 
 # ╔═╡ f00d17b3-12ef-4248-ae19-ae8b952c51e1
 md"""
@@ -429,12 +431,12 @@ The function for taking a single step needs to be wrapped up, so that it only ta
 """
 
 # ╔═╡ 583ca101-265a-4a68-a4c3-36dd544d6180
-function clamp_point(m::CCMechanics, p)
+function clamp_point(m::CCMechanics, p::A)::A where A
 	# Idk if clamping velocity would do anything. Shouldn't.
 	#for i in 1:m.fleet_size
 	#	p[i] = clamp(p[i], m.v_min, m.v_max)
 	#end
-
+	
 	for i in m.fleet_size + 1:m.fleet_size + m.fleet_size - 1
 		p[i] = clamp(p[i], m.distance_min, m.distance_max)
 	end
@@ -443,7 +445,7 @@ end
 
 # ╔═╡ d42f6a70-d65f-4e68-8481-d51a3c1ab8fb
 begin
-	function simulation_function(p, a::Int64, r)
+	function simulation_function(p, a::Int64, r, m=m)
 		a′ = int_to_joint_action(a, m.fleet_size - 1)
 		p′ = simulate_point(m, p, r, a′)
 		# Clamp the states so that overshooting max distance isn't a winning strategy
@@ -466,13 +468,13 @@ The cars should not crash, so the distance between cars should always be greater
 
 # ╔═╡ 07645bb8-9f8d-4b0e-90ec-34466a966786
 begin
-	function is_safe(point) 
-		[m.distance_max > point[i] > m.distance_min
+	function is_safe(point, m=m)::Bool
+		[m.distance_max > point[i]::Float64 > m.distance_min
 			for i in m.fleet_size + 1:m.fleet_size + m.fleet_size - 1
 		] |> all
 	end
 	
-	function is_safe(bounds::Bounds)
+	function is_safe(bounds::Bounds{Float64}, m=m)::Bool
 			is_safe([bounds.lower[i] 
 				for i in 1:m.fleet_size + m.fleet_size - 1]) &&
 
@@ -492,7 +494,7 @@ is_safe(Bounds(Float64[0, 0, 0, 50, 50], Float64[2, 2, 2, 51, 51]))
 m
 
 # ╔═╡ 28237ef9-6a65-407f-8a1c-0dc49cb8a1d7
-Bounds([2, 2, -2, 0, 50], [4, 4, 0, 1, 51]) |> is_safe
+Bounds(Float64[2, 2, -2, 0, 50], Float64[4, 4, 0, 1, 51]) |> is_safe
 
 # ╔═╡ 270796fb-2c5b-4fb1-b27c-58d354c87e36
 md"""
@@ -534,10 +536,15 @@ grid_bounds = get_grid_bounds(m)
 # ╔═╡ 6a9e0327-fd4a-4357-a30f-fe05ff487736
 granularity = get_granularity(m)
 
+# ╔═╡ 9fb7bb68-c1d7-481b-b3ba-201e4d9bc43c
+function safety_init(x::Bounds)::Int32
+	is_safe(x) ? any_action : no_action
+end
+
 # ╔═╡ 82cb8845-5eb9-4dac-bab2-47a5e9761bee
 begin
 	grid = Grid(granularity, grid_bounds, data_type=Int32)
-	initialize!(grid, x -> is_safe(x) ? any_action : no_action)
+	initialize!(grid, safety_init)
 end
 
 # ╔═╡ 06e52243-b8a9-4335-8452-3fb7d6d153a8
@@ -625,7 +632,7 @@ joint_action_space = let
 end
 
 # ╔═╡ dfc8cb50-b08f-4006-8e6f-de058ee0bf98
-if make_shield_button > 0
+if true
 	reachability_function_precomputed = 
 		get_transitions(reachability_function, joint_action_space, grid)
 end;
@@ -649,7 +656,7 @@ begin
 
 	if !isnothing(imported_shield)
 		shield = imported_shield
-	elseif make_shield_button > 0
+	elseif true
 		## here is the computation ##
 		shield, max_steps_reached = make_shield(
 			reachability_function_precomputed, 
@@ -719,6 +726,9 @@ end
 	"""
 end
 
+# ╔═╡ 84dfb0c5-2287-4f54-9abe-6c29b76f3c39
+joint_action_to_int(action)
+
 # ╔═╡ 342d3d02-4d1e-47f9-97fd-0d273a016ccd
 let
 	result = joint_action_to_int(action)
@@ -755,7 +765,7 @@ let
 end
 
 # ╔═╡ 84236123-88d6-4f15-af8e-8b5cc4632606
-@bind point PlutoUI.combine() do e
+@bind point′ PlutoUI.combine() do e
 	
 	velocities = [e(NumberField(m.v_min:2:m.v_max, default=0))
 			for _ in 1:m.fleet_size]
@@ -764,10 +774,13 @@ end
 			for _ in 1:m.fleet_size - 1]
 
 	md"""
-	`point = ` $(velocities)
+	`point′ = ` $(velocities)
 	$(distances)
 	"""
 end
+
+# ╔═╡ 5646da93-955b-4b8d-aa2b-2bc05a00075f
+point = collect(point′)
 
 # ╔═╡ 9efcf9d2-424e-4595-8e16-311eddbc6846
 get_fleet_size(point)
@@ -781,8 +794,14 @@ get_distances(point)
 # ╔═╡ 911407b6-daa3-44a3-ba2f-bbd96fbb2710
 simulate_point(m, point, [0.34], action)
 
+# ╔═╡ 5ac6e0b7-369d-414f-8968-8c3d6cf36e5a
+clamp_point(m, point)
+
 # ╔═╡ ef90454b-6226-4277-8ae3-7be0ba88a8f8
 simulation_function(point, joint_action_to_int(action), [1])
+
+# ╔═╡ 0e0b517b-5088-4b7f-96f6-1c069360e17d
+typeof(point)
 
 # ╔═╡ 05c9631f-6cd3-4017-b2bb-99a3a99a044e
 is_safe(point)
@@ -790,8 +809,14 @@ is_safe(point)
 # ╔═╡ b7d66268-8a40-499d-aaca-d6e59f0ee14f
 partition = box(shield, point)
 
+# ╔═╡ d37045cf-f139-470d-be3f-ed8544e9fcaa
+bounds = Bounds(partition)
+
 # ╔═╡ c9d3f5df-4707-4875-beed-f7ebbc8596fb
-Bounds(partition) |> is_safe
+is_safe(bounds)
+
+# ╔═╡ 1c8ff33b-41c0-485f-9092-2b552cdb39d5
+safety_init(bounds)
 
 # ╔═╡ c403ff95-26db-4d72-87a2-a00d4ea3a77e
 SupportingPoints(model.samples_per_axis, box(grid, point)) |> collect
@@ -877,7 +902,7 @@ shielded_random = s -> begin
 end
 
 # ╔═╡ 0382588a-ac96-4528-9fee-67ab93d4a1f8
-if make_shield_button > 0 || !isnothing(imported_shield) let
+if true || !isnothing(imported_shield) let
 	animation = @animate for i in 1:10
 		
 		trace = simulate_sequence(m, 120, starting_point, shielded_random)
@@ -1080,6 +1105,7 @@ end
 # ╠═172e3022-eb28-460f-8fca-ed297f0f3a73
 # ╠═2bf28352-02c3-459d-80ca-12157887542f
 # ╠═7db236df-8918-4ad2-887e-a053327e2338
+# ╠═84dfb0c5-2287-4f54-9abe-6c29b76f3c39
 # ╠═342d3d02-4d1e-47f9-97fd-0d273a016ccd
 # ╟─9da71f71-fc87-49c4-86b0-9dff82298465
 # ╠═2bc74997-0d20-4edf-8eb2-5d2603a7a377
@@ -1089,6 +1115,7 @@ end
 # ╠═c2546161-03c9-47a4-ad77-9eb852aecd3d
 # ╠═e49c01cf-93da-4893-9fdb-4ccb69b80a0b
 # ╠═9c8154f4-fc4d-49e9-bed0-257c5abce2c0
+# ╠═93b82d88-d967-4caa-a7a2-83a64d4833b3
 # ╠═d6d9202e-247a-4ba8-8b4e-100841be3a8d
 # ╠═e0e29a56-56db-406b-acb5-3ea1adef7b00
 # ╠═13021bce-c0e7-4e71-951d-e4124a952481
@@ -1096,9 +1123,11 @@ end
 # ╠═d42f6a70-d65f-4e68-8481-d51a3c1ab8fb
 # ╠═583ca101-265a-4a68-a4c3-36dd544d6180
 # ╠═b3a94518-6966-48e9-a2e0-59e9d0e8c310
+# ╠═5ac6e0b7-369d-414f-8968-8c3d6cf36e5a
 # ╠═ef90454b-6226-4277-8ae3-7be0ba88a8f8
 # ╟─32d19beb-b4cb-4767-a094-22d7952d9be8
 # ╠═07645bb8-9f8d-4b0e-90ec-34466a966786
+# ╠═0e0b517b-5088-4b7f-96f6-1c069360e17d
 # ╠═05c9631f-6cd3-4017-b2bb-99a3a99a044e
 # ╠═06e52243-b8a9-4335-8452-3fb7d6d153a8
 # ╠═11fc2ce9-bb18-407f-90fc-4c60c8a65e7e
@@ -1111,7 +1140,10 @@ end
 # ╠═bf5414c8-6141-43fd-826b-088858ac86d4
 # ╠═194b8f6d-c02f-44be-9635-95f0f5bdb9bc
 # ╠═6a9e0327-fd4a-4357-a30f-fe05ff487736
+# ╠═9fb7bb68-c1d7-481b-b3ba-201e4d9bc43c
+# ╠═1c8ff33b-41c0-485f-9092-2b552cdb39d5
 # ╠═82cb8845-5eb9-4dac-bab2-47a5e9761bee
+# ╠═d37045cf-f139-470d-be3f-ed8544e9fcaa
 # ╠═b7d66268-8a40-499d-aaca-d6e59f0ee14f
 # ╠═240eda51-2e54-4529-bfef-35e29747af57
 # ╟─034626dc-dc37-462e-818a-a0fe06a50979
@@ -1140,7 +1172,8 @@ end
 # ╠═05305c4a-a1e6-40b4-bb94-e15e77929ef3
 # ╠═f22987f2-acf7-4a48-b296-f20f81881a49
 # ╟─99aabe32-7c65-4a9d-9397-ba2db2ca5cab
-# ╟─84236123-88d6-4f15-af8e-8b5cc4632606
+# ╠═84236123-88d6-4f15-af8e-8b5cc4632606
+# ╠═5646da93-955b-4b8d-aa2b-2bc05a00075f
 # ╠═99e4dde5-4239-45d9-82b1-b21eda494b3d
 # ╠═28f000ec-9538-4c9c-afbc-ece4af32d3af
 # ╠═12ac5894-d531-4d89-b066-38648174a6a3
