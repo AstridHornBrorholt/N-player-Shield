@@ -93,7 +93,7 @@ end
 
 # Run a fleet with one learner car and one random car in front,
 #plus as many cars in betweeen, as there are strategies provided in `strategy_paths`
-function do_run(strategy_paths)
+function do_run(strategy_paths; skip_training)
     N = length(strategy_paths) + 2
     status("Running Fleet of $N Cars...  (repetition=$repetition)")
     outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
@@ -108,12 +108,16 @@ end
 ## Mainmatter ##
 try
     # Train a distributed strategy on the first car
-    do_run([])
+    do_run([], skip_training=false)
     strategy_path = (working_dir ⨝ "Models/car1.json")
     strategy_paths = [strategy_path for _ in 2:total_cars - 1]
+    
+    # Hack: When skip_training==true, the function will look for a strategy with the appropriate number.
+    #This is a quick way to ensure that the last car in the fleet also uses the strategy of car1.
+    cp(strategy_path, working_dir ⨝ "Models/car$(total_cars - 1).json")
 
     # Do the actual run
-    do_run(strategy_paths)
+    do_run(strategy_paths, skip_training=true)
 
     status("All done.")
 catch e
