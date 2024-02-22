@@ -384,8 +384,9 @@ begin
 		df = transform(df, :runs => ByRow(string) => :runs)
 				
 		@df df plot!(:runs, :reward;
-			color=color,
-			linewidth=2,
+			color=colors.POMEGRANATE,
+			marker=:square,
+			markerstrokewidth=0,
 			xlabel="Training episodes",
 			ylabel="Reward",
 			label=something(label, "Centralized controller"),

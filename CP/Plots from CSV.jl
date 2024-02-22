@@ -405,7 +405,8 @@ cleandata = let
 	episode_length = 100
 	
 	cleandata = transform(cleandata, 
-		:trained_global_performance => ByRow(p -> -p) => :reward,
+		:trained_global_performance => ByRow(p -> -p) => :global_reward,
+		:trained_individual_performance => ByRow(p -> -p) => :individual_reward,
 		:pre_trained_units => ByRow(p -> p + 1) => :trained_units,
 	)
 	
@@ -423,7 +424,8 @@ means = let
 		:trained_global_performance => mean, 
 		:trained_individual_performance => mean,
 		:untrained_individual_performance => mean,
-		:reward => mean,
+		:individual_reward => mean,
+		:global_reward => mean,
 		renamecols=false)
 end
   ╠═╡ =#
@@ -443,9 +445,9 @@ max_trained_units = max(cleandata[!, :trained_units]...)
 default_y_min, default_y_max = let
 	df = filter(:trained_units => t -> t == max_trained_units, means)
 	
-	default_y_min = min(df[!, :reward]...) - 100
+	default_y_min = min(df[!, :global_reward]...) - 100
 	
-	default_y_max = max(df[!, :reward]...) + 100
+	default_y_max = max(df[!, :global_reward]...) + 100
 	
 	default_y_min, default_y_max
 end
@@ -503,7 +505,7 @@ begin
 		
 		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
 		
-		@df df plot!(:trained_units, :trained_individual_performance;
+		@df df plot!(:trained_units, :individual_reward;
 			color=color,
 			linewidth=2,
 			xticks,
@@ -575,7 +577,7 @@ let
 	df = filter(:trained_units => t -> t == max_trained_units, df)
 	df = filter(:runs => r -> r ∈ selected_runs, df)
 	df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
-	@df df plot(:runs, :reward;
+	@df df plot(:runs, :global_reward;
 		size,
 		ylims,
 		color=colors.POMEGRANATE,
@@ -586,6 +588,17 @@ let
 		ylabel="Total reward")
 end
   ╠═╡ =#
+
+# ╔═╡ a824f7e5-0304-4836-a4c5-96a990e208bd
+md"""
+!!! info "Note"
+	So there's a discrepancy between the individual rewards (evaluated after the unit is trained) and the global reward (sum of individual rewards, evaluated when the last unit is trained).
+	The global reward is much larger than the sum of the individual rewards as seen in the plot.
+
+	This is explained by the fact that when a unit is trained, the units below it are random. However, when the units below are later trained, they get a higher reward from favouring taking material from the previous units, rather than the providers.
+
+	So in the final system, demand is much greater than what the unit initially learned.
+"""
 
 # ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
 #=╠═╡
@@ -651,5 +664,6 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╟─7909f497-55cd-4f9d-b34d-515a80241873
 # ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
 # ╠═37e95259-e575-45c3-a0a3-4b0115c12694
+# ╟─a824f7e5-0304-4836-a4c5-96a990e208bd
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
 # ╠═3c202730-71e2-4cf6-b334-b30a8dfc14a5
