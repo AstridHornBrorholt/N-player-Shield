@@ -44,7 +44,7 @@ begin
             default=pwd() ⨝ "../CC Shield/libshield.so"
         "--skip-training"
             action=:store_true
-            help="MISNOMER: Use car1.json for all cars in the fleets (must exist) without training any strategies."
+            help="Try to load existing strategies from results directory."
 	end
 end;
 
@@ -98,11 +98,7 @@ try
         status("Running Fleet of $N Cars...  (repetition=$repetition)")
         outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
         model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, models_dir; checks, skip_training)
-        if skip_training
-            strategy_paths ← (working_dir ⨝ "Models/car1.json")
-        else
-            strategy_paths ← (working_dir ⨝ "Models/car$(N - 1).json")
-        end
+        strategy_paths ← (working_dir ⨝ "Models/car$(N - 1).json")
         open(outfile, "w") do io
             result = [verifyta_call..., model_path, queries_path] |> Cmd |> read |> String
             write(io, result)
