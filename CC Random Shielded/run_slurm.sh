@@ -16,10 +16,11 @@ cp "../CC Shield/libshield.so" "$SHIELD"
 sed "s#/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Shield/libshield.so#$SHIELD#" "Random Fleet.xml" > "$RANDOM_FLEET"
 
 # Schedule slurm jobs
-for ((i=0; i<=18; i++))
+for ((i=0; i<=9; i++))
 do
     sbatch $ARGS ./run_single.sh $i
     echo "Job scheduled."
 done
+sbatch $ARGS ./run_single.sh Reward
 sbatch $ARGS ./run_single.sh Safety
 echo "Job scheduled."

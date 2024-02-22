@@ -10,11 +10,14 @@ echo "Running single experiment."
 # Check if the first argument is "Safety"
 if [ "${1}" = "Safety" ]; then
     $verifyta -s "$RANDOM_FLEET" "Safety.q" &> "$RESULTS/Safety.txt"
+
+if [ "${1}" = "Reward" ]; then
+    $verifyta -s "$RANDOM_FLEET" "Reward.q" &> "$RESULTS/Reward.txt"
     
 # Check if the first argument is a number
 elif [[ "${1}" =~ ^[0-9]+$ ]]; then
     $verifyta -s "$RANDOM_FLEET" "D${1}.q" &> "$RESULTS/D${1}.txt"
     
 else
-    echo "First argument should be 'Safety' or a number 0-18"
+    echo "First argument should be 'Safety', 'Reward' or a number 0-18"
 fi

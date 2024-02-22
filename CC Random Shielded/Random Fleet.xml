@@ -378,43 +378,45 @@ int[0, fleetSize] i = 0; </declaration>
 	</template>
 	<system>Random0 = Random(0);
 
-Random1 = Random(1);
+// Learners used because the actions will be chosen according to 
+//a uniform distribution if no strategy is provided.
+Random1 = Learner(1);
 Shield1 = Shield(1);
-Random2 = Random(2);
+Random2 = Learner(2);
 Shield2 = Shield(2);
-Random3 = Random(3);
+Random3 = Learner(3);
 Shield3 = Shield(3);
-Random4 = Random(4);
+Random4 = Learner(4);
 Shield4 = Shield(4);
-Random5 = Random(5);
+Random5 = Learner(5);
 Shield5 = Shield(5);
-Random6 = Random(6);
+Random6 = Learner(6);
 Shield6 = Shield(6);
-Random7 = Random(7);
+Random7 = Learner(7);
 Shield7 = Shield(7);
-Random8 = Random(8);
+Random8 = Learner(8);
 Shield8 = Shield(8);
-Random9 = Random(9);
+Random9 = Learner(9);
 Shield9 = Shield(9);
-Random10 = Random(10);
+Random10 = Learner(10);
 Shield10 = Shield(10);
-Random11 = Random(11);
+Random11 = Learner(11);
 Shield11 = Shield(11);
-Random12 = Random(12);
+Random12 = Learner(12);
 Shield12 = Shield(12);
-Random13 = Random(13);
+Random13 = Learner(13);
 Shield13 = Shield(13);
-Random14 = Random(14);
+Random14 = Learner(14);
 Shield14 = Shield(14);
-Random15 = Random(15);
+Random15 = Learner(15);
 Shield15 = Shield(15);
-Random16 = Random(16);
+Random16 = Learner(16);
 Shield16 = Shield(16);
-Random17 = Random(17);
+Random17 = Learner(17);
 Shield17 = Shield(17);
-Random18 = Random(18);
+Random18 = Learner(18);
 Shield18 = Shield(18);
-Random19 = Random(19);
+Random19 = Learner(19);
 Shield19 = Shield(19);
 
 

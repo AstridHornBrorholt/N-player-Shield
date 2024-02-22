@@ -1,0 +1,1 @@
+E[<=100;1000](min: -(sum (i : int[0, fleetSize - 2]) D[i])/100)
