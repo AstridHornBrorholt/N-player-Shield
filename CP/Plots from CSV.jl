@@ -13,6 +13,9 @@ begin
 	using Plots
 	using Statistics
 	using StatsPlots
+	
+	include("Results to CSV.jl")
+	include("../FlatUI Colors.jl")
 end;
 
 # ╔═╡ 61c15d44-75be-4613-8b60-484d94847b8a
@@ -20,10 +23,15 @@ end;
 #=╠═╡
 begin
 	using PlutoUI
-	include("Results to CSV.jl")
-	include("../FlatUI Colors.jl")
 end
   ╠═╡ =#
+
+# ╔═╡ 7da0c88c-6353-4273-90d5-1cb414f1023b
+# Hahah yea. So I have two notebooks that expose almost identical functions.
+#But they are specific to different things. So this is my way of dealing with that.
+module centralized_to_csv
+	include("../CP Centralized Controller/Results to CSV.jl")
+end
 
 # ╔═╡ 2bd47b9e-31e3-4ee1-aa87-60dfc40869a9
 html"""
@@ -335,6 +343,139 @@ Plots.default(fontfamily="serif-roman")
 # ╔═╡ ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 ⨝ = joinpath
 
+# ╔═╡ 193a3fb9-92c9-4ac2-8f41-2a2e4540486f
+md"""
+# The Main Plot
+
+This is the performance vs training time plot.
+"""
+
+# ╔═╡ 01af1a0e-8806-40c6-9c8f-a3391368072d
+# Performance is the raw result obtained from runnign the thing. This isn't the same as the reward we report because I don't want to re-run the experiments every time we change our minds.
+function reward(performance)
+	-performance
+end
+
+# ╔═╡ 782b14e8-a0d4-4584-9082-dded2699b70a
+# Extract just mean performance as a function of the number of runs.
+function runs_performance(result_dir)
+	buf = IOBuffer(to_csv(result_dir))
+	df = CSV.read(buf, DataFrame, delim=";")
+	n_units = max(df.pre_trained_units...) + 1
+	df = filter(:pre_trained_units => (==)(n_units - 1), df)
+
+	grouping =  groupby(df, [:runs])
+	
+	df = combine(grouping, 
+		:trained_global_performance => mean,
+		renamecols=false)
+
+	df = sort(df, :runs)
+
+	return (runs=[string(r*10) for r  in df.runs], 
+	performance=[reward(p) for p in df.trained_global_performance])
+end
+
+# ╔═╡ ea282e41-f786-4c5c-b2e6-e42826949516
+# Yea and for centralized control the format is completely different.
+function centralized_runs_performance(result_dir)
+	buf = IOBuffer(centralized_to_csv.to_csv(result_dir))
+	df = CSV.read(buf, DataFrame, delim=";")
+
+	grouping =  groupby(df, [:runs])
+	
+	df = combine(grouping, 
+		:trained_performance => mean,
+		renamecols=false)
+
+	df = sort(df, :runs)
+
+	return (runs=[string(r) for r  in df.runs],  
+	performance=[reward(p) for p in df.trained_performance])
+end
+
+# ╔═╡ afe6e072-a335-4e72-a1d4-389ebd624493
+runs_performance(homedir() ⨝ "Results/N-player CP")
+
+# ╔═╡ b00365f5-d412-45a7-a8e3-57f8c272413e
+centralized_runs_performance(homedir() ⨝ "Results/N-player CP Centralized Controller")
+
+# ╔═╡ 802bb5e1-f2e1-4788-abcb-c1716683693e
+function plot_results!(;runs, performance)
+	plot!(runs, performance)
+end
+
+# ╔═╡ 10dc113e-aaa0-46f8-80ef-c345d52d5eec
+#=╠═╡
+md"""
+`distributed =` $(@bind distributed TextField(70, 
+	default=homedir()⨝"Results Example/N-player CP Non-specialized"))
+
+`cascading =` $(@bind cascading TextField(70, 
+	default=homedir()⨝"Results Example/N-player CP"))
+
+`centralized =` $(@bind centralized TextField(70, 
+	default=homedir()⨝"Results Example/N-player CP Centralized Controller"))
+"""
+  ╠═╡ =#
+
+# ╔═╡ 5160269e-c0fe-4643-bbaf-9094bb4bd537
+function do_the_plot_of_the_results(;distributed, 
+		cascading, 
+		centralized)
+
+	distributed = runs_performance(distributed)
+	cascading = runs_performance(cascading)
+	centralized = centralized_runs_performance(centralized)
+
+	
+	all_performances = [distributed.performance..., 	
+		cascading.performance..., centralized.performance...]
+
+	ylims = (min(all_performances...) -50, max(all_performances...) + 50)
+
+	stylings = (linewidth=2,
+		markerstrokewidth=2,
+		markerstrokecolor=:white)
+	
+	plot(;size=(350, 250),
+		ylims,
+		xlabel="Total episodes trained",
+		ylabel="Performance")
+	
+	plot!(distributed.runs, distributed.performance;
+		label="Distributed",
+		color=colors.PETER_RIVER,
+		marker=(:pentagon, 6),
+		stylings...)
+	
+	plot!(cascading.runs, cascading.performance;
+		label="Cascading",
+		color=colors.NEPHRITIS,
+		marker=(:rtriangle, 9),
+		stylings...)
+	
+	plot!(centralized.runs, centralized.performance;
+		label="Centralized",
+		color=colors.AMETHYST,
+		marker=(:circle, 6),
+		stylings...)
+	
+	
+end
+
+# ╔═╡ de90ff81-dace-447e-8d0c-7573536d64a0
+#=╠═╡
+do_the_plot_of_the_results(;distributed, cascading, centralized)
+  ╠═╡ =#
+
+# ╔═╡ 60a6c2c5-e5af-4b33-9976-9054b51814d1
+md"""
+# Detailed Plots
+
+A bunch of other plots which were made to explore the data.
+"""
+
 # ╔═╡ 1f3a2bee-2817-4314-901e-7dd3743fbab9
 #=╠═╡
 @bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CP")
@@ -628,6 +769,7 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 
 # ╔═╡ Cell order:
 # ╠═d0db8070-41a9-11ee-2b97-818668d7efa8
+# ╠═7da0c88c-6353-4273-90d5-1cb414f1023b
 # ╟─2bd47b9e-31e3-4ee1-aa87-60dfc40869a9
 # ╟─c9e1bc2c-a6f7-4b88-8038-51cf2ef2a008
 # ╟─4362212e-0f0e-4425-bfb1-a6c3808ed808
@@ -637,6 +779,17 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╠═15f0808f-8424-4d27-9247-274c7751bf8e
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
+# ╟─193a3fb9-92c9-4ac2-8f41-2a2e4540486f
+# ╠═01af1a0e-8806-40c6-9c8f-a3391368072d
+# ╠═782b14e8-a0d4-4584-9082-dded2699b70a
+# ╠═ea282e41-f786-4c5c-b2e6-e42826949516
+# ╠═afe6e072-a335-4e72-a1d4-389ebd624493
+# ╠═b00365f5-d412-45a7-a8e3-57f8c272413e
+# ╠═802bb5e1-f2e1-4788-abcb-c1716683693e
+# ╟─10dc113e-aaa0-46f8-80ef-c345d52d5eec
+# ╠═5160269e-c0fe-4643-bbaf-9094bb4bd537
+# ╠═de90ff81-dace-447e-8d0c-7573536d64a0
+# ╟─60a6c2c5-e5af-4b33-9976-9054b51814d1
 # ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
 # ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 # ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
