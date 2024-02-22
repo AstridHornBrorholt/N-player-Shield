@@ -28,7 +28,7 @@ begin
 		"--checks"
 			arg_type=Int
 			required=true
-        "--total-cars"
+        "--fleet-size"
             arg_type=Int
             required=true
         "--repetition"
@@ -52,17 +52,18 @@ args = parse_args(s)
 
 runs = args["runs"]
 checks = args["checks"]
-total_cars = args["total-cars"]
+fleet_size = args["fleet-size"]
 repetition = args["repetition"]
 results_dir = args["results-dir"]
 verifyta_path = args["verifyta-path"]
 skip_training = args["skip-training"]
-status("Starting... $((;runs, checks, total_cars, repetition))")
+status("Starting... $((;runs, checks, fleet_size, repetition))")
 
 isdir(results_dir) || mkdir(results_dir) # Error if path is invalid except if it is only the last folder missing.
 isfile(verifyta_path) || error("File verifyta not found at path $verifyta_path")
 
-verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs --total-runs $runs --runs-pr-state $runs"
+runs′ = runs*(fleet_size - 1) # Same number of training runs as would have been spent training each car after the other.
+verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs′ --total-runs $runs --runs-pr-state $runs"
 
 verifyta_call = String[
     verifyta_path,
@@ -110,11 +111,11 @@ try
     # Train a distributed strategy on the first car
     do_run([], skip_training=false)
     strategy_path = (working_dir ⨝ "Models/car1.json")
-    strategy_paths = [strategy_path for _ in 2:total_cars - 1]
+    strategy_paths = [strategy_path for _ in 2:fleet_size - 1]
     
     # Hack: When skip_training==true, the function will look for a strategy with the appropriate number.
     #This is a quick way to ensure that the last car in the fleet also uses the strategy of car1.
-    cp(strategy_path, working_dir ⨝ "Models/car$(total_cars - 1).json")
+    cp(strategy_path, working_dir ⨝ "Models/car$(fleet_size - 1).json")
 
     # Do the actual run
     do_run(strategy_paths, skip_training=true)
