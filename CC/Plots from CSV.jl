@@ -363,6 +363,126 @@ Plots.default(fontfamily="serif-roman")
 # ╔═╡ ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 ⨝ = joinpath
 
+# ╔═╡ ef5c1d6e-9046-4da7-bfd1-2a12832d0e7d
+md"""
+# The Main Plot
+
+This is the performance vs training time plot.
+"""
+
+# ╔═╡ a2256c72-3686-4f89-9adf-6684270946b6
+const episode_length = 100
+
+# ╔═╡ 266ba2a5-01d0-48a4-be0e-52416dfd2485
+# Performance is the raw result obtained from runnign the thing. This isn't the same as the reward we report because I don't want to re-run the experiments every time we change our minds.
+function reward(performance)
+	-performance/episode_length
+end
+
+# ╔═╡ a3c96777-3878-4abd-b865-e3ee35186808
+# Extract just mean performance as a function of the number of runs.
+function runs_performance(result_dir)
+	buf = IOBuffer(to_csv(result_dir))
+	df = CSV.read(buf, DataFrame, delim=";")
+	fleet_size = max(df.fleet_size...)
+	df = filter(:fleet_size => (==)(fleet_size), df)
+
+	grouping =  groupby(df, [:runs])
+	
+	df = combine(grouping, 
+		:learned_performance => mean,
+		renamecols=false)
+
+	df = sort(df, :runs)
+
+	return (runs=[string(r*9) for r  in df.runs], 
+	performance=[reward(p) for p in df.learned_performance])
+end
+
+# ╔═╡ 01b7deac-96df-4dad-939e-6822fe9dde2d
+runs_performance(homedir() ⨝ "Results/N-player CC")
+
+# ╔═╡ 9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
+#=╠═╡
+md"""
+`distributed =` $(@bind distributed TextField(70, 
+	default=homedir()⨝"Results Example/N-player CC Non-specialized"))
+
+`cascading =` $(@bind cascading TextField(70, 
+	default=homedir()⨝"Results Example/N-player CC"))
+
+`centralized =` $(@bind centralized TextField(70, 
+	default=homedir()⨝"Results Example/N-player CC Centralized Controller"))
+"""
+  ╠═╡ =#
+
+# ╔═╡ 9aa911de-e818-4565-a7e2-1adc18f3fce0
+#=╠═╡
+CSV.read(IOBuffer(to_csv(distributed)), DataFrame)
+  ╠═╡ =#
+
+# ╔═╡ 20225483-817e-4dc3-93ad-ffa67ec32a99
+#=╠═╡
+runs_performance(distributed)
+  ╠═╡ =#
+
+# ╔═╡ f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
+function do_the_plot_of_the_results(;distributed, 
+		cascading, 
+		centralized)
+
+	distributed = runs_performance(distributed)
+	cascading = runs_performance(cascading)
+	centralized = runs_performance(centralized)
+
+	
+	all_performances = [distributed.performance..., 	
+		cascading.performance..., centralized.performance...]
+
+	ylims = (min(all_performances...) -50, max(all_performances...) + 50)
+
+	stylings = (linewidth=2,
+		markerstrokewidth=2,
+		markerstrokecolor=:white)
+	
+	plot(;size=(350, 250),
+		ylims,
+		xlabel="Total episodes trained",
+		ylabel="Performance")
+	
+	plot!(distributed.runs, distributed.performance;
+		label="Distributed",
+		color=colors.PETER_RIVER,
+		marker=(:pentagon, 6),
+		stylings...)
+	
+	plot!(cascading.runs, cascading.performance;
+		label="Cascading",
+		color=colors.NEPHRITIS,
+		marker=(:rtriangle, 9),
+		stylings...)
+	
+	plot!(centralized.runs, centralized.performance;
+		label="Centralized",
+		color=colors.AMETHYST,
+		marker=(:circle, 6),
+		stylings...)
+	
+	
+end
+
+# ╔═╡ 74674f2d-c384-4c01-957b-ca8d15062db3
+#=╠═╡
+do_the_plot_of_the_results(;distributed, cascading, centralized)
+  ╠═╡ =#
+
+# ╔═╡ a0159339-14f3-4280-8160-447702f19d2a
+md"""
+# Detailed Plots
+
+A bunch of other plots which were made to explore the data.
+"""
+
 # ╔═╡ 1f3a2bee-2817-4314-901e-7dd3743fbab9
 #=╠═╡
 @bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CC")
@@ -482,11 +602,9 @@ cleandata = let
 	if only_first_repetition
 		cleandata = filter(:repetition => (x -> x == 1), cleandata)
 	end
-	
-	episode_length = 100
-	
+		
 	cleandata = transform(cleandata, 
-		:learned_performance => ByRow(p -> -p/episode_length) => :reward)
+		:learned_performance => ByRow(reward) => :reward)
 	
 	cleandata = transform(cleandata, 
 		:other_cars => ByRow(v -> [-p/episode_length for p in v]) => :other_cars_reward)
@@ -816,6 +934,17 @@ end
 # ╠═15f0808f-8424-4d27-9247-274c7751bf8e
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
+# ╟─ef5c1d6e-9046-4da7-bfd1-2a12832d0e7d
+# ╠═a2256c72-3686-4f89-9adf-6684270946b6
+# ╠═266ba2a5-01d0-48a4-be0e-52416dfd2485
+# ╠═a3c96777-3878-4abd-b865-e3ee35186808
+# ╠═01b7deac-96df-4dad-939e-6822fe9dde2d
+# ╠═9aa911de-e818-4565-a7e2-1adc18f3fce0
+# ╠═20225483-817e-4dc3-93ad-ffa67ec32a99
+# ╟─9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
+# ╠═f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
+# ╠═74674f2d-c384-4c01-957b-ca8d15062db3
+# ╟─a0159339-14f3-4280-8160-447702f19d2a
 # ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
 # ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 # ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
