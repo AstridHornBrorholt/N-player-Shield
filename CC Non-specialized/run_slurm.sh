@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "Scheduling slurm jobs"
 
-export log_output="$HOME/Results/N-player CC/log.txt"
+export log_output="$HOME/Results/N-player CC Non-specialized/log.txt"
 
 date >> "$log_output"
 
