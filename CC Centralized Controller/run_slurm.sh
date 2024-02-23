@@ -4,7 +4,7 @@ echo "Scheduling slurm jobs"
 export log_output="$HOME/Results/N-player CC Centralized Controller/log.txt"
 
 date >> "$log_output"
-ARGS="--out=/dev/null --exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4] --partition=cpu -n1 --mem=16G --job-name 'CCCentralizedController'"
+ARGS="--out=/dev/null --exclude=rome0[1-7]dhabi0[1-2],naples0[1-2],turing0[1-2] --partition=cpu -n1 --mem=16G --job-name 'CCCentralizedController'"
 
 export max_cars=10
 repetitions=10
