@@ -1,25 +1,25 @@
 # N-player Shield
 
-## Expeirmental setups
+## How to Run
 
-There is not a seperate file to run each type of experiments. This is on the todos, but such are a lot of things. 
+First time an experiment is run, make sure that the correct folder structure is in place. There should be a file path at `~/Results/N-player ##` where `##` matches the folder name containing the experiments. This is to support logging of slurm jobs. OBS: The cause of the error will not be printed because slurm is annoying.
 
-Instead, the different experiments are conducted by editing the code files in various ways, as detailed here.
+Start an experiment by navigating to its sub-folder in this project. If it is run from any other working directory, it will fail. These experiments are made to run as parallel slurm jobs where possible. As a rule, the file `run_slurm.sh` starts multiple jobs by queueing instances of `run_single.sh` with different bash variables exported. This calls `Run Experiment.jl` with a bunch of command line arguments. Calling `run_single.sh` on its own is likely to result in failure because of undeclared variables. Use `run_single_cli.sh` instead. Note that the arguments to different versions of this script may vary. (Check them by reading the script.)
 
-### Distributed Controller + Distributed Shield
+## Index of Experiments
 
-This should be the standard setup. I'm counting hard on this configuration being the last thing I pushed. Start with `run_slurm.sh` or `run_single_cli.sh`.
+| Folder Prefix  |  |
+|--|--|
+|CC| Cruise Control Example|
+|CP| Chemical Production Example|
 
-### Centralized Controller + Distributed Shield
+The names of these experiments don't really match what we call it in the article. We always come up with new names for things in the writing process, so I've chosen to keep the experiment names for now. Changing the folder names is time-consuming and error-prone anyway.
 
-This one actually does have a seperate folder. It is copy-pasta of the root folder. Start with `Centralized Controller/run_slurm.sh` or `Centralized Controller/run_single_cli.sh`.
+Training budget is handled inconsistently. In some copies of `Run Experiment.jl` the number of `runs` specified will be multiplied by the number of agents. I think in at least one case the multiplication has to be done manually. 
 
-### Non-specialized Distributed Controller + Distributed Shield
-
-Non-specialized meaning that the controller of the first car is simply repeated to the following cars. 
-
-Check that `Run Experiment.jl` interprets the `--skip-training` flag as copying the `car1.json` strategy as the controller throughout the fleet. There should be a "misnomer" warning in the description of the flag if this is the case. Of course, this requires the `car1.json` strategy to be present in the results folder for the specified number of runs already.
-
-### Centralized Shield
-
-Still a work in progress at the time of writing. It also has its own folder. For now I am going to say that a centralized shield will also necessitate a centralized controller.
+| Folder Suffix | Term Used in Paper | |
+|---------------|--------------------|-|
+| \<none\>      | Distributed Shield & Cascading Learning | Shielding: Individual shield for each agent. Learning: Train one unit, make the unit's strategy part of the environment. Then train the next unit etc.  |
+| Non-specialized | Distributed Shield & Distributed Learning | Shielding: See previous. Learning: Spend entire training budget on training the first unit, then apply the learned policy to all agents. |
+| Centralized Control | Distributed Shield & Centralized Learning | Shielding: y'know. Learning: Spend entire training budget on one single policy that controls all agents. |
+| Centralied Shield | Centralized Shield & Centralized Learning | CC Only. A shield spanning 3 cars (1 uncontrollable, 2 controllable) is compared to a shield spanning 2 cars (1 uncontrollable 1 controllable). Doing distributed or cascading learning with a centralized shield doesn't really make sense, so only centralized learning is done. |
