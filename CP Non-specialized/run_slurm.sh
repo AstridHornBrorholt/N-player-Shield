@@ -33,22 +33,22 @@ do
     echo "Job scheduled."
     export repetition=$r
     
-    export runs=$((2500*9))
+    export runs=$((2500*10))
     export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
     
-    export runs=$((5000*9))
+    export runs=$((5000*10))
     export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
     
-    export runs=$((10000*9))
+    export runs=$((10000*10))
     export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
     
-    export runs=$((20000*9))
+    export runs=$((20000*10))
     export checks=1000
     sbatch $ARGS ./run_single.sh
     echo "Job scheduled."
