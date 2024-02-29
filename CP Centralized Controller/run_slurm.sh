@@ -8,32 +8,27 @@ ARGS="--out=/dev/null --exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4]
 
 repetitions=10
 
-for ((r=1; r<=$repetitions; r++))
-do
-    export repetition=$r
-    
-    export runs=1000
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=25000
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=50000
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=100000
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=200000
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-done
+export repetition=3
+export runs=1000
+export checks=1000
+sbatch $ARGS ./run_single.sh
+echo "Job scheduled."
+
+export repetition=7
+export runs=1000
+export checks=1000
+sbatch $ARGS ./run_single.sh
+echo "Job scheduled."
+
+
+export repetition=4
+export runs=10000
+export checks=1000
+sbatch $ARGS ./run_single.sh
+echo "Job scheduled."
+
+export repetition=0
+export runs=20000
+export checks=1000
+sbatch $ARGS ./run_single.sh
+echo "Job scheduled."
