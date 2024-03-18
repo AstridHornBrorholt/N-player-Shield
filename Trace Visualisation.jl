@@ -31,26 +31,41 @@ md"""
 html"""
 <style>
 pluto-editor {
-	background-image: url("https://i.imgur.com/VqU9gsd.png");
+	background-image: url("https://media.istockphoto.com/id/1220369994/vector/city-seamless-pattern-roads-cars-grass-areas-background.jpg?s=612x612&w=0&k=20&c=sYjLlJJ31bZ7hsoLOddZ3xd6eWxyFowMFfW9GCLrH7U=");
 }
 pluto-notebook {
 	background: none;
 }
+.foldcode, .add_cell, .runtime, .runcell {
+	background: white;
+	border-radius: 8pt;
+}
+
+.depends_on_disabled_cells {
+	opacity:1.0;
+	background: #fefefe;
+}
 
 pluto-output  {
-	border-radius: 4pt 4pt 0 0;
-	padding: 4pt;
-	background: none;
-	backdrop-filter: blur(5px)brightness(104%);
+	border-radius: 8pt 8pt 0pt 0pt;
+	padding: 16pt;
+	margin: 32pt 0 0 0;
+	background: #eeeeee;
 }
 
 pluto-input .cm-editor {
-	background: none;
-	backdrop-filter: blur(5px)brightness(98%);
+	border-radius: 0 0 8pt 8pt;
+	background: #dce4e8;
 }
 
 pluto-cell.code_differs .cm-editor .cm-gutters {
 	background: #c8dcfa;
+}
+body:not(.___) pluto-cell > pluto-trafficlight {
+	background: #aaaaaa;
+	border-radius: 4pt;
+	width: 7pt;
+	margin: 6pt 0 6pt -4pt;
 }
 
 body:not(.___) pluto-cell.code_differs > pluto-trafficlight {
@@ -71,14 +86,14 @@ body:not(.___) pluto-cell.queued>pluto-trafficlight:after {
   background:repeating-linear-gradient(-45deg,transparent,transparent 8px,var(--normal-cell-color) 8px,var(--normal-cell-color) 16px);
   background-clip:padding-box;
   background-size:4px var(--patternHeight);
-  opacity:.99
+  opacity:1.0;
 }
 
 body:not(.___) pluto-cell.running>pluto-trafficlight:after {
   background:repeating-linear-gradient(-45deg,var(--normal-cell-color),var(--normal-cell-color) 8px,var(--dark-normal-cell-color) 8px,var(--dark-normal-cell-color) 16px);
   background-clip:content-box;
   background-size:4px var(--patternHeight);
-  opacity:.99
+  opacity:1.0;
 }
 
 body:not(.___) pluto-cell.queued.errored>pluto-trafficlight:after,
@@ -86,7 +101,7 @@ body:not(.___) pluto-cell.running.errored>pluto-trafficlight:after {
   background:repeating-linear-gradient(-45deg,#EC8B8B,#EC8B8B 8px,#CF8A8A 8px,#CF8A8A 16px);
   background-clip:content-box;
   background-size:4px var(--patternHeight);
-  opacity:.99
+  opacity:1.0;
 }
 
 </style>
@@ -116,17 +131,33 @@ end
 # ╔═╡ 9c079ac8-f773-458e-b288-c27c7c172d19
 @bind model_file TextField(80,homedir() ⨝ "Results/N-player CC/5000 Runs/Repetition 1/Models/Fleet of 10 Cars.xml")
 
+# ╔═╡ 0653dec7-7293-4c2d-bffe-5e08f288f62f
+function n_cars_from_name(filename)
+	parse(Int, match(r"Fleet of (\d+) Cars", filename)[1])
+end
+
+# ╔═╡ d171f98e-549a-4541-b881-2b43fa404da5
+@bind n_cars NumberField(1:99, default=n_cars_from_name(model_file))
+
 # ╔═╡ cb30806f-3438-4c28-9b55-7966dd24ee64
 isfile(model_file)
 
 # ╔═╡ 4828fc73-d59a-4797-bbc0-a3d91448ec07
 readdir(dirname(model_file))
 
+# ╔═╡ 7953f665-0eff-4b97-9300-8984f3d41dae
+function query_for_cars(N)
+	distances = 0:N - 2 # -1 for zero-indexing. -1 because the last car does not have its strategy loaded
+	distances = ["distance[$n]" for n in distances]
+	distances = join(distances, ", ")
+	"simulate[<=100;1] {velocity[0], $distances}"
+end
+
 # ╔═╡ d18a9ac3-9cc8-45f3-9e86-3509a743eb78
 # Needs the velocity of the front car to render the moving landscape
 # Cars will be drawn according to number of distance vectors.
 # NB: The last car in the model will not be following a preset strategy, so that one should be omitted since it will be exhibiting random behaviour.
-@bind query TextField((80, 4), default="simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3], distance[4], distance[5], distance[6], distance[7]}")
+@bind query TextField((80, 4), default=query_for_cars(n_cars))
 
 # ╔═╡ 5f09b9ed-8218-4a34-a12d-f4ec65e382c4
 """
@@ -152,6 +183,9 @@ simulate[<=100;1] {velocity[0], velocity[1], velocity[2], distance[0], distance[
 
 """ |> multiline
 
+# ╔═╡ efd196bd-7b62-48b0-8072-72851be42d06
+@bind verifyta TextField(80, default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta")
+
 # ╔═╡ 6e56fdba-627a-4200-8e2e-25970f67e8b4
 begin 
 	query # reactivity
@@ -164,9 +198,6 @@ begin
 	end
 	query_file
 end
-
-# ╔═╡ efd196bd-7b62-48b0-8072-72851be42d06
-@bind verifyta TextField(80, default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta")
 
 # ╔═╡ 3bbf5c96-3ed9-4a40-83ae-6cc97e57e86e
 if isfile(query_file) && isfile(model_file)
@@ -305,7 +336,7 @@ function plot_cars(distances::T, time::Int64) where T <: Dict{Int64, Vector{Floa
 		for (i, _) in enumerate(distances)]
 
 	plot(
-		xlims=(-9, length(distances)*distance_per_car),
+		xlims=(-9, 500),
 		ylims=(0, 2),
 		#xflip=true,
 		yticks=[0],
@@ -334,7 +365,7 @@ t*Δt
 
 # ╔═╡ 30a5d12f-490c-481b-8ab0-92f3c79c7ca7
 function plot_landscape(distance_covered, ncars)
-	draw_limit = ncars*distance_per_car
+	draw_limit = (ncars + 1)*distance_per_car
 	x = 2*draw_limit
 	annotate!([((distance_covered + x*0.03)%x, 0.3, "🌻")])
 	annotate!([((distance_covered + x*0.14)%x, 0.7, "🌳")])
@@ -392,6 +423,7 @@ function animate_cars(distances, velocities)
 	distance_covered = 0
 	anim = @animate for t in 1:t_max
 		plot_cars(distances, t)
+		distance_covered += 10*Δt
 		distance_covered += velocities[t + 1]*Δt # I don't remember why it was + 1
 		#plot_road(distance_covered, length(distances))
 		plot_landscape(distance_covered, length(distances))
@@ -1463,12 +1495,15 @@ version = "1.4.1+0"
 # ╠═0a69ab62-9e67-4cdc-a3b3-7f8a808848e9
 # ╠═be837fbd-faea-45fd-950b-c473599756ce
 # ╠═9c079ac8-f773-458e-b288-c27c7c172d19
+# ╠═0653dec7-7293-4c2d-bffe-5e08f288f62f
+# ╠═d171f98e-549a-4541-b881-2b43fa404da5
 # ╠═cb30806f-3438-4c28-9b55-7966dd24ee64
 # ╠═4828fc73-d59a-4797-bbc0-a3d91448ec07
+# ╠═7953f665-0eff-4b97-9300-8984f3d41dae
 # ╠═d18a9ac3-9cc8-45f3-9e86-3509a743eb78
 # ╟─5f09b9ed-8218-4a34-a12d-f4ec65e382c4
-# ╠═6e56fdba-627a-4200-8e2e-25970f67e8b4
 # ╠═efd196bd-7b62-48b0-8072-72851be42d06
+# ╠═6e56fdba-627a-4200-8e2e-25970f67e8b4
 # ╠═3bbf5c96-3ed9-4a40-83ae-6cc97e57e86e
 # ╠═de5ffb24-d55a-47bc-a1df-fe03c2662856
 # ╠═30529eb4-b8a0-4b65-9098-e24ebe6655e0
