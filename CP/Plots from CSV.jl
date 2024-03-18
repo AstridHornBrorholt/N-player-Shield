@@ -359,10 +359,14 @@ end
 # ╔═╡ 782b14e8-a0d4-4584-9082-dded2699b70a
 # Extract just mean performance as a function of the number of runs.
 function runs_performance(result_dir)
+
+	runs = [2500, 5000, 10000, 20000]
+	
 	buf = IOBuffer(to_csv(result_dir))
 	df = CSV.read(buf, DataFrame, delim=";")
 	n_units = max(df.pre_trained_units...) + 1
 	df = filter(:pre_trained_units => (==)(n_units - 1), df)
+	df = filter(:runs => r -> r ∈ runs, df)
 
 	grouping =  groupby(df, [:runs])
 	
@@ -379,8 +383,13 @@ end
 # ╔═╡ ea282e41-f786-4c5c-b2e6-e42826949516
 # Yea and for centralized control the format is completely different.
 function centralized_runs_performance(result_dir)
+
+	
+	runs = [2500, 5000, 10000, 20000].*10
+	
 	buf = IOBuffer(centralized_to_csv.to_csv(result_dir))
 	df = CSV.read(buf, DataFrame, delim=";")
+	df = filter(:runs => r -> r ∈ runs, df)
 
 	grouping =  groupby(df, [:runs])
 	
@@ -393,12 +402,6 @@ function centralized_runs_performance(result_dir)
 	return (runs=[string(r) for r  in df.runs],  
 	performance=[reward(p) for p in df.trained_performance])
 end
-
-# ╔═╡ afe6e072-a335-4e72-a1d4-389ebd624493
-runs_performance(homedir() ⨝ "Results/N-player CP")
-
-# ╔═╡ b00365f5-d412-45a7-a8e3-57f8c272413e
-centralized_runs_performance(homedir() ⨝ "Results/N-player CP Centralized Controller")
 
 # ╔═╡ 802bb5e1-f2e1-4788-abcb-c1716683693e
 function plot_results!(;runs, performance)
@@ -419,10 +422,16 @@ md"""
 """
   ╠═╡ =#
 
+# ╔═╡ afe6e072-a335-4e72-a1d4-389ebd624493
+#=╠═╡
+runs_performance(distributed)
+  ╠═╡ =#
+
 # ╔═╡ 5160269e-c0fe-4643-bbaf-9094bb4bd537
 function do_the_plot_of_the_results(;distributed, 
 		cascading, 
 		centralized)
+
 
 	distributed = runs_performance(distributed)
 	cascading = runs_performance(cascading)
@@ -432,7 +441,7 @@ function do_the_plot_of_the_results(;distributed,
 	all_performances = [distributed.performance..., 	
 		cascading.performance..., centralized.performance...]
 
-	ylims = (min(all_performances...) -50, max(all_performances...) + 50)
+	ylims = (min(all_performances...) -200, max(all_performances...) + 400)
 
 	stylings = (linewidth=2,
 		markerstrokewidth=2,
@@ -446,7 +455,7 @@ function do_the_plot_of_the_results(;distributed,
 	plot!(distributed.runs, distributed.performance;
 		label="Distributed",
 		color=colors.PETER_RIVER,
-		marker=(:pentagon, 6),
+		marker=(:diamond, 6),
 		stylings...)
 	
 	plot!(cascading.runs, cascading.performance;
@@ -784,7 +793,6 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╠═782b14e8-a0d4-4584-9082-dded2699b70a
 # ╠═ea282e41-f786-4c5c-b2e6-e42826949516
 # ╠═afe6e072-a335-4e72-a1d4-389ebd624493
-# ╠═b00365f5-d412-45a7-a8e3-57f8c272413e
 # ╠═802bb5e1-f2e1-4788-abcb-c1716683693e
 # ╟─10dc113e-aaa0-46f8-80ef-c345d52d5eec
 # ╠═5160269e-c0fe-4643-bbaf-9094bb4bd537

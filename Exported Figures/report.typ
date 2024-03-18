@@ -4,8 +4,9 @@ All experiments were repeated 10 times and the mean is reported.
 
 == Decentralized Shield & Decentralized, Cascading Learning
 
-Episodes in all experiments are 100 seconds. Reward is reported as the negative total average distance to the car in front. That is, if during those 100 seconds every car had an average distance of 40m to the car in front of it, the total reward would be -360.
-@CC-Learned-Performance shows the outcomes of cascading (decentralized) training. That is, the first controlled car was trained to follow the random car in front of the fleet. Then the learned policy is made part of the environment, and the next car in the row is trained afterwards.
+Episodes in all experiments are 100 seconds. Reward is reported as the negative total average distance to the car in front. That is, if during those 100 seconds all 9 controlled cars had an average distance of 40m to the car in front of it, the total reward would be -360.
+
+In @CC-Learned-Performance, the green line shows the outcomes of cascading (decentralized) training with different learning budgets. That is, the first controlled car was trained to follow the random car in front of the fleet. Then the learned policy is made part of the environment, and the next car in the row is trained afterwards. Since 9 cars are trained separately, they are each given $1/9$th of the total training budget.
 
 == More Cars
 
@@ -20,31 +21,23 @@ However, it was safe.
 
 It is interesting to see whether training specific agents for each car in the fleet actually results in better performance, or if using the same policy for all cars gives a similar result. In fact it is better to train a specialized policy for each position in the fleet.
 
-In  @non-specialized-20k,  the blue lines represent the results from @CC-Learned-Performance. The teal(?) line is the corresponding setup evaluated using only the strategy of car1. 
+In  @CC-Learned-Performance,  the blue lines represent the results from @CC-Learned-Performance. The teal(?) line is the corresponding setup evaluated using only the strategy of car1. 
 
 #grid(columns:(1fr, 1fr),
 
     [#figure(
-        image("./CC/Learned Performance.svg", width:100%),
+        image("./CC/CC.svg", width:100%),
         caption: "Learned Performance"
     ) <CC-Learned-Performance>],
-    [#figure(
-        v(5em) + [FIGURE MISSING] + v(5em),
-        caption: "Non-specialized 20k and (regular) specialized 20k"
-    ) <non-specialized-20k>]
 )
 
 == Decentralized Shield & Centralized Learning
 
 It would be interesting to see if a centralized learning approach can help the cars to achieve a better coherent performance, compared to the default setup. Though the challenge is a much bigger state space has to be learned.
 
-@centralized-controller shows the learning outcomes for different training budgets. Note that since there were 9 centrally controlled cars (and 1 uncontrollable car), each learner has been trained for 9 times the number of episodes listed in the x-axis. 
+The purple line in @CC-Learned-Performance shows the learning outcomes for different training budgets.
 
 #grid(columns:(1fr, 1fr),
-    [#figure(
-        image("./CC/Centralized Controller.svg", width:100%),
-        caption: "Centralized controller"
-    ) <centralized-controller>],
     [#figure(
     image("./CC/Centralized shield.svg", width:70%),
     caption: "Respectively, centralized shield where actions are co-ordinated, decentralized shield, and decentralized shield where actions are co-ordinated."
@@ -66,12 +59,6 @@ This assumption is not present in the default decentralized configuration, but I
 
 
 == Shield Transfer
-
-Transferring a shield from one agent to the other doesn't have to be as simple as "renaming the variables." In this experiment, we showed how a safety strategy can be transferred to an agent with completely different mechanics (under certain circumstances). 
-
-A shield of 10 cars all acting randomly was created with the default mechanics: 
-
-
 
 Transferring a shield from one agent to the other doesn't have to be as simple as "renaming the variables." In this experiment, we showed how a safety strategy can be transferred to an agent with completely different mechanics (under certain circumstances). 
 
@@ -102,17 +89,18 @@ All experiments were repeated 10 times and the mean outcome is reported.
 
 In the default setup, all production units are shielded at all times, to avoid having either inadequate supply or overflow. 
 Units which have not been optimized yet pick which inflow pipes are enabled, according to a uniformly random distribution.
-One productoin unit is trained at a time, with a set number of episodes. The reward signal for each unit is $-1 times "cost"$. Recall that "cost" is the price of taking material from providers, as opposed to other units. When training has finished, the resulting policy is made part of the environment, and training of the next unit begins. 
-Training happens sequentially according to the numbers on the production units (squares) of @Layout.
+One productoin unit is trained at a time, with a set number of episodes. The reward signal for each unit is $-1 times "cost"$. Recall that "cost" is the price of taking material from providers, as opposed to other units. The immediate cost of relying on providers varies periodically. When training has finished, the resulting policy is made part of the environment, and training of the next unit begins. 
+Training happens sequentially according to the numbers on the production units (squares) of @Layout. Note that the training budget for each unit is $1/10$th of the total budget.
 
-@CP-Learned-Performance shows the global reward, i.e. the sum of each unit's individual rewards. 
+@CP-Learned-Performance shows the global rewards, i.e. the sum of each unit's individual rewards. Distributed training is the blue line; cascading is the green.
+
 The baseline performance, where all production units pick actions randomly, is a reward of -2336. The average reward achieved after training each production unit for 20000 episodes is -183.
 
 #grid(columns:(1fr, 1fr),
 
     [#figure(
-        image("./CP/Learned Performance.svg", width:100%),
-        caption: "Distributed controllers observing only their own state."
+        image("./CP/CP.svg", width:100%),
+        caption: "Chemical production learning results."
     ) <CP-Learned-Performance>],
     [#figure(
         image("./CP/Layout.png", height:170pt),
@@ -123,13 +111,5 @@ The baseline performance, where all production units pick actions randomly, is a
 
 == Decentralized Shielding & Centralized Learning
 
-Turns out a centralized controller is much more effective in this context, perhaps due to the slightly lower dimensionality. The performance for the entire plant under one centralized controller is shown in @CP-Centralized-Controller. Note that the training times are 10 times as much as those shown in @CP-Learned-Performance, since the training in that figure is repeated for each of the 10 units. The best performance achieved is a mean reward of -398.
+Turns out a centralized controller is much more effective in this context, perhaps due to the slightly lower dimensionality. The performance for the entire plant under one centralized controller is shown in the purple line of @CP-Learned-Performance. The best performance achieved is a mean reward of -398.
 
-#grid(columns:(1fr, 1fr),
-
-    [#figure(
-        image("./CP/Centralized Controller.svg", width:100%),
-        caption: "Centralized controller."
-    ) <CP-Centralized-Controller>],
-    [#h(100%)]
-)

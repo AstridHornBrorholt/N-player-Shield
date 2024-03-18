@@ -399,9 +399,6 @@ function runs_performance(result_dir)
 	performance=[reward(p) for p in df.learned_performance])
 end
 
-# ╔═╡ 01b7deac-96df-4dad-939e-6822fe9dde2d
-runs_performance(homedir() ⨝ "Results/N-player CC")
-
 # ╔═╡ 9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
 #=╠═╡
 md"""
@@ -416,14 +413,19 @@ md"""
 """
   ╠═╡ =#
 
-# ╔═╡ 9aa911de-e818-4565-a7e2-1adc18f3fce0
-#=╠═╡
-CSV.read(IOBuffer(to_csv(distributed)), DataFrame)
-  ╠═╡ =#
-
 # ╔═╡ 20225483-817e-4dc3-93ad-ffa67ec32a99
 #=╠═╡
 runs_performance(distributed)
+  ╠═╡ =#
+
+# ╔═╡ 0800ba83-5476-4b18-a7c1-569239a12af7
+#=╠═╡
+runs_performance(cascading)
+  ╠═╡ =#
+
+# ╔═╡ 9aa911de-e818-4565-a7e2-1adc18f3fce0
+#=╠═╡
+CSV.read(IOBuffer(to_csv(cascading)), DataFrame)
   ╠═╡ =#
 
 # ╔═╡ f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
@@ -439,7 +441,7 @@ function do_the_plot_of_the_results(;distributed,
 	all_performances = [distributed.performance..., 	
 		cascading.performance..., centralized.performance...]
 
-	ylims = (min(all_performances...) -50, max(all_performances...) + 50)
+	ylims = (min(all_performances...) -25, max(all_performances...) + 40)
 
 	stylings = (linewidth=2,
 		markerstrokewidth=2,
@@ -926,7 +928,7 @@ end
 # ╔═╡ Cell order:
 # ╠═d0db8070-41a9-11ee-2b97-818668d7efa8
 # ╟─2bd47b9e-31e3-4ee1-aa87-60dfc40869a9
-# ╟─c9e1bc2c-a6f7-4b88-8038-51cf2ef2a008
+# ╠═c9e1bc2c-a6f7-4b88-8038-51cf2ef2a008
 # ╟─4362212e-0f0e-4425-bfb1-a6c3808ed808
 # ╟─95e38fbd-142d-4926-9291-27e69ddf7c75
 # ╠═61c15d44-75be-4613-8b60-484d94847b8a
@@ -938,9 +940,9 @@ end
 # ╠═a2256c72-3686-4f89-9adf-6684270946b6
 # ╠═266ba2a5-01d0-48a4-be0e-52416dfd2485
 # ╠═a3c96777-3878-4abd-b865-e3ee35186808
-# ╠═01b7deac-96df-4dad-939e-6822fe9dde2d
-# ╠═9aa911de-e818-4565-a7e2-1adc18f3fce0
 # ╠═20225483-817e-4dc3-93ad-ffa67ec32a99
+# ╠═0800ba83-5476-4b18-a7c1-569239a12af7
+# ╠═9aa911de-e818-4565-a7e2-1adc18f3fce0
 # ╟─9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
 # ╠═f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
 # ╠═74674f2d-c384-4c01-957b-ca8d15062db3

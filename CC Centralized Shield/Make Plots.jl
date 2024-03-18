@@ -153,12 +153,15 @@ csv_string |> multiline
 # ╔═╡ f54beb3d-da04-4c5f-8a66-b4bbe6289c54
 raw_data = DataFrame(CSV.File(IOBuffer(csv_string)))
 
+# ╔═╡ f2799a2c-f694-4cd8-9d32-1810ccc3b7d8
+const episode_length = 100
+
 # ╔═╡ ff7d843d-1426-4cf3-8407-531e97e1960d
 cleandata = let
 	cleandata = raw_data
 	
 	cleandata = transform(cleandata, :reward => (
-		xs -> [-x/100 for x in xs]
+		xs -> [-x/episode_length for x in xs]
 	) => :reward)
 end
 
@@ -171,8 +174,64 @@ means = let
 		renamecols=false)
 end
 
+# ╔═╡ 68f6836e-3ba7-42ca-9650-acba6365aa55
+let
+	grouping = groupby(means, [:runs, :variant])
+	df = combine(grouping, :reward => sum => :reward)
+
+	cent = filter(:variant => (==)("Cent. Co-ord."), df)
+	cent = sort(cent, :runs)
+	dec = filter(:variant => (==)("Dec."), df)
+	dec = sort(dec, :runs)
+	coord = filter(:variant => (==)("Dec. Co-ord."), df)
+	coord = sort(coord, :runs)
+	
+	cent = (;runs=[string(r) for r in cent[!, :runs]], 
+		performance=cent[!, :reward])
+	
+	dec = (;runs=[string(r) for r in dec[!, :runs]], 
+		performance=dec[!, :reward])
+	
+	coord = (;runs=[string(r) for r in coord[!, :runs]], 
+		performance=coord[!, :reward])
+
+
+	all_performances = [cent.performance..., 	
+		dec.performance..., coord.performance...]
+
+	ylims = (min(all_performances...) - 5, max(all_performances...) + 12)
+	
+	stylings = (linewidth=2,
+		markerstrokewidth=2,
+		markerstrokecolor=:white)
+	
+	plot(;size=(350, 250),
+		ylims,
+		legend=:topleft,
+		xlabel="Total episodes trained",
+		ylabel="Performance")
+	
+	plot!(cent.runs, cent.performance;
+		label="Co-ordinated centralized shield",
+		color=colors.POMEGRANATE,
+		marker=(:pentagon, 6),
+		stylings...)
+		
+	plot!(coord.runs, coord.performance;
+		label="Co-ordinated decentralized shield",
+		color=colors.CONCRETE,
+		marker=(:circle, 6),
+		stylings...)
+	
+	plot!(dec.runs, dec.performance;
+		label="Decentralized shield",
+		color=colors.SUNFLOWER,
+		marker=(:rtriangle, 9),
+		stylings...)
+end
+
 # ╔═╡ 1bf14dff-08e3-4a32-9e5e-dba6438bc670
-standard_deviations = let	
+standard_deviations = let
 	grouping =  groupby(cleandata, [:runs, :variant, :car])
 	
 	standard_deviations = combine(grouping, 
@@ -220,6 +279,62 @@ let
 	)
 end
 
+# ╔═╡ 0960af3f-6b25-4c92-8d95-caf0029da1fc
+let
+	df = filter(:runs => r -> r == runs, means)
+	
+	df = transform(df, :car => (
+		xs -> ["Car $x" for x in xs]
+	) => :car)
+
+	decentralized = "Decentralized"
+	centralized = "Centralized"
+	cooperative = "Co-operative"
+	
+	df = transform(df, :variant => ByRow(v -> 
+		v == "Cent. Co-ord." ? centralized :
+		v == "Dec." ? decentralized :
+		v == "Dec. Co-ord." ? cooperative :
+		v),
+		renamecols=false
+	)
+
+	sorting = [decentralized, centralized, cooperative]
+	the_sort = x -> findfirst((==)(x), sorting)
+
+	grouped = groupby(df, [:runs, :variant])
+
+	df = combine(grouped, :reward => sum => :reward)
+
+	df = sort(df, :variant, by=the_sort)
+	
+	@df df bar(:variant, :reward,
+		label=nothing,
+		#xrot=10,
+		bar_width=0.4,
+		color=colors.TURQUOISE,
+		linewidth=4,
+		linecolor=:white)
+	
+	ylim = (min(df[!, :reward]...) - 5, 0)
+	hline!([0], label=nothing, color=:black, width=4)
+	
+	plot!(;
+		size=(300,200),
+		ylim,
+		legend=:outertop,
+		ylabel="reward",
+	)
+	#=
+	=#
+end
+
+# ╔═╡ a23eb1ab-a3e2-4a6c-8704-51315f3600ed
+let
+	A = [:foo, :bar, :baz]
+	findfirst(==(:bar), A)
+end
+
 # ╔═╡ Cell order:
 # ╠═d6481c1f-3020-4a26-b4aa-83aaa14f33e5
 # ╟─6a2ada61-1cf9-4e1d-a69f-ec49897fc133
@@ -233,11 +348,15 @@ end
 # ╠═cc09735c-596f-480b-aecf-86e4a811615d
 # ╠═b8188561-e6ff-4d4e-8b79-8897a79f8977
 # ╠═f54beb3d-da04-4c5f-8a66-b4bbe6289c54
+# ╠═f2799a2c-f694-4cd8-9d32-1810ccc3b7d8
 # ╠═ff7d843d-1426-4cf3-8407-531e97e1960d
 # ╠═aea564f9-6fc5-4f1d-8699-1ce77be3a38d
+# ╠═68f6836e-3ba7-42ca-9650-acba6365aa55
 # ╠═1bf14dff-08e3-4a32-9e5e-dba6438bc670
 # ╠═d4e45474-6def-4e02-9fe2-43e6f4fb1bb2
 # ╠═207c5c24-8d48-4beb-b703-83ba13fd3697
 # ╠═1962f0d8-be1f-490f-b377-ff2019625f4d
 # ╠═337afbf0-cf51-4068-b3ea-6f759c76a5ce
 # ╠═7f059d13-41f5-4d6c-8468-1de130d66901
+# ╠═0960af3f-6b25-4c92-8d95-caf0029da1fc
+# ╠═a23eb1ab-a3e2-4a6c-8704-51315f3600ed
