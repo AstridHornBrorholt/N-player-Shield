@@ -606,6 +606,21 @@ system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8
 			<comment/>
 		</query>
 		<query>
+			<formula>simulate[&lt;=100;1] {
+    stored[1], stored[2], stored[3],
+    stored[4], stored[5], stored[6],
+    stored[7], stored[8], stored[9], stored[10],
+    provider_out[1], provider_out[2], provider_out[3],
+    provider_out[4], provider_out[5], provider_out[6],
+    provider_out[7], provider_out[8], provider_out[9], provider_out[10],
+    unit_out[1], unit_out[2], unit_out[3],
+    unit_out[4], unit_out[5], unit_out[6],
+    unit_out[7], unit_out[8], unit_out[9], unit_out[10], 
+U1.in
+    }</formula>
+			<comment/>
+		</query>
+		<query>
 			<formula>simulate[&lt;=100;1] {stored[1]}</formula>
 			<comment/>
 		</query>
@@ -622,11 +637,11 @@ system Metronome, P1, P2, P3, U1, U2, U3, P4, P5, U4, U5, P6, P7, P8, U6, U7, U8
 			<comment/>
 		</query>
 		<query>
-			<formula>E[&lt;=100;1000] (max:cost)</formula>
+			<formula>E[&lt;=100;1000](max:sum (i : providerid_t) cost[i])</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>E[&lt;=100;1000] (max:cost) under Moneydollars</formula>
+			<formula>E[&lt;=100;1000](max:sum (i : providerid_t) cost[i]) under Moneydollars</formula>
 			<comment/>
 		</query>
 		<query>
