@@ -192,10 +192,20 @@ Maybe you want to choose a mostly pre-trained model from the results folder for 
 
 # ╔═╡ 55a118e3-a657-4e07-af8a-5ad60f0b509b
 @bind query TextField((95, 18), default="""
-// strategy unit10 = loadStrategy {}->{t, stored[10]}
+	// strategy unit10 = loadStrategy {}->{t, stored[10]}
 	("/home/asger/Results/N-player CP/20001 Runs/Repetition 1/Models/unit10.json")
 	
 	simulate[<=100;1] {
+		U1.in, U1.r1, U1.r2, U1.r3,
+		U2.in, U2.r1, U2.r2, U2.r3,
+		U3.in, U3.r1, U3.r2, U3.r3,
+		U4.in, U4.r1, U4.r2, U4.r3,
+		U5.in, U5.r1, U5.r2, U5.r3,
+		U6.in, U6.r1, U6.r2, U6.r3,
+		U7.in, U7.r1, U7.r2, U7.r3,
+		U8.in, U8.r1, U8.r2, U8.r3,
+		U9.in, U9.r1, U9.r2, U9.r3,
+		U10.in, U10.r1, U10.r2, U10.r3,
 		stored[1], stored[2], stored[3],
 		stored[4], stored[5], stored[6],
 		stored[7], stored[8], stored[9], stored[10],
@@ -213,7 +223,7 @@ Maybe you want to choose a mostly pre-trained model from the results folder for 
 function remove_single_line_breaks(str)
 	line_break_placeholder = "¤NEWLINE¤"
 	str= replace(str, r"\n\s*\n" => line_break_placeholder)
-	str = replace(str, r"\n\s+" => " ")
+	str = replace(str, r"\n\s*" => " ")
 	str = replace(str, line_break_placeholder => "\n")
 end
 
@@ -252,9 +262,13 @@ Also copy-pasta but hopefully better organised.
 
 # ╔═╡ 636b5f6d-eb7e-4276-8594-db623f8fdef5
 function parse_pair(str)
-	left = match(r"\(([-0-9.]+),", str)[1]
+	left = match(r"\(([-0-9.e]+),", str)
+	if isnothing(left) error("left side of pair not found in $str") end
+	left = left[1]
 	left = parse(Float64, left)
-	right = match(r",([-0-9.]+)\)", str)[1]
+	right = match(r",([-0-9.e]+)\)", str)
+	if isnothing(right) error("right side of pair not found in $str") end
+	right = right[1]
 	right = parse(Float64, right)
 	(left, right)
 end
@@ -332,17 +346,93 @@ end
 # ╔═╡ 8110e7dc-2a1c-43ba-81f3-83dd0f987ea5
 begin
 	# consts
-	Δt = 0.5
+	Δt = 0.5 # Decision period in the model.
 	n_units = 10
 	n_providers = 10
-	rate = 2.65
+	rate = 2.65 # Approximate rate of flow through a single pipe.
+	# Not included: Variance of flow rate in pipes.
 end;
 
+# ╔═╡ c165f2d1-f1c1-4eeb-bb24-5dcad0e1bc4a
+keywords = let
+	keywords = String[]
+		
+	for i in 1:n_units
+		push!(keywords, "stored[$i]", "unit_out[$i]", "U$i.r1", "U$i.r2", "U$i.r3", "U$i.in")
+	end
+	
+	for i in 1:n_providers
+		push!(keywords, "provider_out[$i]")
+	end
+	keywords
+end
+
+# ╔═╡ bb40f696-8810-4ba6-a81c-add3d713fd3e
+begin
+	CCO = 0
+	COC = 1
+	OCC = 2
+	CCC = 3
+	OOC = 4
+	COO = 5
+	OCO = 6
+	OOO = 7
+	UNK = -1
+end;
+
+# ╔═╡ aba61fb1-82e7-4352-8128-2f35cdf64ead
+# Okay, so this is some real fuck.
+# Basically, the trace barely has enough information to determine 
+# which pipes are open at any given time.
+# I have to infer this from other values, which I'm doing here.
+# Have a look at the model to figure out what's going on I guess.
+# Even worse, this is not enough, because my layout is slightly inconsistent.
+# So which action matches which pipes will be different for each unit,
+# according to the system declaration.
+
+function add_actions!(trace)
+	trace_length = length(trace["U1.in"])
+	for id in 1:n_units
+		actions = []
+		for i in 1:trace_length
+			r1 = trace["U$id.r1"][i]
+			r2 = trace["U$id.r2"][i]
+			r3 = trace["U$id.r3"][i]
+			inflow = trace["U$id.in"][i]
+			if inflow == 0
+				actions ← CCC
+			elseif inflow ≈ rate + r1
+				actions ← OCC
+			elseif inflow ≈ rate + r2
+				actions ← COC
+			elseif inflow ≈ rate + r3
+				actions ← CCO
+			elseif inflow ≈ 2*rate + r1 + r2
+				actions ← OOC
+			elseif inflow ≈ 2*rate + r1 + r3
+				actions ← OCO
+			elseif inflow ≈ 2*rate + r2 + r3
+				actions ← COO
+			elseif inflow ≈ 3*rate + r1 + r2 + r3
+				actions ← OOO
+			else
+				actions ← UNK
+				@warn "Unmatched action. Unexpected values: $((;r1, r2, r3, inflow, rate))"
+			end
+		end
+		trace["action[$id]"] = actions
+	end
+	trace
+end
+
 # ╔═╡ a27ae8e0-c411-4cb8-b844-98fe61a18a0e
-trace = parse_trace(output, Δt, 
-	["stored[$i]" for i in 1:n_units]..., 
-	["unit_out[$i]" for i in 1:n_units]..., 
-	["provider_out[$i]" for i in 1:n_providers]...)
+begin
+	trace = parse_trace(output, Δt, keywords...)
+	add_actions!(trace)
+end
+
+# ╔═╡ d1fc7529-d474-48ea-9cbe-2fe17f3b8efe
+trace["U4.in"]
 
 # ╔═╡ cd1ca4c4-aa08-44e0-8d85-668936e93e92
 max_time = length(trace["stored[1]"])*Δt - Δt
@@ -350,22 +440,28 @@ max_time = length(trace["stored[1]"])*Δt - Δt
 # ╔═╡ 6938d095-5d16-4652-a359-60d2e6e6fefe
 struct CPState
 	stored::Vector{Float64}
-	provider_out::Vector{Int64}
+	action::Vector{Int64}
 	unit_out::Vector{Int64}
+	provider_out::Vector{Int64}
 end
 
 # ╔═╡ ce089bee-067b-422b-803f-51ad8c306cc1
-struct CPTrace 
-	states::Vector{CPState}
-	times::Vector{Float64}
+begin
+	struct CPTrace 
+		states::Vector{CPState}
+		times::Vector{Float64}
+	end
+
+	Base.copy(t::CPTrace) = CPTrace(copy(t.states), copy(t.times))
 end
 
 # ╔═╡ 80fbc8d8-01cb-4274-8392-f5abaddb7d71
 function get_state(trace, t, Δt)
 	j = Int(t/Δt)
-	result = CPState([], [], [])
+	result = CPState([], [], [], [])
 	for i in 1:n_units
 		result.stored ← trace["stored[$i]"][j]
+		result.action ← trace["action[$i]"][j]
 		result.unit_out ← round(trace["unit_out[$i]"][j]/rate)
 	end
 	for i in 1:n_providers
@@ -378,7 +474,7 @@ end
 get_state(trace, 10, Δt)
 
 # ╔═╡ a13479e6-0485-4549-8d04-37c9b9b46546
-function get_trace(trace, t_max)
+function get_trace(trace, t_max)::CPTrace
 	result = CPTrace([], [])
 	for t in Δt:Δt:t_max
 		result.times ← t
@@ -391,10 +487,11 @@ end
 findfirst(<(1), [4, 3, 2, 1, 0])
 
 # ╔═╡ 6bcef4d0-4070-4154-a9ad-cf0f23c18065
-function interpolate(trace::CPTrace, Δt)
+function interpolate(trace::CPTrace, interpolated_time)
+	trace = copy(trace)
 	t_max = trace.times[end]
 	result = CPTrace([], [])
-	for time in Δt:Δt:t_max - Δt
+	for time in interpolated_time:interpolated_time:t_max - interpolated_time
 		j = findfirst(>(time), trace.times)
 		i = j == 1 ? 1 : j - 1
 		result.times ← time
@@ -412,17 +509,25 @@ function interpolate(trace::CPTrace, Δt)
 		end
 
 		result.states ← CPState(stored, 
-			state_before.provider_out, 
-			state_before.unit_out)
+			state_after.action,
+			state_after.unit_out, 
+			state_after.provider_out,)
 	end
 	result
 end
 
 # ╔═╡ 5161853d-b0b8-4d40-8f5d-5de7d46ca75a
-interpolated_time = 0.1
+begin
+	# Animation frames per second
+	fps = 24
+	time_multiplier = 1 # 0.5 = half speed, 1 = normal speed, etc.
+end
 
 # ╔═╡ 7fe68f14-a450-4442-99e6-4ac739eb1209
-trace′ = interpolate(get_trace(trace, max_time), interpolated_time)
+trace′ = let
+	trace′ = get_trace(trace, max_time)
+	trace′ = interpolate(trace′, 1/fps*time_multiplier)
+end
 
 # ╔═╡ 95ca91d5-f821-4417-beae-dfecc4dd49e4
 md"""
@@ -539,24 +644,46 @@ begin
 	
 	function System(state::CPState)
 		units = [Unit(i, state.stored[i]) for i in 1:10]
-		
+
+		a = state.action
+		u = state.unit_out
+		o = state.provider_out
+
+		# Actions are OOO = Open-Open-Open, COC = Closed-Open-Open etc.
+		# There isn't really any rhyme or reason in the 
+		# UPPAAL model's system declaration as to which pipe is the 
+		# left one, the middle one, or the rightmost one. 
+		# For example, Unit4 sees Unit1 as being connected by its middle pipe.
+		# While Unit8 sees Unit5 as being connected by its left pipe.
+		# I just had to read all the positions manually.
 		pipes = [
-			Pipe(1, 4, state.unit_out[1] > 0), 
-			Pipe(2, 4, state.unit_out[2] > 0), Pipe(2, 5, state.unit_out[2] > 0), 
-			Pipe(3, 5, state.unit_out[3] > 0), 
-			Pipe(4, 6, state.unit_out[4] > 0), Pipe(4, 7, state.unit_out[4] > 0), 
-			Pipe(5, 7, state.unit_out[5] > 0), Pipe(5, 8, state.unit_out[5] > 0), 
-			Pipe(6, 9, state.unit_out[6] > 0), 
-			Pipe(7, 9, state.unit_out[7] > 0), Pipe(7, 10, state.unit_out[7] > 0), 
-			Pipe(8, 10, state.unit_out[8] > 0), 
-			Pipe(9, 13, state.unit_out[9] > 0), Pipe(9, 14, state.unit_out[9] > 0), 
-			Pipe(10, 15, state.unit_out[10] > 0),Pipe(10, 16, state.unit_out[10] > 0)
+			Pipe(1, 4, a[4] ∈ (OOO, COC, OOC, COO)),
+			Pipe(2, 4, a[4] ∈ (OOO, CCO, COO, OCO)),
+			Pipe(2, 5, a[5] ∈ (OOO, OCC, OOC, OCO)),
+			Pipe(3, 5, a[5] ∈ (OOO, COC, OOC, COO)),
+			
+			Pipe(4, 6, a[6] ∈ (OOO, CCO, COO, OCO)),
+			Pipe(4, 7, a[7] ∈ (OOO, OCC, OOC, OCO)),
+			Pipe(5, 7, a[7] ∈ (OOO, COC, OOC, COO)),
+			Pipe(5, 8, a[8] ∈ (OOO, OCC, OOC, OCO)),
+			
+			Pipe(6, 9, a[9] ∈ (OOO, COC, OOC, COO)),
+			Pipe(7, 9, a[9] ∈ (OOO, CCO, COO, OCO)),
+			Pipe(7, 10, a[10] ∈ (OOO, OCC, OOC, OCO)),
+			Pipe(8, 10, a[10] ∈ (OOO, COC, OOC, COO)),
+			
+			Pipe(9, 13, u[9] >= 1),
+			Pipe(9, 14, u[9] >= 2),
+			Pipe(10, 15, u[10] >= 1),
+			Pipe(10, 16, u[10] >= 2)
 		]
-		
+
+		# All units have at least one provider.
+		# Units 1-3 have 3 providers each, while 6 and 8 have 2 each.
 		providers = vcat(
-			[Provider(1, i, state.provider_out[i] > 0) for i in 1:10],
-			[Provider(2, i, state.provider_out[i] > 1) for i in 1:3],
-			[Provider(3, i, state.provider_out[i] > 2) for i in 1:3])
+			[Provider(1, i, o[i] > 0) for i in 1:10],
+			[Provider(2, i, o[i] > 1) for i in [1, 2, 3, 6, 8]],
+			[Provider(3, i, o[i] > 2) for i in 1:3])
 		
 		consumers = vcat([Consumer(11, 9), Consumer(12, 10)])
 		
@@ -674,23 +801,29 @@ end
 # ╔═╡ f4d139f0-62ba-4d3e-a261-7f2393f15c19
 begin
 	plot(aspectratio=:equal, size=(400, 400), ticks=nothing)
-	draw!(System(trace′.states[10]))
+	draw!(System(trace′.states[30]))
 end
 
 # ╔═╡ 3a9c8e25-a333-4899-831a-f2e6ff38d71d
-function animate_trace(trace::CPTrace, Δt)
-	🎥 = @animate for i in 1:length(trace.times) + ceil(Int, 1/Δt)
+function animate_trace(trace::CPTrace, fps)
+	# + 1*fps == 1 second wait after animations ends.
+	🎥 = @animate for i in 1:length(trace.times) + 1*fps 
 		plot(aspectratio=:equal, size=(400, 400), ticks=nothing)
 		if i <= length(trace.times)
 			draw!(System(trace′.states[i]))
 		end
 	end
 
-	gif(🎥, show_msg=false, fps=1/Δt)
+	gif(🎥; show_msg=false, fps)
 end
 
 # ╔═╡ 7fba5e3f-59f5-4943-9dd2-acf569ac31df
-animate_trace(trace′, interpolated_time)
+# Second argument is time between frames.
+# Multiply by a value > 1 to make the animation appear slower.
+animate_trace(trace′, fps)
+
+# ╔═╡ 05a0f2a9-44a9-4182-b71d-0ecd39902675
+[s.action for s in trace′.states]
 
 # ╔═╡ Cell order:
 # ╠═3a57c06f-0adb-4f92-9f64-f22edbefcadf
@@ -727,7 +860,11 @@ animate_trace(trace′, interpolated_time)
 # ╠═8c052cf6-cca3-427e-9239-283ef2fbb758
 # ╠═a4e9d483-1cbb-406c-bf63-75016c25ceaa
 # ╠═8110e7dc-2a1c-43ba-81f3-83dd0f987ea5
+# ╠═c165f2d1-f1c1-4eeb-bb24-5dcad0e1bc4a
 # ╠═a27ae8e0-c411-4cb8-b844-98fe61a18a0e
+# ╠═d1fc7529-d474-48ea-9cbe-2fe17f3b8efe
+# ╠═bb40f696-8810-4ba6-a81c-add3d713fd3e
+# ╠═aba61fb1-82e7-4352-8128-2f35cdf64ead
 # ╠═cd1ca4c4-aa08-44e0-8d85-668936e93e92
 # ╠═6938d095-5d16-4652-a359-60d2e6e6fefe
 # ╠═ce089bee-067b-422b-803f-51ad8c306cc1
@@ -758,3 +895,4 @@ animate_trace(trace′, interpolated_time)
 # ╠═f4d139f0-62ba-4d3e-a261-7f2393f15c19
 # ╠═3a9c8e25-a333-4899-831a-f2e6ff38d71d
 # ╠═7fba5e3f-59f5-4943-9dd2-acf569ac31df
+# ╠═05a0f2a9-44a9-4182-b71d-0ecd39902675
