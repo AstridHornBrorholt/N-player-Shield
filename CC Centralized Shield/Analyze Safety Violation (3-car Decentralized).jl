@@ -1042,7 +1042,9 @@ end
 md"""
 **Select trace to inspect**
 
-`trace_id =` $(@bind trace_id Select(unsafe_trace_ids))
+`trace_id =` $(@bind trace_id Select(length(unsafe_trace_ids) > 0 ?
+	unsafe_trace_ids :
+	[1:10...]))
 """
 
 # ╔═╡ 74eba11e-23c4-49e1-9139-8cbfe5984a2b
