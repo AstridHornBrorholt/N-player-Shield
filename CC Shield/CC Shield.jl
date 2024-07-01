@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -311,6 +311,9 @@ begin
 	grid
 end
 
+# ╔═╡ d3c6a4b2-ce31-4fd6-a0b1-11064425b945
+length(grid)
+
 # ╔═╡ e3d5c8b9-0e93-42b1-ad7b-e66e61ff842a
 md"""
 ### Drawing the grid
@@ -591,6 +594,7 @@ end
 # ╟─270796fb-2c5b-4fb1-b27c-58d354c87e36
 # ╠═52e5763e-213e-4b39-952f-60a612846cbe
 # ╠═82cb8845-5eb9-4dac-bab2-47a5e9761bee
+# ╠═d3c6a4b2-ce31-4fd6-a0b1-11064425b945
 # ╟─e3d5c8b9-0e93-42b1-ad7b-e66e61ff842a
 # ╠═05305c4a-a1e6-40b4-bb94-e15e77929ef3
 # ╟─b3e8b012-57c0-48f1-86a8-cd06b8971d46

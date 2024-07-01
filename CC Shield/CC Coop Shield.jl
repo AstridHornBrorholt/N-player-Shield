@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -72,7 +72,7 @@ struct CCMechanics
 end
 
 # ╔═╡ 0fedc544-3a81-45b3-b8b0-94c86d291f1b
-m = CCMechanics(1, 0, 50, -10, 20, -10, 20)
+m = CCMechanics(1, 0, 200, -10, 20, -10, 20)
 
 # ╔═╡ 0fba5442-bba5-4a82-9821-77068368227e
 function speed_limit(min, max, v, action::CCAction)
@@ -306,6 +306,9 @@ begin
 
 	grid
 end
+
+# ╔═╡ 3d6ac7b3-13fb-4080-8406-53c4f4a3aff4
+length(grid)
 
 # ╔═╡ e3d5c8b9-0e93-42b1-ad7b-e66e61ff842a
 md"""
@@ -594,6 +597,7 @@ end
 # ╟─270796fb-2c5b-4fb1-b27c-58d354c87e36
 # ╠═52e5763e-213e-4b39-952f-60a612846cbe
 # ╠═82cb8845-5eb9-4dac-bab2-47a5e9761bee
+# ╠═3d6ac7b3-13fb-4080-8406-53c4f4a3aff4
 # ╟─e3d5c8b9-0e93-42b1-ad7b-e66e61ff842a
 # ╠═05305c4a-a1e6-40b4-bb94-e15e77929ef3
 # ╟─b3e8b012-57c0-48f1-86a8-cd06b8971d46
