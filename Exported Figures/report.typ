@@ -1,6 +1,18 @@
+#import calc : round
+
 = Cruise Control
 
 All experiments were repeated 10 times and the mean is reported.
+
+== Shield Synthesis Times
+
+Making the decentralized shield took #round(0.44 + 4.7 + 1.6) seconds. This is with a max safe distance of 200m. If it is decreased to 50m, the time becomes #round(0.1 + 1.3 + 0.28). Looks like there's a lot of overhead computing reachability. 
+
+The decentralized shield with co-ordinated actions took #round(0.8 + 16.9 + 14.2) to compute.  And then #round(0.2 + 3.9 + 2.2) to compute for 50m safety distance. This sort of tracks with the fact that the grid is $3 times$ as large.
+
+The centralized shield by comparison, takes #round(30 + 3566 + 1097) seconds for 3 cars. At 4 cars, it runs out of memory. Reminder to myself to try and support `StaticArrays` for this stuff.
+
+I tried to make a plot of this in @CC-Synthesis-Times. I had to add an axis break because the difference is so enormous.
 
 == Decentralized Shield & Decentralized, Cascading Learning
 
@@ -29,6 +41,10 @@ In  @CC-Learned-Performance,  the blue lines represent the results from @CC-Lear
         image("./CC/CC.svg", width:100%),
         caption: "Learned Performance"
     ) <CC-Learned-Performance>],
+    [#figure(
+        image("./CC/Synthesis times - edited.svg", width:100%),
+        caption: "Shield synthesis times"
+    ) <CC-Synthesis-Times>],
 )
 
 == Decentralized Shield & Centralized Learning
@@ -48,7 +64,7 @@ The purple line in @CC-Learned-Performance shows the learning outcomes for diffe
 
 I was not actually able to synthesize a centralized shield for even two cars. This seems strange to me since the worst-case memory consumption is much less than the RAM I have available. Must be some significant inefficiency in a data strcutre of mine. 
 
-But what I was able to do, was create a shield for two cars whose max distance was only 50m. Synthesizing this shield took #calc.round((30 + 3566 + 1097)/60) minutes. In comparison, synthesizing the distributed shield takes 3 seconds.
+But what I was able to do, was create a shield for two cars whose max distance was only 50m. Synthesizing this shield took #round((30 + 3566 + 1097)/60) minutes. In comparison, synthesizing the distributed shield takes 3 seconds.
 
 It did not leave much room for learning a more optimal strategy, but it was working. So to match, I made a decentralized sheild with the same max distance. The comparison of training outcomes for the two cars are shown in @centralized-shield.
 
