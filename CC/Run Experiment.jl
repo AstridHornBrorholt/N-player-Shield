@@ -64,7 +64,7 @@ isdir(results_dir) || mkdir(results_dir) # Error if path is invalid except if it
 isfile(verifyta_path) || error("File verifyta not found at path $verifyta_path")
 
 cars_to_train = max_cars - 1
-runs_per_car = runs/cars_to_train
+runs_per_car = round(Int64, runs/cars_to_train)
 
 verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs_per_car --total-runs $runs_per_car --runs-pr-state $runs_per_car"
 
