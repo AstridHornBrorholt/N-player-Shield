@@ -349,7 +349,7 @@ function multiline(str)
 	""")
 end
 
-# ╔═╡ 4b3789f9-759d-405b-a369-fb50a4a5a42a
+# ╔═╡ 9d7d57d3-b2ef-4dec-972f-7873e714fad6
 #=╠═╡
 TableOfContents()
   ╠═╡ =#
@@ -554,7 +554,11 @@ begin
 				df′ = filter(:fleet_size => (x -> x == f), df)
 				other_cars = df′[!, :other_cars_reward]
 				other_cars = get(other_cars, 1, [])
-				scatter!(2:length(other_cars), other_cars, plotargs...; marker..., label= f == fleet_min ? "Performance measured when re-imported for subsequent training" : nothing)
+				
+				scatter!(fleet_min:length(other_cars) + 1, other_cars, 
+					plotargs...;
+					marker..., 
+					label= f == fleet_min ? "Performance measured when re-imported for subsequent training" : nothing)
 			end
 		end
 		plot!(;plotargs...)
@@ -615,6 +619,8 @@ cleandata = let
 	# Only makes sense to compute for the last car.
 	cleandata = transform(cleandata,
 		[:reward, :other_cars_reward] => ByRow((r, s) -> (r + sum(s))) => :global_reward)
+
+	cleandata = sort(cleandata, :fleet_size)
 	
 	cleandata
 end
@@ -932,7 +938,7 @@ end
 # ╟─4362212e-0f0e-4425-bfb1-a6c3808ed808
 # ╟─95e38fbd-142d-4926-9291-27e69ddf7c75
 # ╠═61c15d44-75be-4613-8b60-484d94847b8a
-# ╠═4b3789f9-759d-405b-a369-fb50a4a5a42a
+# ╠═9d7d57d3-b2ef-4dec-972f-7873e714fad6
 # ╠═15f0808f-8424-4d27-9247-274c7751bf8e
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
