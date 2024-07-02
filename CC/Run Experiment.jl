@@ -25,6 +25,7 @@ begin
 	     "--runs"
 			arg_type=Int
 			required=true
+            help="Total number of training episodes spent. This number is divied out to each car in the cascading training."
 		"--checks"
 			arg_type=Int
 			required=true
@@ -57,12 +58,15 @@ repetition = args["repetition"]
 results_dir = args["results-dir"]
 verifyta_path = args["verifyta-path"]
 skip_training = args["skip-training"]
-status("Starting... (runs=$runs, max_cars=$max_cars, repetition=$repetition, skip_training=$skip_training)")
+status("Starting... $((;runs, max_cars, repetition, skip_training))")
 
 isdir(results_dir) || mkdir(results_dir) # Error if path is invalid except if it is only the last folder missing.
 isfile(verifyta_path) || error("File verifyta not found at path $verifyta_path")
 
-verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs --total-runs $runs --runs-pr-state $runs"
+cars_to_train = max_cars - 1
+runs_per_car = runs/cars_to_train
+
+verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs_per_car --total-runs $runs_per_car --runs-pr-state $runs_per_car"
 
 verifyta_call = String[
     verifyta_path,

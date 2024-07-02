@@ -22,6 +22,7 @@ begin
         "--runs"
 			arg_type=Int
 			required=true
+            help="Total number of training runs. Since only one agent is trained, it gets the whole budget."
 		"--checks"
 			arg_type=Int
 			required=true
@@ -80,8 +81,7 @@ status("Running Fleet of $fleet_size Cars...  (repetition=$repetition)")
 outfile = query_results_dir ⨝ "Fleet of $fleet_size Cars.txt"
 model_path, queries_path = create_fleet(blueprint_path, shield_path, fleet_size, models_dir; checks, skip_training)
 
-runs′ = runs*(fleet_size - 1) # Same number of training runs as would have been spent training each car after the other.
-verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs′ --total-runs $runs′ --runs-pr-state $runs′"
+verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs --total-runs $runs --runs-pr-state $runs"
 verifyta_call = String[
     verifyta_path,
     split(verifyta_args, " ")...
