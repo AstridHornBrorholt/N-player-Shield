@@ -1,5 +1,6 @@
 # This file supports both the version with the centralized shield and the non-centralized shield
 # That is, 3-Car_blueprint as well as 3-Car Centralized_blueprint. 
+# Now also the 3-Car Declared_blueprint. 
 
 using Dates
 # The emoji are there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.

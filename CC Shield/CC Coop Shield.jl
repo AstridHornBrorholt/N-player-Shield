@@ -559,13 +559,13 @@ md"""
 let
 	buffer = IOBuffer()
 	robust_grid_serialization(buffer, shield)
-	DownloadButton(buffer, "Cruise Control.shield")
+	DownloadButton(take!(buffer), "Cruise Control Declared Action.shield")
 end
 
 # ╔═╡ 298dadf8-41a4-443d-90c9-9dba1a87145c
 let
 	libshield_so = get_libshield(shield)
-	DownloadButton(libshield_so |> read, "libshield.so")
+	DownloadButton(libshield_so |> read, "libdecalredactionshield.so")
 end
 
 # ╔═╡ Cell order:
