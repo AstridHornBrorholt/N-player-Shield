@@ -395,7 +395,7 @@ function runs_performance(result_dir)
 
 	df = sort(df, :runs)
 
-	return (runs=[string(r*9) for r  in df.runs], 
+	return (runs=[string(r) for r  in df.runs], 
 	performance=[reward(p) for p in df.learned_performance])
 end
 
