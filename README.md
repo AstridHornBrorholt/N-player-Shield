@@ -9,17 +9,26 @@ Start an experiment by navigating to its sub-folder in this project. If it is ru
 ## Index of Experiments
 
 | Folder Prefix  |  |
-|--|--|
-|CC| Cruise Control Example|
+|--|----------------------------|
+|CC| Cruise Control Example     |
 |CP| Chemical Production Example|
 
-The names of these experiments don't really match what we call it in the article. We always come up with new names for things in the writing process, so I've chosen to keep the experiment names for now. Changing the folder names is time-consuming and error-prone anyway.
+The names of these experiments don't really match what we call it in the article. We always come up with new names for things in the writing process, so I've chosen to keep the experiment names for now. Changing the folder names is error-prone.
 
-Training budget is handled inconsistently. In some copies of `Run Experiment.jl` the number of `runs` specified will be multiplied by the number of agents. I think in at least one case the multiplication has to be done manually. 
+Main experiments: 
 
 | Folder Suffix | Term Used in Paper | |
 |---------------|--------------------|-|
 | \<none\>      | Distributed Shield & Cascading Learning | Shielding: Individual shield for each agent. Learning: Train one unit, make the unit's strategy part of the environment. Then train the next unit etc.  |
 | Non-specialized | Distributed Shield & Distributed Learning | Shielding: See previous. Learning: Spend entire training budget on training the first unit, then apply the learned policy to all agents. |
 | Centralized Control | Distributed Shield & Centralized Learning | Shielding: y'know. Learning: Spend entire training budget on one single policy that controls all agents. |
-| Centralied Shield | Centralized Shield & Centralized Learning | CC Only. A shield spanning 3 cars (1 uncontrollable, 2 controllable) is compared to a shield spanning 2 cars (1 uncontrollable 1 controllable). Doing distributed or cascading learning with a centralized shield doesn't really make sense, so only centralized learning is done. |
+| Centralied Shield | Centralized Shield & Centralized Learning, Distributed Shield & Centralized Learning, Co-ordinated Shield & Centralized Learning | CC Only. Shields with limited range of 50m compared to 200m default. Doing distributed or cascading learning with a centralized shield doesn't really make sense, so only centralized learning is done. |
+
+Other:
+
+| Folder | Term Used in Paper | |
+|---------------|--------------------|-|
+| CC Shield|  | Contains code for generating the distributed and co-ordinated shields, as well as the generated shield files. |
+| CC Shield Transfer |  | An experiment where the CC shield was applied to a variant of CC with different mechanics, through a transformation function. Turns out this is only possible for very specific combinations of mechanics. |
+| Strategies |  | Some strategies that have been exported and that the non-blueprint UPPAAL models use. |
+| Exported Figures |  | Y'know. |
