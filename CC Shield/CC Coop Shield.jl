@@ -564,7 +564,7 @@ end
 
 # ╔═╡ 298dadf8-41a4-443d-90c9-9dba1a87145c
 let
-	libshield_so = get_libshield(shield)
+	libshield_so = get_libshield(shield, function_name="get_value_declared")
 	DownloadButton(libshield_so |> read, "libdecalredactionshield.so")
 end
 
@@ -631,4 +631,4 @@ end
 # ╟─b4eea529-3c88-4e9d-b1b1-99fe2f9c4f94
 # ╟─4e9bc749-dcd6-481b-89a2-98ddad587291
 # ╟─8a119778-d498-44af-95cc-18513c836b4f
-# ╟─298dadf8-41a4-443d-90c9-9dba1a87145c
+# ╠═298dadf8-41a4-443d-90c9-9dba1a87145c
