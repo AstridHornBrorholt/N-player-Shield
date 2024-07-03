@@ -4,7 +4,7 @@ echo "Scheduling slurm jobs"
 export log_output="$HOME/Results/N-player CC/log.txt"
 
 date >> "$log_output"
-ARGS="--out=/dev/null --exclude=rome0[1-3],dhabi0[1-3],naples0[1-3],vmware0[1-4] -n1 --mem=4G --job-name 'CCCentralizedShield'"
+ARGS="--out=/dev/null --partition=rome -n1 --mem=4G --job-name 'CCCentralizedShield'"
 
 repetitions=10
 
