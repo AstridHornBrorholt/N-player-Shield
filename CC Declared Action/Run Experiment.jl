@@ -1,19 +1,19 @@
 ## Preface ##
 using Dates
 # The fruit is there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.
-emoji = [ "🟥", "🟧", "🟨", "🟩", "🟦", "🟪", "🟫", "⬛", "⬜" ]
-🟦🟥 = join(rand(emoji, 2), "")
+emoji = [ "🍞", "🥐", "🥖", "🫓", "🥨", "🥯", "🥞", "🧇", "🧀", "🌭", "🥪", "🌮", "🥙" ]
+🍞🥐 = join(rand(emoji, 2), "")
 node = get(ENV, "SLURMD_NODENAME", "local")
 function status(str) 
     time = Dates.format(Dates.now(), "dd/mm HH:MM")
-    println("$time $node $🟦🟥 $str")
+    println("$time $node $🍞🥐 $str")
     flush(stdout)
 end
 using Pkg
 Pkg.activate("..", io=devnull)
 
 using ArgParse
-include("../CC Declared Action/Create Fleet.jl")
+include("Create Fleet.jl")
 
 ## Args and Constants ##
 ⨝ = joinpath
@@ -40,7 +40,7 @@ begin
         "--verifyta-path"
             default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta.sh"
         "--blueprint-path"
-            default=pwd() ⨝ "../CC Declared Action/Declared Action Fleet_blueprint.xml"
+            default=pwd() ⨝ "Declared Action Fleet_blueprint.xml"
         "--shield-path"  
             default=pwd() ⨝ "../CC Shield/libshield.so"
         "--declared-action-shield-path"  
@@ -65,7 +65,10 @@ status("Starting... $((;runs, checks, fleet_size, repetition))")
 isdir(results_dir) || mkdir(results_dir) # Error if path is invalid except if it is only the last folder missing.
 isfile(verifyta_path) || error("File verifyta not found at path $verifyta_path")
 
-verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs --total-runs $runs --runs-pr-state $runs"
+cars_to_train = fleet_size - 1
+runs_per_car = round(Int64, runs/cars_to_train)
+
+verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs_per_car --total-runs $runs_per_car --runs-pr-state $runs_per_car"
 
 verifyta_call = String[
     verifyta_path,
@@ -101,35 +104,20 @@ struct ExceptionWithNodeID <: Exception
     node_id
 end
 
-# Run a fleet with one learner car and one random car in front,
-#plus as many cars in betweeen, as there are strategies provided in `strategy_paths`
-function do_run(strategy_paths; skip_training)
-    N = length(strategy_paths) + 2
-    status("Running Fleet of $N Cars...  (repetition=$repetition)")
-    outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
-    model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, declared_action_shield_path, models_dir; checks, skip_training)
-    open(outfile, "w") do io
-        result = [verifyta_call..., model_path, queries_path] |> Cmd |> read |> String
-        write(io, result)
-    end
-    status("Done running Fleet of $N Cars.  (repetition=$repetition)")
-end
-
 ## Mainmatter ##
 try
-    # Train a distributed strategy on the first car
-    do_run([], skip_training=false)
-
-    # Use this strategy for the next (fleet_size - 1) cars.
-    strategy_path = (models_dir ⨝ "car1.json")
-    strategy_paths = [strategy_path for _ in 2:fleet_size - 1]
-    
-    # Hack: When skip_training==true, the function will look for a strategy with the appropriate number.
-    # This is a quick way to ensure that the last car in the fleet also uses the strategy of car1.
-    cp(strategy_path, models_dir ⨝ "car$(fleet_size - 1).json", force=true)
-
-    # Do the actual run
-    do_run(strategy_paths, skip_training=true)
+    strategy_paths = String[]
+    for N in 2:fleet_size
+        status("Running Fleet of $N Cars...  (repetition=$repetition)")
+        outfile = query_results_dir ⨝ "Fleet of $N Cars.txt"
+        model_path, queries_path = create_fleet(blueprint_path, strategy_paths, shield_path, declared_action_shield_path, models_dir; checks, skip_training)
+        strategy_paths ← (working_dir ⨝ "Models/car$(N - 1).json")
+        open(outfile, "w") do io
+            result = [verifyta_call..., model_path, queries_path] |> Cmd |> read |> String
+            write(io, result)
+        end
+        status("Done running Fleet of $N Cars.  (repetition=$repetition)")
+    end
 
     status("All done.")
 catch e
