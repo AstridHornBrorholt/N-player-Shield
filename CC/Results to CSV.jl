@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -409,23 +409,58 @@ end
 extract_results(query_result)
   ╠═╡ =#
 
+# ╔═╡ 1d00dac9-a3c1-4a25-b456-87e53c03bb1a
+md"""
+---
+"""
+
 # ╔═╡ 5c625d7a-a646-4613-b8dd-b2c246ce0c22
-function safety_violation_occured(query_result)
-	re_safe = r"\(0/\d+ runs\)"
-	if occursin(re_safe, query_result)
+# Output error if query results seem to indicate a safety violation. 
+# This shit is super brittle because it counts hard on there being only ONE Pr[]
+# query in the file, and that query being the safety one.
+# Assuming safety query on the form 
+#    Pr[<=100;100]([] forall (i : int[0, fleetSize - 2]) (distance[i] > minDistance || distance[i] < maxDistance))
+function safety_violation_occured(query_result, path=nothing)
+	re_safety_evaluation = r"\((\d+)/(\d+) runs\)"
+	m = match(re_safety_evaluation, query_result)
+	#return m
+	if !isnothing(m) && m[1] == m[2]
 		return false
 	else
-		re_check = r"\(\d+/\d+ runs\)"
-		matches = match(re_check, query_result)
-		@error "Didn't find a query showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." matches
+		safety_evaluation = isnothing(m) ? "not found!" : m.match
+		@error "Didn't find a query showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." safety_evaluation path
 		return true
 	end
 end
 
+# ╔═╡ 69b804f5-24e9-420d-81d5-d3112628c795
+# ╠═╡ skip_as_script = true
+#=╠═╡
+safety_violation_occured("ababa (100/1000 runs) asdasdfasdf")
+  ╠═╡ =#
+
+# ╔═╡ bd82c2e0-bf72-43fe-a878-87b77d1b7f31
+# ╠═╡ skip_as_script = true
+#=╠═╡
+safety_violation_occured("ababa (1000/1000 runs) asdasdfasdf")
+  ╠═╡ =#
+
+# ╔═╡ d2cb5b73-7d26-40bb-9aa3-53570eb73ebf
+# ╠═╡ skip_as_script = true
+#=╠═╡
+safety_violation_occured("ababa asdasdfasdf")
+  ╠═╡ =#
+
 # ╔═╡ 479f1124-24e7-411b-acc5-f19bf908f7d0
+# ╠═╡ skip_as_script = true
 #=╠═╡
 safety_violation_occured(query_result)
   ╠═╡ =#
+
+# ╔═╡ 1b47dcac-5ba2-4b08-a55f-59e1887f9705
+md"""
+---
+"""
 
 # ╔═╡ 1e34748a-20ee-4903-a9b2-a514de81b68a
 function to_csv(results_dir)
@@ -445,7 +480,7 @@ function to_csv(results_dir)
 					@warn "Skipping file with unexpected number of query results" file=🗎 expected=fleet_size - 1 actual=length(query_results)
 					continue
 				end
-				safety_violation_occured(query_result_str)
+				safety_violation_occured(query_result_str, 🗎)
 				learned_performance = query_results[end]
 				other_cars = query_results[1:end - 1]
 				if length(other_cars) == 0
@@ -491,8 +526,13 @@ end
 # ╠═272ca917-5dbd-446e-8bc1-2d044d7631f5
 # ╠═e900855f-6c9f-41d4-8f1e-9580190a92f8
 # ╠═a665c327-d78f-4fef-90f1-ae1acddf73bf
+# ╟─1d00dac9-a3c1-4a25-b456-87e53c03bb1a
 # ╠═5c625d7a-a646-4613-b8dd-b2c246ce0c22
+# ╠═69b804f5-24e9-420d-81d5-d3112628c795
+# ╠═bd82c2e0-bf72-43fe-a878-87b77d1b7f31
+# ╠═d2cb5b73-7d26-40bb-9aa3-53570eb73ebf
 # ╠═479f1124-24e7-411b-acc5-f19bf908f7d0
+# ╟─1b47dcac-5ba2-4b08-a55f-59e1887f9705
 # ╠═1e34748a-20ee-4903-a9b2-a514de81b68a
 # ╠═b646f1e9-e216-44dc-9566-54fc077a9910
 # ╠═030b379f-72c9-426b-aa45-32be0220709b

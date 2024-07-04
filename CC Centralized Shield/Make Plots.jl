@@ -87,14 +87,20 @@ function extract_results(query_result)
 end
 
 # ╔═╡ 6565e283-22b5-495f-8635-a49e9af36d37
+# Output error if query results seem to indicate a safety violation. 
+# This shit is super brittle because it counts hard on there being only ONE Pr[]
+# query in the file, and that query being the safety one.
+# Assuming safety query on the form 
+#    Pr[<=100;100]([] forall (i : int[0, fleetSize - 2]) (distance[i] > minDistance || distance[i] < maxDistance))
 function safety_violation_occured(query_result)
-	re_safe = r"\(0/\d+ runs\)"
-	if occursin(re_safe, query_result)
+	re_safety_evaluation = r"\((\d+)/(\d+) runs\)"
+	m = match(re_safety_evaluation, query_result)
+	#return m
+	if !isnothing(m) && m[1] == m[2]
 		return false
 	else
-		re_check = r"\(\d+/\d+ runs\)"
-		matches = match(re_check, query_result)
-		@warn "Didn't find a query showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." matches
+		safety_evaluation = isnothing(m) ? "not found!" : m.match
+		@error "Didn't find a query showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." safety_evaluation
 		return true
 	end
 end
