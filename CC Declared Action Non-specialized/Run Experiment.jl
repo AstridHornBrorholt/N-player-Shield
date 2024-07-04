@@ -1,12 +1,12 @@
 ## Preface ##
 using Dates
 # The fruit is there to distinguish different runs writing to the same output concurrently. This doesn't seem to be a problem after all but I enjoy the splash of colour.
-emoji = ["🦃", "🐔", "🐓", "🐣", "🐤", "🐥", "🐦", "🐧", "🕊️", "🦅", "🦆", "🦢", "🦉", "🦤", "🪶", "🦩", "🦚", "🦜", "🪽", "🐦‍⬛", "🪿", "🐦‍🔥", "🪹", "🪺"]
-🐔🐦 = join(rand(emoji, 2), "")
+emoji = [ "🟥", "🟧", "🟨", "🟩", "🟦", "🟪", "🟫", "⬛", "⬜" ]
+🟦🟥 = join(rand(emoji, 2), "")
 node = get(ENV, "SLURMD_NODENAME", "local")
 function status(str) 
     time = Dates.format(Dates.now(), "dd/mm HH:MM")
-    println("$time $node $🐔🐦 $str")
+    println("$time $node $🟦🟥 $str")
     flush(stdout)
 end
 using Pkg
@@ -39,8 +39,8 @@ begin
 			default=homedir() ⨝ "Results/N-player CC Declared Action Non-specialized"
         "--verifyta-path"
             default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta.sh"
-        "--blueprint-path"  
-            default=pwd() ⨝ "../CC/Fleet_blueprint.xml"
+        "--blueprint-path"
+            default=pwd() ⨝ "Declared Action Fleet_blueprint.xml"
         "--shield-path"  
             default=pwd() ⨝ "../CC Shield/libshield.so"
         "--declared-action-shield-path"  
@@ -126,7 +126,7 @@ try
     
     # Hack: When skip_training==true, the function will look for a strategy with the appropriate number.
     # This is a quick way to ensure that the last car in the fleet also uses the strategy of car1.
-    cp(strategy_path, models_dir ⨝ "car$(fleet_size - 1).json")
+    cp(strategy_path, models_dir ⨝ "car$(fleet_size - 1).json", force=true)
 
     # Do the actual run
     do_run(strategy_paths, skip_training=true)
