@@ -94,7 +94,7 @@ import %declared action shield path%
 {
     // Get value from shield which factors in the front car's action.
     int get_value_declared(double velocity, double veloctiyFront, double distance, double actionFront);
-}
+};
 
 typedef struct {
     bool backwards;
@@ -112,9 +112,9 @@ allowedActions intToActions(int bitarray) {
 }
 
 double actionToInt(int a) {
-    return  a == -2 ? 0 : 
-            a == 0 ? 1 :
-            a == 2 ? 2 : velocity[-100]; // Provoke error: unexpected acceleration.
+    return  a == -2 ? 0.0 : 
+            a == 0 ? 1.0 :
+            a == 2 ? 2.0 : velocity[-100]+0.0; // Provoke error: unexpected acceleration.
 }
 
 int debugUnsafeState = 0;
