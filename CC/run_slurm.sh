@@ -8,7 +8,7 @@ date >> "$log_output"
 #sinfo -h -o %N >> dhabi[01-09],naples[01-09],rome[01-07],turing[01-02],vmware[01-04]
 ARGS="--out=/dev/null --partition=rome -n1 --mem=16G --job-name CC"
 
-export max_cars=30
+export max_cars=10
 repetitions=10
 
 for ((r=1; r<=$repetitions; r++))
