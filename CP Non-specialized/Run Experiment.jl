@@ -36,7 +36,7 @@ begin
             arg_type=Int
             required=true
 		"--results-dir"
-			default=homedir() ⨝ "Results/N-player CP Non-specialized"
+			default=homedir() ⨝ "Results/N-player $(basename(pwd()))"
         "--verifyta-path"
             default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta.sh"
         "--blueprint-path"  
