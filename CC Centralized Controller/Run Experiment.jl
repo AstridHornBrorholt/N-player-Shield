@@ -8,7 +8,7 @@ function status(str)
     flush(stdout)
 end
 using Pkg
-Pkg.activate("..")
+Pkg.activate("..", io=devnull)
 
 using ArgParse
 include("Create Fleet.jl")

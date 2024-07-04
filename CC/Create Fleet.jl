@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ 488ee430-40cf-11ee-3160-1f10b20c5be6
 begin
 	using Pkg
-	Pkg.activate("..")
+	Pkg.activate("..", io=devnull)
 	using JSON
 	using Glob
 	using ArgParse

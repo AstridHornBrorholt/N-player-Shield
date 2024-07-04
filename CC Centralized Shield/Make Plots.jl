@@ -17,7 +17,7 @@ end
 # ╔═╡ d6481c1f-3020-4a26-b4aa-83aaa14f33e5
 begin
 	using Pkg
-	Pkg.activate("..")
+	Pkg.activate("..", io=devnull)
 	using JSON
 	using CSV
 	using Glob

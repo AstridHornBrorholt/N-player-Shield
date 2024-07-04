@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ c1bdc9f0-3d96-11ee-00af-b341a715281c
 begin
 	using Pkg
-	Pkg.activate("..")
+	Pkg.activate("..", io=devnull)
 	using Plots
 	using PlutoLinks
 	using StatsBase

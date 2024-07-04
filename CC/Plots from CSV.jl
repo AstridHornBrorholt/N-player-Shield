@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ d0db8070-41a9-11ee-2b97-818668d7efa8
 begin
 	using Pkg
-	Pkg.activate("..")
+	Pkg.activate("..", io=devnull)
 	using CSV
 	using DataFrames
 	using Plots
@@ -396,7 +396,7 @@ function runs_performance(result_dir)
 	df = sort(df, :runs)
 
 	return (runs=[string(r) for r  in df.runs], 
-	performance=[reward(p) for p in df.learned_performance])
+		performance=[reward(p) for p in df.learned_performance])
 end
 
 # ╔═╡ 9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
