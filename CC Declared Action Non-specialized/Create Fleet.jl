@@ -286,7 +286,7 @@ function queries(number_of_strategies, output_path;
 	# Learned performance
 	result ← "E[<=100;$checks](max:D[$(i - 1)]) under car$i"
 	# Probability of safety violation
-	result ← "Pr[<=100;$checks](<> forall (i : int[0, fleetSize - 2]) (distance[i] < minDistance || distance[i] > maxDistance)) under car$i"
+	result ← "Pr[<=100;$checks]([] forall (i : int[0, fleetSize - 2]) (distance[i] > minDistance || distance[i] < maxDistance)) under car$i"
 
 	join(result, "\n")
 end
@@ -516,7 +516,7 @@ create_fleet(blueprint_path, strategy_paths,
 # ╠═fade61a9-8136-4a4c-99a2-dee9bf79fd32
 # ╠═a0e02d1a-0355-4496-9b18-70f53c67a389
 # ╠═dc00019b-ca42-49e8-a9e7-7c326b3082db
-# ╠═598c3b63-5c4e-413d-a721-a0ed3268413f
+# ╟─598c3b63-5c4e-413d-a721-a0ed3268413f
 # ╠═5e900e6f-fede-40fa-b36f-5a1868e44c5f
 # ╠═4a634cea-cbe4-4454-aee0-1525b526b48a
 # ╠═9baf5bef-2632-4d4d-8ee6-17a58db86c1a

@@ -183,7 +183,7 @@ function queries(fleet_size, output_path; checks=1000, skip_training=false)
 		result ← "E[<=100;$checks](max:D[$(i)]) under centralized"
 	end
 	# Probability of safety violation
-	result ← "Pr[<=100;$checks](<> forall (i : int[0, fleetSize - 2]) (distance[i] < minDistance || distance[i] > maxDistance)) under centralized"
+	result ← "Pr[<=100;$checks]([] forall (i : int[0, fleetSize - 2]) (distance[i] > minDistance || distance[i] < maxDistance)) under centralized"
 
 	join(result, "\n")
 end

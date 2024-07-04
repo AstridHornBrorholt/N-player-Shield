@@ -478,7 +478,7 @@ system Decisions, Dynamics, Random0,
 			<comment/>
 		</query>
 		<query>
-			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance))</formula>
+			<formula>Pr[&lt;=100;1000]([] forall (i : int[0, fleetSize - 2]) (distance[i] &gt; minDistance || distance[i] &lt; maxDistance))</formula>
 			<comment/>
 		</query>
 		<query>

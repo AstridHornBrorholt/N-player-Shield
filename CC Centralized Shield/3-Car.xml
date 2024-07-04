@@ -345,11 +345,11 @@ system Dynamics, Decisions, Shield2, Learner2, Shield1, Learner1, Random0;</syst
 			<comment/>
 		</query>
 		<query>
-			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance))</formula>
+			<formula>Pr[&lt;=100;1000]([] forall (i : int[0, fleetSize - 2]) (distance[i] &gt; minDistance || distance[i] &lt; maxDistance))</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>Pr[&lt;=100;1000](&lt;&gt; forall (i : int[0, fleetSize - 2]) (distance[i] &lt; minDistance || distance[i] &gt; maxDistance)) under bothCars</formula>
+			<formula>Pr[&lt;=100;1000]([] forall (i : int[0, fleetSize - 2]) (distance[i] &gt; minDistance || distance[i] &lt; maxDistance)) under bothCars</formula>
 			<comment/>
 		</query>
 		<query>

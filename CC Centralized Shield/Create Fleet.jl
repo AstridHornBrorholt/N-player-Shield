@@ -114,7 +114,7 @@ strategy bothCars = minE(D[0] + D[1]) [<=105] {}->{velocity[0], velocity[1], vel
 saveStrategy("$output_path/$name.json", bothCars)
 E[<=100;$checks](max:D[0]) under bothCars
 E[<=100;$checks](max:D[1]) under bothCars
-Pr[<=100;$checks](<> forall (i : int[0, fleetSize - 2]) (distance[i] < minDistance || distance[i] > maxDistance)) under bothCars
+Pr[<=100;$checks]([] forall (i : int[0, fleetSize - 2]) (distance[i] > minDistance || distance[i] < maxDistance)) under bothCars
 """
 end
 
