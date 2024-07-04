@@ -407,6 +407,9 @@ md"""
 ### Inspect Result
 """
 
+# ╔═╡ a1dd7ecd-1f81-432b-bd56-9bb6c4e78558
+[backwards, neutral, forwards]
+
 # ╔═╡ 99aabe32-7c65-4a9d-9397-ba2db2ca5cab
 @bind action Select([backwards, neutral, forwards])
 
@@ -451,7 +454,7 @@ end
 SupportingPoints(model.samples_per_axis, box(grid, v_ego, v_front, distance, Int(neutral))) |> collect
 
 # ╔═╡ b7d66268-8a40-499d-aaca-d6e59f0ee14f
-partition = box(shield, v_ego, v_front, distance, Int(neutral))
+partition = box(shield, v_ego, v_front, distance, Int(front_action))
 
 # ╔═╡ 0018900a-03ed-437f-a4ce-b1e967269ac3
 get_value(partition)
@@ -562,11 +565,28 @@ let
 	DownloadButton(take!(buffer), "Cruise Control Declared Action.shield")
 end
 
+# ╔═╡ c6938231-7ee4-49fe-8407-4931a81672cc
+md"""
+# The exported libshield
+"""
+
+# ╔═╡ e42941e6-0158-4a57-9f57-0d81908d4c67
+const libshield_so = get_libshield(shield, function_name="get_value_declared")
+
 # ╔═╡ 298dadf8-41a4-443d-90c9-9dba1a87145c
 let
-	libshield_so = get_libshield(shield, function_name="get_value_declared")
 	DownloadButton(libshield_so |> read, "libdecalredactionshield.so")
 end
+
+# ╔═╡ a79ffdc5-5540-47b5-a7f6-538a753718d3
+c_get_value(s1, s2, s3, s4) = 
+	@ccall libshield_so.get_value_declared(s1::Cdouble, s2::Cdouble, s3::Cdouble, s4::Cdouble)::Clong
+
+# ╔═╡ f02cdba6-d8cc-4f06-9002-cc738f73b6d0
+c_get_value(v_ego, v_front, distance, Int(front_action))
+
+# ╔═╡ 28fd76a1-2411-43f7-b53f-5b771d0859f3
+c_get_value(0., -2., 10., 2.)
 
 # ╔═╡ Cell order:
 # ╟─1e159603-fc61-45f8-9595-f75e55318344
@@ -616,10 +636,12 @@ end
 # ╠═0f5ee444-afe5-4314-ab8e-a7dfff02964d
 # ╟─85e07e50-a0fc-42bb-813c-8d0ab6af2b4c
 # ╟─2418bf90-b0ec-4cb9-b3fd-bf2b91d2ff33
+# ╠═a1dd7ecd-1f81-432b-bd56-9bb6c4e78558
 # ╠═99aabe32-7c65-4a9d-9397-ba2db2ca5cab
 # ╠═5bd38f1d-46c4-4576-a1b3-bb05c50cd7e6
 # ╠═b7d66268-8a40-499d-aaca-d6e59f0ee14f
 # ╠═0018900a-03ed-437f-a4ce-b1e967269ac3
+# ╠═f02cdba6-d8cc-4f06-9002-cc738f73b6d0
 # ╠═5b3b198d-f0df-4991-8eb7-f208418b0be0
 # ╟─1537138d-1e9a-4c2e-a1ce-0e3b696d5c8d
 # ╠═28f000ec-9538-4c9c-afbc-ece4af32d3af
@@ -632,3 +654,7 @@ end
 # ╟─4e9bc749-dcd6-481b-89a2-98ddad587291
 # ╟─8a119778-d498-44af-95cc-18513c836b4f
 # ╠═298dadf8-41a4-443d-90c9-9dba1a87145c
+# ╟─c6938231-7ee4-49fe-8407-4931a81672cc
+# ╠═e42941e6-0158-4a57-9f57-0d81908d4c67
+# ╠═a79ffdc5-5540-47b5-a7f6-538a753718d3
+# ╠═28fd76a1-2411-43f7-b53f-5b771d0859f3

@@ -145,7 +145,7 @@ void apply_shield(int i) {
     double vFront = round(velocity[i - 1]+0.0);
     double d = round(distance[i - 1]+0.0);
     allowedActions allowed;
-    if (i == 2) {
+    if (i &gt; 1) {
         double front_action = actionToInt(acceleration[i-1]);
         allowed = intToActions(get_value_declared(v, vFront, d, front_action));
     } else {
@@ -191,7 +191,7 @@ that time reversing.</label>
 		<transition id="id4">
 			<source ref="id1"/>
 			<target ref="id3"/>
-			<label kind="synchronisation" x="-25" y="68">choose?</label>
+			<label kind="synchronisation" x="51" y="110">choose?</label>
 			<nail x="0" y="68"/>
 		</transition>
 		<transition id="id5">
