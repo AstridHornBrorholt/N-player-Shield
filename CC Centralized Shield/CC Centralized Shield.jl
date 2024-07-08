@@ -632,7 +632,7 @@ joint_action_space = let
 end
 
 # ╔═╡ dfc8cb50-b08f-4006-8e6f-de058ee0bf98
-if true
+if make_shield_button > 0
 	reachability_function_precomputed = 
 		get_transitions(reachability_function, joint_action_space, grid)
 end;
