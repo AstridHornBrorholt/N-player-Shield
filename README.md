@@ -2,7 +2,10 @@
 
 ## How to Run
 
-First time an experiment is run, make sure that the correct folder structure is in place. There should be a file path at `~/Results/N-player ##` where `##` matches the folder name containing the experiments. This is to support logging of slurm jobs. OBS: The cause of the error will not be printed because slurm is annoying.
+ - Install Julia 1.10
+ - Install UPPAAL 5.0.0
+    - Remember to do `--key`
+Check some of the readmes in my other repos for detailed instructions.
 
 Start an experiment by navigating to its sub-folder in this project. If it is run from any other working directory, it will fail. These experiments are made to run as parallel slurm jobs where possible. As a rule, the file `run_slurm.sh` starts multiple jobs by queueing instances of `run_single.sh` with different bash variables exported. This calls `Run Experiment.jl` with a bunch of command line arguments. Calling `run_single.sh` on its own is likely to result in failure because of undeclared variables. Use `run_single_cli.sh` instead. Note that the arguments to different versions of this script may vary. (Check them by reading the script.)
 
