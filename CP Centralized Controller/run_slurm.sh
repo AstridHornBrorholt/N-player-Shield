@@ -2,6 +2,7 @@
 
 export experiment_name=$(basename "$(pwd)")
 export results_dir="$HOME/Results/N-player $experiment_name"
+job_name=$(echo -e "${experiment_name}" | tr -d '[:space:]')
 
 [ -d "$results_dir" ] || mkdir -p "$results_dir"
 export log_output="$results_dir/log.txt"
@@ -14,7 +15,7 @@ $(date)
 
 echo "Scheduling slurm jobs. Writing logs to \"$log_output\""
 
-ARGS="--out=/dev/null --partition=rome -n1 --mem=20G --job-name 'CPCentralizedController'"
+ARGS="--out=/dev/null --partition=rome -n1 --mem=20G --job-name $job_name"
 
 repetitions=10
 

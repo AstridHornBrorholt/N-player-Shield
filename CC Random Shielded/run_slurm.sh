@@ -2,6 +2,7 @@
 
 export experiment_name=$(basename "$(pwd)")
 export results_dir="$HOME/Results/N-player $experiment_name"
+job_name=$(echo -e "${experiment_name}" | tr -d '[:space:]')
 
 [ -d "$results_dir" ] || mkdir -p "$results_dir"
 export log_output="$results_dir/log.txt"
@@ -14,7 +15,7 @@ $(date)
 
 echo "Scheduling slurm jobs. Writing logs to \"$log_output\""
 
-ARGS="--out=/dev/null --partition=rome -n1 --mem=16G --job-name 'CCRandomShielded'"
+ARGS="--out=/dev/null --partition=rome -n1 --mem=16G --job-name $job_name"
 
 # Make a copy of the thing. The uppaal file.
 export RANDOM_FLEET="$RESULTS/Random Fleet.xml"
