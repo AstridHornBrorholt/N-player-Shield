@@ -249,7 +249,7 @@ html"""
 <style>
 pluto-editor {
 	background-image: url("https://i.kym-cdn.com/photos/images/original/000/511/922/ea9.jpg");
-	background-size: 100%;
+	background-size: 270pt;
 }
 pluto-notebook {
 	background: none;
@@ -258,13 +258,24 @@ pluto-notebook {
 pluto-output  {
 	border-radius: 4pt 4pt 0 0;
 	padding: 4pt;
-	background: none;
+	background: #efefef60;
 	backdrop-filter: blur(5px)brightness(150%)grayscale(60%);
 }
 
 pluto-input .cm-editor {
-	background: none;
+	background: #efefef60;
 	backdrop-filter: blur(15px)brightness(180%)grayscale(60%);
+}
+
+pluto-logs-container {
+	margin-right: 0;
+	background: #efefef60;
+	backdrop-filter: blur(15px)brightness(180%)grayscale(60%);
+}
+
+table.pluto-table .schema-names th,
+table.pluto-table tbody th:first-child{
+	background: none;
 }
 
 pluto-cell.code_differs .cm-editor .cm-gutters {
@@ -370,6 +381,26 @@ md"""
 This is the performance vs training time plot.
 """
 
+# ╔═╡ 9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
+#=╠═╡
+md"""
+`distributed =` $(@bind distributed TextField(70, 
+	default=homedir()⨝"Results/N-player CC Non-specialized"))
+
+`cascading =` $(@bind cascading TextField(70, 
+	default=homedir()⨝"Results/N-player CC"))
+
+`centralized =` $(@bind centralized TextField(70, 
+	default=homedir()⨝"Results/N-player CC Centralized Controller"))
+
+`distributed_coop =` $(@bind distributed_coop TextField(70, 
+	default=homedir()⨝"Results/N-player CC Declared Action Non-specialized"))
+
+`cascading_coop =` $(@bind cascading_coop TextField(70, 
+	default=homedir()⨝"Results/N-player CC Declared Action"))
+"""
+  ╠═╡ =#
+
 # ╔═╡ a2256c72-3686-4f89-9adf-6684270946b6
 const episode_length = 100
 
@@ -399,23 +430,9 @@ function runs_performance(result_dir)
 		performance=[reward(p) for p in df.learned_performance])
 end
 
-# ╔═╡ 9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
-#=╠═╡
-md"""
-`distributed =` $(@bind distributed TextField(70, 
-	default=homedir()⨝"Results Example/N-player CC Non-specialized"))
-
-`cascading =` $(@bind cascading TextField(70, 
-	default=homedir()⨝"Results Example/N-player CC"))
-
-`centralized =` $(@bind centralized TextField(70, 
-	default=homedir()⨝"Results Example/N-player CC Centralized Controller"))
-"""
-  ╠═╡ =#
-
 # ╔═╡ 20225483-817e-4dc3-93ad-ffa67ec32a99
 #=╠═╡
-runs_performance(distributed)
+runs_performance(distributed_coop)
   ╠═╡ =#
 
 # ╔═╡ 0800ba83-5476-4b18-a7c1-569239a12af7
@@ -431,11 +448,15 @@ CSV.read(IOBuffer(to_csv(cascading)), DataFrame)
 # ╔═╡ f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
 function do_the_plot_of_the_results(;distributed, 
 		cascading, 
-		centralized)
+		centralized,
+		distributed_coop, 
+		cascading_coop)
 
 	distributed = runs_performance(distributed)
 	cascading = runs_performance(cascading)
 	centralized = runs_performance(centralized)
+	distributed_coop = runs_performance(distributed_coop)
+	cascading_coop = runs_performance(cascading_coop)
 
 	
 	all_performances = [distributed.performance..., 	
@@ -443,7 +464,9 @@ function do_the_plot_of_the_results(;distributed,
 
 	ylims = (min(all_performances...) -25, max(all_performances...) + 40)
 
-	stylings = (linewidth=2,
+	stylings = (
+		legend=:bottomleft,
+		linewidth=2,
 		markerstrokewidth=2,
 		markerstrokecolor=:white)
 	
@@ -470,12 +493,25 @@ function do_the_plot_of_the_results(;distributed,
 		marker=(:circle, 6),
 		stylings...)
 	
+	plot!(distributed_coop.runs, distributed_coop.performance;
+		label="Distributed Co-op",
+		color=colors.SUNFLOWER,
+		marker=(:square, 4),
+		stylings...)
+	
+	plot!(cascading_coop.runs, cascading_coop.performance;
+		label="Cascading Co-op",
+		color=colors.POMEGRANATE,
+		marker=(:diamond, 5),
+		stylings...)
+	
 	
 end
 
 # ╔═╡ 74674f2d-c384-4c01-957b-ca8d15062db3
 #=╠═╡
-do_the_plot_of_the_results(;distributed, cascading, centralized)
+do_the_plot_of_the_results(;distributed, cascading, centralized, 
+	distributed_coop, cascading_coop)
   ╠═╡ =#
 
 # ╔═╡ a0159339-14f3-4280-8160-447702f19d2a
@@ -943,13 +979,13 @@ end
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╟─ef5c1d6e-9046-4da7-bfd1-2a12832d0e7d
+# ╟─9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
 # ╠═a2256c72-3686-4f89-9adf-6684270946b6
 # ╠═266ba2a5-01d0-48a4-be0e-52416dfd2485
 # ╠═a3c96777-3878-4abd-b865-e3ee35186808
 # ╠═20225483-817e-4dc3-93ad-ffa67ec32a99
 # ╠═0800ba83-5476-4b18-a7c1-569239a12af7
 # ╠═9aa911de-e818-4565-a7e2-1adc18f3fce0
-# ╟─9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
 # ╠═f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
 # ╠═74674f2d-c384-4c01-957b-ca8d15062db3
 # ╟─a0159339-14f3-4280-8160-447702f19d2a
