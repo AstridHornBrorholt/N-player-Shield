@@ -21,37 +21,18 @@ ARGS="--out=/dev/null --partition=rome -n1 --mem=16G --job-name $job_name"
 export fleet_size=10
 repetitions=10
 
+runs_step=500
+min_runs=$runs_step
+max_runs=10000
+
 for ((r=1; r<=$repetitions; r++))
 do
     export repetition=$r
     
-    export runs=500
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=1000
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=1500
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=2000
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=2500
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=3000
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
+    for ((runs=$min_runs; runs<=$max_runs; runs+=$runs_step)); do
+        export runs=$runs
+        export checks=1000
+        sbatch $ARGS ./run_single.sh
+        echo "Job scheduled. (max_cars=$max_cars, checks=$checks, runs=$runs)"
+    done
 done
