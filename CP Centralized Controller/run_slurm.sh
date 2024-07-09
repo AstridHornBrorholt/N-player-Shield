@@ -15,7 +15,7 @@ $(date)
 
 echo "Scheduling slurm jobs. Writing logs to \"$log_output\""
 
-ARGS="--out=/dev/null --partition=rome -n1 --mem=20G --job-name $job_name"
+ARGS="--out=/dev/null --partition=dhabi -n1 --mem=20G --job-name $job_name"
 
 repetitions=10
 

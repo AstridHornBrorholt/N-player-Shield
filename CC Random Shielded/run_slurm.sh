@@ -15,7 +15,7 @@ $(date)
 
 echo "Scheduling slurm jobs. Writing logs to \"$log_output\""
 
-ARGS="--out=/dev/null --partition=rome -n1 --mem=16G --job-name $job_name"
+ARGS="--out=/dev/null --partition=dhabi -n1 --mem=16G --job-name $job_name"
 
 # Make a copy of the thing. The uppaal file.
 export RANDOM_FLEET="$RESULTS/Random Fleet.xml"

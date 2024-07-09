@@ -16,7 +16,7 @@ $(date)
 echo "Scheduling slurm jobs. Writing logs to \"$log_output\""
 
 #sinfo -h -o %N >> dhabi[01-09],naples[01-09],rome[01-07],turing[01-02],vmware[01-04]
-ARGS="--out=/dev/null --partition=rome -n1 --mem=16G --job-name $job_name"
+ARGS="--out=/dev/null --partition=dhabi -n1 --mem=16G --job-name $job_name"
 
 export max_cars=10
 repetitions=10
