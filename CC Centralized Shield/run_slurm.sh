@@ -19,8 +19,8 @@ ARGS="--out=/dev/null --partition=rome -n1 --mem=4G --job-name $job_name"
 
 repetitions=10
 
-runs_step=500
-min_runs=$runs_step
+runs_step=1000
+min_runs=4000
 max_runs=10000
 
 for ((r=1; r<=$repetitions; r++))
