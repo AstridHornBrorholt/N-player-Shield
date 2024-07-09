@@ -686,30 +686,6 @@ gradient = let
 	cgrad(color_list, length(color_list), categorical=true)
 end
 
-# ╔═╡ 05305c4a-a1e6-40b4-bb94-e15e77929ef3
-function draw′(grid, point)
-
-	slice = vcat(
-		[:],
-		[box(grid, point).indices[i + 1] 
-			for i in 1:m.fleet_size - 1], 
-		[:],
-		[box(grid, point).indices[i + 1] 
-			for i in m.fleet_size + 1:m.fleet_size + 1 + m.fleet_size - 3], 
-	)
-
-	numbers = grid.array |> unique
-	clims = (min(numbers...), max(numbers...))
-	
-	draw(grid, slice;
-		colors=gradient,
-		clims,
-		size=(800,400),
-		legend=nothing,
-		colorbar_ticks=nothing,
-		colorbar=nothing)
-end
-
 # ╔═╡ f22987f2-acf7-4a48-b296-f20f81881a49
 @bind show_point CheckBox(default=false)
 
@@ -758,6 +734,7 @@ let
 
 	@show decoded = int_to_actions(Int64, encoded)
 	decoded′ = [int_to_joint_action(d, length(action)) for d in decoded]
+	@show [[string(dd) for dd in d] for d in decoded′]
 	@show a1 ∈ decoded′ 
 	@show a2 ∈ decoded′
 	@show a3 ∈ decoded′
@@ -824,6 +801,22 @@ SupportingPoints(model.samples_per_axis, box(grid, point)) |> collect
 # ╔═╡ 7a26f7f8-043a-4d0a-aeff-b46194c313ca
 reachability_function(box(grid, point), action)
 
+# ╔═╡ 219d83e3-0604-45d2-8db3-ee5938e8276b
+slice = vcat(
+	[:],
+	[box(grid, point).indices[i + 1] 
+		for i in 1:m.fleet_size - 1], 
+	[:],
+	[box(grid, point).indices[i + 1] 
+		for i in m.fleet_size + 1:m.fleet_size + 1 + m.fleet_size - 3], 
+)
+
+# ╔═╡ ae07716b-d018-4d5e-84ae-de8fdf615094
+encoded_actions = shield.array |> unique |> sort
+
+# ╔═╡ 5b2a89d2-54a4-4335-8831-9a449af57399
+findfirst((==(17)), encoded_actions)
+
 # ╔═╡ 99e4dde5-4239-45d9-82b1-b21eda494b3d
 # I can't get it to properly draw the actual shield, seeing as there is such 
 #a big numberical difference between some of the actions.
@@ -831,34 +824,24 @@ reachability_function(box(grid, point), action)
 #when the maximum value is > 1000
 shield_to_draw = let
 	result = Grid(shield.granularity, shield.bounds, data_type=Int64)
-	numbers = shield.array |> unique |> sort
 	for partition in result
 		value = get_value(GridShielding.Partition(shield, partition.indices))
-		new_value = findfirst((==(value)), numbers)
+		new_value = findfirst((==(value)), encoded_actions)
 		set_value!(partition, new_value)
 	end
 	result
 end
 
-# ╔═╡ 12ac5894-d531-4d89-b066-38648174a6a3
-[int_to_joint_action(a, m.fleet_size - 1) for a in int_to_actions(Int64, get_value(partition))]
-
-# ╔═╡ dd5faeb3-42f2-43ca-ace4-493e578bca77
-Bounds(partition)
-
-# ╔═╡ 6f8a09ac-bfa4-4ecc-ba85-5340d2ae5976
-slice = vcat(
-		[:],
-		[box(grid, point).indices[i + 1] 
-			for i in 1:m.fleet_size - 1], 
-		[:],
-		[box(grid, point).indices[i + 1] 
-			for i in m.fleet_size + 1:m.fleet_size + 1 + m.fleet_size - 3], 
-	)
-
 # ╔═╡ 28f000ec-9538-4c9c-afbc-ece4af32d3af
 let
-	draw′(shield_to_draw, point)
+	draw(shield_to_draw, slice;
+		colors=gradient,
+		clims=(0, length(encoded_actions)),
+		size=(800,400),
+		legend=nothing,
+		colorbar_ticks=nothing,
+		colorbar=nothing)
+	
 	if show_point
 		draw_barbaric_transition!(model, partition, joint_action_to_int(action), slice)
 	end
@@ -866,6 +849,12 @@ let
 			ylabel="distance",
 			size=(600, 400))
 end
+
+# ╔═╡ 12ac5894-d531-4d89-b066-38648174a6a3
+[int_to_joint_action(a, m.fleet_size - 1) for a in int_to_actions(Int64, get_value(partition))]
+
+# ╔═╡ dd5faeb3-42f2-43ca-ace4-493e578bca77
+Bounds(partition)
 
 # ╔═╡ c9904b3d-061c-47ec-8ed7-2655f08f6883
 unique(possible_outcomes(model, box(shield, point), action))
@@ -927,7 +916,22 @@ trace.states[i]
 # ╔═╡ f4cc7c54-b0d7-41f3-bd13-1c5a3a9c0836
 let point = trace.states[i]
 	
-	draw′(shield_to_draw, point)
+	slice = vcat(
+		[:],
+		[box(grid, point).indices[i + 1] 
+			for i in 1:m.fleet_size - 1], 
+		[:],
+		[box(grid, point).indices[i + 1] 
+			for i in m.fleet_size + 1:m.fleet_size + 1 + m.fleet_size - 3], 
+	)
+	
+	draw(shield_to_draw, slice;
+		colors=gradient,
+		clims=(0, length(encoded_actions)),
+		size=(800,400),
+		legend=nothing,
+		colorbar_ticks=nothing,
+		colorbar=nothing)
 
 	scatter!([point[1]], [point[4]])
 	plot!(xlabel="v_front",
@@ -1169,16 +1173,17 @@ end
 # ╠═0f5ee444-afe5-4314-ab8e-a7dfff02964d
 # ╟─85e07e50-a0fc-42bb-813c-8d0ab6af2b4c
 # ╠═bc55b7aa-a2b0-4307-9130-42d6327c34bf
-# ╠═05305c4a-a1e6-40b4-bb94-e15e77929ef3
+# ╠═219d83e3-0604-45d2-8db3-ee5938e8276b
 # ╠═f22987f2-acf7-4a48-b296-f20f81881a49
 # ╟─99aabe32-7c65-4a9d-9397-ba2db2ca5cab
 # ╠═84236123-88d6-4f15-af8e-8b5cc4632606
 # ╠═5646da93-955b-4b8d-aa2b-2bc05a00075f
+# ╠═ae07716b-d018-4d5e-84ae-de8fdf615094
+# ╠═5b2a89d2-54a4-4335-8831-9a449af57399
 # ╠═99e4dde5-4239-45d9-82b1-b21eda494b3d
 # ╠═28f000ec-9538-4c9c-afbc-ece4af32d3af
 # ╠═12ac5894-d531-4d89-b066-38648174a6a3
 # ╠═dd5faeb3-42f2-43ca-ace4-493e578bca77
-# ╠═6f8a09ac-bfa4-4ecc-ba85-5340d2ae5976
 # ╠═c9904b3d-061c-47ec-8ed7-2655f08f6883
 # ╠═e4397487-050e-4531-b356-cd855136bd56
 # ╠═7930c464-6404-4855-ab73-0ab7ce5a24dd
