@@ -18,6 +18,7 @@ end
 begin
 	using Pkg
 	Pkg.activate(".")
+	using GridShielding
 	using JSON
 	using PlutoUI
 	using PlutoLinks
@@ -32,12 +33,6 @@ begin
 	import Gaston
 	include("FlatUI Colors.jl")
 	TableOfContents()
-end
-
-# ╔═╡ f543bf7e-737e-4e76-8a76-e11d54997c07
-begin
-	Pkg.develop("GridShielding")
-	@revise using GridShielding
 end
 
 # ╔═╡ 57fa5a4e-2d90-436c-a1f1-36ffa6ad7b89
@@ -827,7 +822,6 @@ gif(animate_trace_with_shielded_policy(trace), fps=4, show_msg=false)
 
 # ╔═╡ Cell order:
 # ╠═bdb61d68-2ac9-11ed-1b20-9dc154fc45d0
-# ╠═f543bf7e-737e-4e76-8a76-e11d54997c07
 # ╟─57fa5a4e-2d90-436c-a1f1-36ffa6ad7b89
 # ╟─8894e942-b6f6-4893-bfea-ebaa2f9c58f0
 # ╟─c870988d-96aa-4114-9901-35472f341d16

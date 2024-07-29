@@ -18,6 +18,7 @@ end
 begin
 	using Pkg
 	Pkg.activate("..", io=devnull)
+	using GridShielding
 	using Plots
 	using PlutoUI
 	using PlutoLinks
@@ -27,11 +28,6 @@ begin
 	using Combinatorics
 end
 
-# ╔═╡ d2204fe6-a71e-4131-a568-349572ce28d4
-begin
-	Pkg.develop("GridShielding")
-	@revise using GridShielding
-end
 
 # ╔═╡ 1e159603-fc61-45f8-9595-f75e55318344
 md"""
@@ -561,7 +557,6 @@ end
 # ╔═╡ Cell order:
 # ╟─1e159603-fc61-45f8-9595-f75e55318344
 # ╠═c1bdc9f0-3d96-11ee-00af-b341a715281c
-# ╠═d2204fe6-a71e-4131-a568-349572ce28d4
 # ╠═3a57c06f-0adb-4f92-9f64-f22edbefcadf
 # ╟─5f3af2ba-af4e-4591-bc56-dbebfcb06de5
 # ╠═f7233b81-e182-4b23-aa31-409ee53daf77

@@ -18,6 +18,7 @@ end
 begin
 	using Pkg
 	Pkg.activate("..")
+	using GridShielding
 	using Plots
 	using PlutoUI
 	using PlutoLinks
@@ -28,12 +29,6 @@ begin
 	using Measures
 	using Parameters
 	include("../FlatUI Colors.jl")
-end
-
-# ╔═╡ d2204fe6-a71e-4131-a568-349572ce28d4
-begin
-	Pkg.develop("GridShielding")
-	@revise using GridShielding
 end
 
 # ╔═╡ 3a57c06f-0adb-4f92-9f64-f22edbefcadf
@@ -784,7 +779,6 @@ end
 # ╟─9aead72a-8c20-4565-a4bf-26d72ef832ab
 # ╟─1e159603-fc61-45f8-9595-f75e55318344
 # ╠═c1bdc9f0-3d96-11ee-00af-b341a715281c
-# ╠═d2204fe6-a71e-4131-a568-349572ce28d4
 # ╠═2b50bd80-1506-4ad3-abbe-589952fddf3c
 # ╟─14d4416b-ef73-4777-942e-f621c3ef801d
 # ╠═e019f426-8a0f-4698-8b6d-ed487a68ae5c

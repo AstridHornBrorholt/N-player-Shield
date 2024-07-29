@@ -18,6 +18,7 @@ end
 begin
 	using Pkg
 	Pkg.activate("..", io=devnull)
+	using GridShielding
 	using Plots
 	using PlutoUI
 	using PlutoLinks
@@ -25,12 +26,6 @@ begin
 	using Unzip
 	using Distributions
 	using Combinatorics
-end
-
-# ╔═╡ d2204fe6-a71e-4131-a568-349572ce28d4
-begin
-	Pkg.develop("GridShielding")
-	@revise using GridShielding
 end
 
 # ╔═╡ 1e159603-fc61-45f8-9595-f75e55318344

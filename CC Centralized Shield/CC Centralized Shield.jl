@@ -18,6 +18,7 @@ end
 begin
 	using Pkg
 	Pkg.activate("..", io=devnull)
+	using GridShielding
 	using Plots
 	import Gaston
 	using PlutoUI
@@ -28,13 +29,6 @@ begin
 	using Combinatorics
 	using Serialization
 	include("../FlatUI Colors.jl")
-end
-
-# ╔═╡ d2204fe6-a71e-4131-a568-349572ce28d4
-begin
-	Pkg.develop("GridShielding")
-	@revise using GridShielding # Be careful with @revise and long computations.
-	#using GridShielding
 end
 
 # ╔═╡ 1e159603-fc61-45f8-9595-f75e55318344
@@ -1078,7 +1072,6 @@ end
 # ╠═c1bdc9f0-3d96-11ee-00af-b341a715281c
 # ╠═6a33c245-d3ba-42ff-bac1-174e7082dd92
 # ╠═59eac6a7-c4c3-4579-bc23-42549f95ae83
-# ╠═d2204fe6-a71e-4131-a568-349572ce28d4
 # ╠═77d2442c-8081-4cc0-90f5-65684b51b801
 # ╟─dc3c1888-5846-498a-ad37-92c6d5493c1b
 # ╟─5f3af2ba-af4e-4591-bc56-dbebfcb06de5

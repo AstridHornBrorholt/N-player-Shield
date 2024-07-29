@@ -8,6 +8,7 @@ using InteractiveUtils
 begin
 	using Pkg
 	Pkg.activate("..", io=devnull)
+	using GridShielding
 	using Plots
 	using PlutoLinks
 	using StatsBase
@@ -15,12 +16,6 @@ begin
 	using Distributions
 	using Combinatorics
 	using Measures
-end
-
-# ╔═╡ d2204fe6-a71e-4131-a568-349572ce28d4
-begin
-	Pkg.develop("GridShielding")
-	@revise using GridShielding
 end
 
 # ╔═╡ 57fe6e2d-92d0-4891-a1fa-a9fb0b29f81d
@@ -727,7 +722,6 @@ end
 # ╠═75dbc088-74a1-4a7a-ae59-f2163b99b6f1
 # ╠═ea83ab65-934a-4734-b562-f9f5223fb34f
 # ╟─1e159603-fc61-45f8-9595-f75e55318344
-# ╠═d2204fe6-a71e-4131-a568-349572ce28d4
 # ╟─5f3af2ba-af4e-4591-bc56-dbebfcb06de5
 # ╠═f7233b81-e182-4b23-aa31-409ee53daf77
 # ╠═7ba18477-7d3a-4004-b422-46e7c850fc23
