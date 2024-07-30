@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -187,6 +187,11 @@ md"""
 Maybe you want to choose a mostly pre-trained model from the results folder for comparison.
 """
 
+# ╔═╡ 07602a48-7ba8-400a-aacf-e187c4bc9ba4
+md"""
+## Model and Query
+"""
+
 # ╔═╡ 220da967-3034-4a98-9e20-bffd39a072a5
 @bind model_file TextField(80, default=pwd() ⨝ "Plant.xml")
 
@@ -237,6 +242,11 @@ query_file = let
 	query_file
 end
 
+# ╔═╡ ee1a618a-b8ce-4768-a03f-092175eb018a
+md"""
+## Verifyta Call
+"""
+
 # ╔═╡ 628aa472-d15b-4534-81ef-08200830dcb5
 @bind verifyta TextField(80, default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta")
 
@@ -255,7 +265,7 @@ output[1:min(10000, length(output))] |> multiline
 
 # ╔═╡ 0da1531a-81ec-49fb-8186-5295f0499c8b
 md"""
-## Reading Traces
+# Reading Traces
 
 Also copy-pasta but hopefully better organised.
 """
@@ -531,7 +541,7 @@ end
 
 # ╔═╡ 95ca91d5-f821-4417-beae-dfecc4dd49e4
 md"""
-# Mainmatter -- Visualising the Trace
+# Visualising the Trace
 So you can just plot the volumes, but we can do better!
 """
 
@@ -548,6 +558,11 @@ let
 	end
 	plot!()
 end
+
+# ╔═╡ 96c6deeb-4e7e-41db-9eff-2bab2a67f3c8
+md"""
+## Drawing the Plant
+"""
 
 # ╔═╡ 903dc3c7-6974-4b37-af0d-9593f207c21b
 abstract type ProductionPart end
@@ -804,6 +819,11 @@ begin
 	draw!(System(trace′.states[30]))
 end
 
+# ╔═╡ af8b0dd5-46f3-472c-a902-9fc60db6e79f
+md"""
+## Animating!
+"""
+
 # ╔═╡ 3a9c8e25-a333-4899-831a-f2e6ff38d71d
 function animate_trace(trace::CPTrace, fps)
 	# + 1*fps == 1 second wait after animations ends.
@@ -838,11 +858,13 @@ animate_trace(trace′, fps)
 # ╟─9be0a063-d016-4081-8c5d-dbff0e31de87
 # ╠═d87a16d5-5cd6-4eb2-8029-f47e86b880c5
 # ╟─41937a62-f9f9-414a-943d-f4f0f89763ce
+# ╟─07602a48-7ba8-400a-aacf-e187c4bc9ba4
 # ╠═220da967-3034-4a98-9e20-bffd39a072a5
-# ╠═55a118e3-a657-4e07-af8a-5ad60f0b509b
+# ╟─55a118e3-a657-4e07-af8a-5ad60f0b509b
 # ╠═16faad42-0357-4fae-a075-333fbe1ee0b0
 # ╠═d8e542db-de75-4da8-a7c9-d4a8bf7910c0
 # ╠═162772c5-824e-4c84-b72c-6b60d4a569d4
+# ╟─ee1a618a-b8ce-4768-a03f-092175eb018a
 # ╠═628aa472-d15b-4534-81ef-08200830dcb5
 # ╠═784fef9e-c40f-481f-a898-24bee6dfb109
 # ╠═41931c62-20b3-4efe-8e9e-929645d816d6
@@ -877,6 +899,7 @@ animate_trace(trace′, fps)
 # ╠═7fe68f14-a450-4442-99e6-4ac739eb1209
 # ╟─95ca91d5-f821-4417-beae-dfecc4dd49e4
 # ╟─14837142-42bc-4f06-9a20-9458171b9cee
+# ╟─96c6deeb-4e7e-41db-9eff-2bab2a67f3c8
 # ╠═903dc3c7-6974-4b37-af0d-9593f207c21b
 # ╠═d195d292-ff44-476a-a39b-feae659454a2
 # ╠═e7fbfff7-c464-4109-8c57-491b229036f0
@@ -893,6 +916,7 @@ animate_trace(trace′, fps)
 # ╠═355fe45c-2589-4691-8bbb-cc0bba132462
 # ╠═f23fdcb7-e1a6-4602-bb61-4ccb649f5a00
 # ╠═f4d139f0-62ba-4d3e-a261-7f2393f15c19
+# ╟─af8b0dd5-46f3-472c-a902-9fc60db6e79f
 # ╠═3a9c8e25-a333-4899-831a-f2e6ff38d71d
 # ╠═7fba5e3f-59f5-4943-9dd2-acf569ac31df
 # ╠═05a0f2a9-44a9-4182-b71d-0ecd39902675
