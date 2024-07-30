@@ -35,7 +35,7 @@ begin
 		"--results-dir"
 			default=homedir() ⨝ "Results/N-player $(basename(pwd()))"
         "--verifyta-path"
-            default=homedir() ⨝ "opt/uppaal-5.1.0-beta5-linux64/bin/verifyta.sh"
+            default=homedir() ⨝ "opt/uppaal-5.0.0-linux64/bin/verifyta.sh"
         "--blueprint-path"  
             default=pwd() ⨝ "../Centralized Shield/3-Car_blueprint.xml"
         "--shield-path"  
