@@ -59,10 +59,12 @@ verifyta_path = args["verifyta-path"]
 skip_training = args["skip-training"]
 status("Starting... $((;runs, repetition, skip_training))")
 
+runs_per_unit = round(Int64, runs/n_units)
+
 isdir(results_dir) || mkdir(results_dir) # Error if path is invalid except if it is only the last folder missing.
 isfile(verifyta_path) || error("File verifyta not found at path $verifyta_path")
 
-verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs --total-runs $runs --runs-pr-state $runs"
+verifyta_args = "-s --epsilon 0.001 --max-iterations 1 --good-runs $runs_per_unit --total-runs $runs_per_unit --runs-pr-state $runs_per_unit"
 
 verifyta_call = String[
     verifyta_path,

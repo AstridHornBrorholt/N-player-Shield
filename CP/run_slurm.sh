@@ -17,34 +17,21 @@ echo "Scheduling slurm jobs. Writing logs to \"$log_output\""
 
 ARGS="--out=/dev/null --partition=dhabi -n1 --mem=4G --job-name $job_name"
 
-repetitions=10
+repetitions=1
+
+runs_step=5000
+min_runs=5000
+max_runs=50000
 
 for ((r=1; r<=$repetitions; r++))
 do
     export repetition=$r
-    
-    export runs=101
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=2501
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=5001
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=10001
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
-    
-    export runs=20001
-    export checks=1000
-    sbatch $ARGS ./run_single.sh
-    echo "Job scheduled."
+
+    for ((runs=$min_runs; runs<=$max_runs; runs+=$runs_step)); do
+        
+        export runs=$runs
+        export checks=1000
+        # sbatch $ARGS ./run_single.sh
+        echo "Job scheduled. (repetition=$r, runs=$runs)"
+    done
 done
