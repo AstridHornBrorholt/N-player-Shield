@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -750,6 +750,11 @@ md"""
 	So in the final system, demand is much greater than what the unit initially learned.
 """
 
+# ╔═╡ dc0bf1be-f6a5-4c76-b62d-7fdf234cd601
+#=╠═╡
+filter((x -> x[:runs] ∈ selected_runs), means)
+  ╠═╡ =#
+
 # ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
 #=╠═╡
 let
@@ -826,5 +831,6 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
 # ╠═37e95259-e575-45c3-a0a3-4b0115c12694
 # ╟─a824f7e5-0304-4836-a4c5-96a990e208bd
+# ╠═dc0bf1be-f6a5-4c76-b62d-7fdf234cd601
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
 # ╠═3c202730-71e2-4cf6-b334-b30a8dfc14a5
