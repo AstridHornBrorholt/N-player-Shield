@@ -19,8 +19,8 @@ ARGS="--out=/dev/null --partition=dhabi -n1 --mem=4G --job-name $job_name"
 
 repetitions=1
 
-runs_step=5000
-min_runs=5000
+runs_step=1000
+min_runs=1000
 max_runs=50000
 
 for ((r=1; r<=$repetitions; r++))
@@ -31,7 +31,7 @@ do
         
         export runs=$runs
         export checks=1000
-        # sbatch $ARGS ./run_single.sh
+        sbatch $ARGS ./run_single.sh
         echo "Job scheduled. (repetition=$r, runs=$runs)"
     done
 done
