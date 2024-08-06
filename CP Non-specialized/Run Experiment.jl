@@ -57,6 +57,7 @@ repetition = args["repetition"]
 results_dir = args["results-dir"]
 verifyta_path = args["verifyta-path"]
 skip_training = args["skip-training"]
+status("WARNING: The create_fleet method instantiates plants in descending order. So right now the agent whose policy will be duplicated is Agent 10. Be better if it was Agent 2.")
 status("Starting... $((;runs, repetition, skip_training))")
 
 isdir(results_dir) || mkdir(results_dir) # Error if path is invalid except if it is only the last folder missing.
