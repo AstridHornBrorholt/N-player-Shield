@@ -196,7 +196,7 @@ md"""
 @bind model_file TextField(80, default=pwd() ⨝ "Plant.xml")
 
 # ╔═╡ 55a118e3-a657-4e07-af8a-5ad60f0b509b
-@bind query TextField((95, 18), default="""
+@bind query TextField((95, 32), default="""
 	// strategy unit10 = loadStrategy {}->{t, stored[10]}
 	("/home/asger/Results/N-player CP/20001 Runs/Repetition 1/Models/unit10.json")
 	
@@ -217,12 +217,15 @@ md"""
 		provider_out[1], provider_out[2], provider_out[3],
 		provider_out[4], provider_out[5], provider_out[6],
 		provider_out[7], provider_out[8], provider_out[9], provider_out[10],
+		cost[1], cost[2], cost[3],
+		cost[4], cost[5], cost[6],
+		cost[7], cost[8], cost[9], cost[10],
 		unit_out[1], unit_out[2], unit_out[3],
 		unit_out[4], unit_out[5], unit_out[6],
 		unit_out[7], unit_out[8], unit_out[9], unit_out[10]
 	}
 	// under unit10
-""")
+	""")
 
 # ╔═╡ 16faad42-0357-4fae-a075-333fbe1ee0b0
 function remove_single_line_breaks(str)
@@ -268,6 +271,14 @@ md"""
 # Reading Traces
 
 Also copy-pasta but hopefully better organised.
+"""
+
+# ╔═╡ c307d7eb-6507-4b20-a313-4ba1140959f0
+md"""
+## Parsing the UPPAAL-output
+Parsed into a dictionary of `"Variable1" => [0.1, 2.2, 1.3, 7.5, ...], "var2" => [...]...`
+
+Inferring the actions is particularly hard...
 """
 
 # ╔═╡ 636b5f6d-eb7e-4276-8594-db623f8fdef5
@@ -342,17 +353,6 @@ end
 # ╔═╡ 8c052cf6-cca3-427e-9239-283ef2fbb758
 at_regular_intervals(pairs, 10)
 
-# ╔═╡ a4e9d483-1cbb-406c-bf63-75016c25ceaa
-function parse_trace(output, Δt, keywords...)
-	result = Dict{String, Vector{Float64}}()
-	
-	for keyword in keywords
-		trace = get_pairs_for_array(output, keyword)
-		result[keyword] = at_regular_intervals(trace, Δt)
-	end
-	result
-end
-
 # ╔═╡ 8110e7dc-2a1c-43ba-81f3-83dd0f987ea5
 begin
 	# consts
@@ -368,13 +368,24 @@ keywords = let
 	keywords = String[]
 		
 	for i in 1:n_units
-		push!(keywords, "stored[$i]", "unit_out[$i]", "U$i.r1", "U$i.r2", "U$i.r3", "U$i.in")
+		push!(keywords, "stored[$i]", "unit_out[$i]", "U$i.r1", "U$i.r2", "U$i.r3", "U$i.in", "cost[$i]")
 	end
 	
 	for i in 1:n_providers
 		push!(keywords, "provider_out[$i]")
 	end
 	keywords
+end
+
+# ╔═╡ a4e9d483-1cbb-406c-bf63-75016c25ceaa
+function parse_output(output, Δt, keywords...)
+	result = Dict{String, Vector{Float64}}()
+	
+	for keyword in keywords
+		trace = get_pairs_for_array(output, keyword)
+		result[keyword] = at_regular_intervals(trace, Δt)
+	end
+	result
 end
 
 # ╔═╡ bb40f696-8810-4ba6-a81c-add3d713fd3e
@@ -437,15 +448,17 @@ end
 
 # ╔═╡ a27ae8e0-c411-4cb8-b844-98fe61a18a0e
 begin
-	trace = parse_trace(output, Δt, keywords...)
-	add_actions!(trace)
+	parsed_output = parse_output(output, Δt, keywords...)
+	add_actions!(parsed_output)
 end
 
-# ╔═╡ d1fc7529-d474-48ea-9cbe-2fe17f3b8efe
-trace["U4.in"]
-
 # ╔═╡ cd1ca4c4-aa08-44e0-8d85-668936e93e92
-max_time = length(trace["stored[1]"])*Δt - Δt
+max_time = length(parsed_output["stored[1]"])*Δt - Δt
+
+# ╔═╡ f7c29f72-1f2d-4c93-8927-aaf61b24e811
+md"""
+## Converting Parsed Output to Trace
+"""
 
 # ╔═╡ 6938d095-5d16-4652-a359-60d2e6e6fefe
 struct CPState
@@ -453,6 +466,7 @@ struct CPState
 	action::Vector{Int64}
 	unit_out::Vector{Int64}
 	provider_out::Vector{Int64}
+	cost::Vector{Float64}
 end
 
 # ╔═╡ ce089bee-067b-422b-803f-51ad8c306cc1
@@ -468,7 +482,7 @@ end
 # ╔═╡ 80fbc8d8-01cb-4274-8392-f5abaddb7d71
 function get_state(trace, t, Δt)
 	j = Int(t/Δt)
-	result = CPState([], [], [], [])
+	result = CPState([], [], [], [], [])
 	for i in 1:n_units
 		result.stored ← trace["stored[$i]"][j]
 		result.action ← trace["action[$i]"][j]
@@ -476,12 +490,13 @@ function get_state(trace, t, Δt)
 	end
 	for i in 1:n_providers
 		result.provider_out ← round(trace["provider_out[$i]"][j]/rate)
+		result.cost ← round(trace["cost[$i]"][j]/rate)
 	end
 	result
 end
 
 # ╔═╡ e5df2174-2335-419e-bbea-a8d4ae9093bc
-get_state(trace, 10, Δt)
+get_state(parsed_output, 10, Δt)
 
 # ╔═╡ a13479e6-0485-4549-8d04-37c9b9b46546
 function get_trace(trace, t_max)::CPTrace
@@ -493,8 +508,17 @@ function get_trace(trace, t_max)::CPTrace
 	result
 end
 
+# ╔═╡ 41e90d4e-778a-4998-87be-df43041a912c
+trace = get_trace(parsed_output, max_time)
+
 # ╔═╡ a3dc6755-524b-4060-8397-4073810dbd8c
 findfirst(<(1), [4, 3, 2, 1, 0])
+
+# ╔═╡ 46a678f6-1693-4c27-994c-0bb1c9b58485
+md"""
+## Interpolating Between Observations
+Makes for a smoother animation :3
+"""
 
 # ╔═╡ 6bcef4d0-4070-4154-a9ad-cf0f23c18065
 function interpolate(trace::CPTrace, interpolated_time)
@@ -521,7 +545,8 @@ function interpolate(trace::CPTrace, interpolated_time)
 		result.states ← CPState(stored, 
 			state_after.action,
 			state_after.unit_out, 
-			state_after.provider_out,)
+			state_after.provider_out,
+			state_after.cost)
 	end
 	result
 end
@@ -529,15 +554,12 @@ end
 # ╔═╡ 5161853d-b0b8-4d40-8f5d-5de7d46ca75a
 begin
 	# Animation frames per second
-	fps = 24
+	fps = 15
 	time_multiplier = 1 # 0.5 = half speed, 1 = normal speed, etc.
 end
 
 # ╔═╡ 7fe68f14-a450-4442-99e6-4ac739eb1209
-trace′ = let
-	trace′ = get_trace(trace, max_time)
-	trace′ = interpolate(trace′, 1/fps*time_multiplier)
-end
+trace′ = interpolate(trace, 1/fps*time_multiplier)
 
 # ╔═╡ 95ca91d5-f821-4417-beae-dfecc4dd49e4
 md"""
@@ -554,7 +576,21 @@ let
 		size=(400, 300))
 	
 	for i in 1:n_units
-		plot!(trace["stored[$i]"], label="stored[$i]")
+		plot!(parsed_output["stored[$i]"], label="stored[$i]")
+	end
+	plot!()
+end
+
+# ╔═╡ 91eb84f5-dc5b-4e72-bb92-bf7849caab4f
+let
+	plot(
+		xlabel="time (s)",
+		ylabel="volume (ℓ)",
+		legend=:outerright,
+		size=(400, 300))
+	
+	for i in 1:n_units
+		plot!(parsed_output["cost[$i]"], label="cost[$i]")
 	end
 	plot!()
 end
@@ -599,6 +635,12 @@ end
 struct Consumer <: ProductionPart
 	id::Int64 # Should start at 11 for corret positioning
 	from::Int64
+end
+
+# ╔═╡ 374fff8a-ef41-4d5d-8ac5-a4a4df78aa21
+struct CostIndicator <: ProductionPart
+	id::Int64
+	cost::Float64
 end
 
 # ╔═╡ 472ccaf0-38ea-425d-b10c-c353cce757bb
@@ -652,6 +694,7 @@ unit.volume/(max_volume - min_volume)
 begin
 	struct System <: ProductionPart
 		units::Vector{Unit}
+		cost_indicators::Vector{CostIndicator}
 		pipes::Vector{Pipe}
 		providers::Vector{Provider}
 		consumers::Vector{Consumer}
@@ -659,6 +702,7 @@ begin
 	
 	function System(state::CPState)
 		units = [Unit(i, state.stored[i]) for i in 1:10]
+		cost_indicators = [CostIndicator(i, state.cost[i]) for i in 1:10]
 
 		a = state.action
 		u = state.unit_out
@@ -700,9 +744,9 @@ begin
 			[Provider(2, i, o[i] > 1) for i in [1, 2, 3, 6, 8]],
 			[Provider(3, i, o[i] > 2) for i in 1:3])
 		
-		consumers = vcat([Consumer(11, 9), Consumer(12, 10)])
+		consumers = [Consumer(11, 9), Consumer(12, 10)]
 		
-		System(units, pipes, providers, consumers)
+		System(units, cost_indicators, pipes, providers, consumers)
 	end
 end
 
@@ -805,18 +849,31 @@ begin
 			label=nothing,)
 	end
 
+	function draw!(cost_indicator::CostIndicator)
+		x, y = unit_position(cost_indicator.id)
+		if cost_indicator.cost == 0
+			cost = "\$0"
+		else
+			cost = "-\$$(round(Int64, cost_indicator.cost))"
+		end
+		annotate!((x + unit_width*0.5, 
+			y + unit_height*1.3, 
+			text(cost, :center, 8)))
+	end
+
 	function draw!(system::System)
 		draw!(system.pipes)
 		draw!(system.providers)
 		draw!(system.consumers)
 		draw!(system.units)
+		draw!(system.cost_indicators)
 	end
 end
 
 # ╔═╡ f4d139f0-62ba-4d3e-a261-7f2393f15c19
 begin
 	plot(aspectratio=:equal, size=(400, 400), ticks=nothing)
-	draw!(System(trace′.states[30]))
+	draw!(System(trace′.states[800]))
 end
 
 # ╔═╡ af8b0dd5-46f3-472c-a902-9fc60db6e79f
@@ -869,6 +926,7 @@ animate_trace(trace′, fps)
 # ╠═784fef9e-c40f-481f-a898-24bee6dfb109
 # ╠═41931c62-20b3-4efe-8e9e-929645d816d6
 # ╟─0da1531a-81ec-49fb-8186-5295f0499c8b
+# ╟─c307d7eb-6507-4b20-a313-4ba1140959f0
 # ╠═636b5f6d-eb7e-4276-8594-db623f8fdef5
 # ╠═5f48e4e9-edbf-4cb0-af59-de97a1374b83
 # ╠═f78f90e1-cf59-41a7-83ab-8b11552926cb
@@ -880,31 +938,35 @@ animate_trace(trace′, fps)
 # ╠═39395cf3-9b5c-45db-aa47-9977ff281c80
 # ╠═adb15a71-ed9d-4a2a-8ee9-e9539561dff8
 # ╠═8c052cf6-cca3-427e-9239-283ef2fbb758
-# ╠═a4e9d483-1cbb-406c-bf63-75016c25ceaa
 # ╠═8110e7dc-2a1c-43ba-81f3-83dd0f987ea5
 # ╠═c165f2d1-f1c1-4eeb-bb24-5dcad0e1bc4a
-# ╠═a27ae8e0-c411-4cb8-b844-98fe61a18a0e
-# ╠═d1fc7529-d474-48ea-9cbe-2fe17f3b8efe
+# ╠═a4e9d483-1cbb-406c-bf63-75016c25ceaa
 # ╠═bb40f696-8810-4ba6-a81c-add3d713fd3e
 # ╠═aba61fb1-82e7-4352-8128-2f35cdf64ead
+# ╠═a27ae8e0-c411-4cb8-b844-98fe61a18a0e
 # ╠═cd1ca4c4-aa08-44e0-8d85-668936e93e92
+# ╟─f7c29f72-1f2d-4c93-8927-aaf61b24e811
 # ╠═6938d095-5d16-4652-a359-60d2e6e6fefe
 # ╠═ce089bee-067b-422b-803f-51ad8c306cc1
 # ╠═80fbc8d8-01cb-4274-8392-f5abaddb7d71
 # ╠═e5df2174-2335-419e-bbea-a8d4ae9093bc
 # ╠═a13479e6-0485-4549-8d04-37c9b9b46546
+# ╠═41e90d4e-778a-4998-87be-df43041a912c
 # ╠═a3dc6755-524b-4060-8397-4073810dbd8c
+# ╟─46a678f6-1693-4c27-994c-0bb1c9b58485
 # ╠═6bcef4d0-4070-4154-a9ad-cf0f23c18065
 # ╠═5161853d-b0b8-4d40-8f5d-5de7d46ca75a
 # ╠═7fe68f14-a450-4442-99e6-4ac739eb1209
 # ╟─95ca91d5-f821-4417-beae-dfecc4dd49e4
 # ╟─14837142-42bc-4f06-9a20-9458171b9cee
+# ╟─91eb84f5-dc5b-4e72-bb92-bf7849caab4f
 # ╟─96c6deeb-4e7e-41db-9eff-2bab2a67f3c8
 # ╠═903dc3c7-6974-4b37-af0d-9593f207c21b
 # ╠═d195d292-ff44-476a-a39b-feae659454a2
 # ╠═e7fbfff7-c464-4109-8c57-491b229036f0
 # ╠═e96794c9-8ea4-4ad7-b90e-a951d2c1844a
 # ╠═f4ab4bb3-691d-4f85-a487-5f112372b5c7
+# ╠═374fff8a-ef41-4d5d-8ac5-a4a4df78aa21
 # ╠═472ccaf0-38ea-425d-b10c-c353cce757bb
 # ╟─a1a2cba6-d6de-4803-bd1a-d586b083fc15
 # ╠═3f8d0161-15a1-4c3c-a3a5-100540af8858
@@ -914,7 +976,7 @@ animate_trace(trace′, fps)
 # ╠═09d11c56-e16c-404e-b430-93e249bec59e
 # ╠═6dfb196c-a018-4340-9115-da5775f202dc
 # ╠═355fe45c-2589-4691-8bbb-cc0bba132462
-# ╠═f23fdcb7-e1a6-4602-bb61-4ccb649f5a00
+# ╟─f23fdcb7-e1a6-4602-bb61-4ccb649f5a00
 # ╠═f4d139f0-62ba-4d3e-a261-7f2393f15c19
 # ╟─af8b0dd5-46f3-472c-a902-9fc60db6e79f
 # ╠═3a9c8e25-a333-4899-831a-f2e6ff38d71d
