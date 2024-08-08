@@ -19,27 +19,17 @@ ARGS="--out=/dev/null --partition=dhabi -n1 --mem=20G --job-name $job_name"
 
 repetitions=10
 
-export repetition=3
-export runs=1000
-export checks=1000
-sbatch $ARGS ./run_single.sh
-echo "Job scheduled."
+min_runs=5000
+runs_step=5000
+max_runs=50000
 
-export repetition=7
-export runs=1000
-export checks=1000
-sbatch $ARGS ./run_single.sh
-echo "Job scheduled."
-
-
-export repetition=4
-export runs=10000
-export checks=1000
-sbatch $ARGS ./run_single.sh
-echo "Job scheduled."
-
-export repetition=0
-export runs=20000
-export checks=1000
-sbatch $ARGS ./run_single.sh
-echo "Job scheduled."
+for ((r=1; r<=$repetitions; r++)); do
+    export repetition=r
+    
+    for ((runs=$min_runs; runs<=$max_runs; runs+=$runs_step)); do
+        export runs=runs
+        export checks=1000
+        sbatch $ARGS ./run_single.sh
+        echo "Job scheduled."
+    done
+done
