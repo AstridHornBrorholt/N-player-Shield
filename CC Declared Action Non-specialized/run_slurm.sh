@@ -21,8 +21,8 @@ ARGS="--out=/dev/null --partition=dhabi -n1 --mem=16G --job-name $job_name"
 export fleet_size=10
 repetitions=10
 
-runs_step=5000
 min_runs=5000
+runs_step=5000
 max_runs=50000
 
 for ((r=1; r<=$repetitions; r++)); do

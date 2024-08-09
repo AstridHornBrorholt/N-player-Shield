@@ -27,7 +27,7 @@ for ((r=1; r<=$repetitions; r++)); do
     export repetition=r
     
     for ((runs=$min_runs; runs<=$max_runs; runs+=$runs_step)); do
-        export runs=runs
+        export runs=$runs
         export checks=1000
         sbatch $ARGS ./run_single.sh
         echo "Job scheduled."
