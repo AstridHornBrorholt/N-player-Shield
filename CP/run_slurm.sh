@@ -17,7 +17,7 @@ echo "Scheduling slurm jobs. Writing logs to \"$log_output\""
 
 ARGS="--out=/dev/null --partition=dhabi -n1 --mem=4G --job-name $job_name"
 
-repetitions=1
+repetitions=10
 
 min_runs=100
 runs_step=100
