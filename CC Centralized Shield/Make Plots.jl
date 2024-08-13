@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -180,10 +180,17 @@ means = let
 		renamecols=false)
 end
 
+# ╔═╡ 12c1bf45-20fe-4332-8477-4a544b0ada2c
+all_runs = cleandata[!, :runs] |> unique |> sort
+
+# ╔═╡ 7ca58b79-9a30-4768-ac04-3562042c4a45
+@bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
+
 # ╔═╡ 68f6836e-3ba7-42ca-9650-acba6365aa55
 let
 	grouping = groupby(means, [:runs, :variant])
 	df = combine(grouping, :reward => sum => :reward)
+	df = filter(:runs => r -> r ∈ runs_shown, df)
 
 	cent = filter(:variant => (==)("Cent. Co-ord."), df)
 	cent = sort(cent, :runs)
@@ -192,13 +199,13 @@ let
 	coord = filter(:variant => (==)("Dec. Co-ord."), df)
 	coord = sort(coord, :runs)
 	
-	cent = (;runs=[string(r) for r in cent[!, :runs]], 
+	cent = (;runs=[r for r in cent[!, :runs]], 
 		performance=cent[!, :reward])
 	
-	dec = (;runs=[string(r) for r in dec[!, :runs]], 
+	dec = (;runs=[r for r in dec[!, :runs]], 
 		performance=dec[!, :reward])
 	
-	coord = (;runs=[string(r) for r in coord[!, :runs]], 
+	coord = (;runs=[r for r in coord[!, :runs]], 
 		performance=coord[!, :reward])
 
 
@@ -357,6 +364,8 @@ end
 # ╠═f2799a2c-f694-4cd8-9d32-1810ccc3b7d8
 # ╠═ff7d843d-1426-4cf3-8407-531e97e1960d
 # ╠═aea564f9-6fc5-4f1d-8699-1ce77be3a38d
+# ╠═12c1bf45-20fe-4332-8477-4a544b0ada2c
+# ╠═7ca58b79-9a30-4768-ac04-3562042c4a45
 # ╠═68f6836e-3ba7-42ca-9650-acba6365aa55
 # ╠═1bf14dff-08e3-4a32-9e5e-dba6438bc670
 # ╠═d4e45474-6def-4e02-9fe2-43e6f4fb1bb2

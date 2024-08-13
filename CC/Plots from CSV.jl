@@ -258,18 +258,18 @@ pluto-notebook {
 pluto-output  {
 	border-radius: 4pt 4pt 0 0;
 	padding: 4pt;
-	background: #efefef60;
+	background: #efefefc0;
 	backdrop-filter: blur(5px)brightness(150%)grayscale(60%);
 }
 
 pluto-input .cm-editor {
-	background: #efefef60;
+	background: #efefefc0;
 	backdrop-filter: blur(15px)brightness(180%)grayscale(60%);
 }
 
 pluto-logs-container {
 	margin-right: 0;
-	background: #efefef60;
+	background: #efefefc0;
 	backdrop-filter: blur(15px)brightness(180%)grayscale(60%);
 }
 
@@ -360,6 +360,11 @@ function multiline(str)
 	""")
 end
 
+# ╔═╡ cd4fb0d2-d1b6-4301-97e4-9ddb3505e061
+#=╠═╡
+TableOfContents(title="Cruise-control Plots")
+  ╠═╡ =#
+
 # ╔═╡ 9d7d57d3-b2ef-4dec-972f-7873e714fad6
 #=╠═╡
 TableOfContents()
@@ -395,6 +400,11 @@ md"""
 """
   ╠═╡ =#
 
+# ╔═╡ 9aa911de-e818-4565-a7e2-1adc18f3fce0
+#=╠═╡
+CSV.read(IOBuffer(to_csv(cascading)), DataFrame)
+  ╠═╡ =#
+
 # ╔═╡ a2256c72-3686-4f89-9adf-6684270946b6
 const episode_length = 100
 
@@ -405,81 +415,9 @@ function reward(performance)
 	-performance/episode_length
 end
 
-# ╔═╡ a3c96777-3878-4abd-b865-e3ee35186808
-# Extract just mean performance as a function of the number of runs.
-function runs_performance(result_dir)
-	buf = IOBuffer(to_csv(result_dir))
-	df = CSV.read(buf, DataFrame, delim=";")
-	fleet_size = max(df.fleet_size...)
-	df = filter(:fleet_size => (==)(fleet_size), df)
-
-	grouping =  groupby(df, [:runs])
-	
-	df = combine(grouping, 
-		:learned_performance => mean,
-		renamecols=false)
-
-	df = sort(df, :runs)
-
-	return (runs=[string(r) for r  in df.runs], 
-		performance=[reward(p) for p in df.learned_performance])
-end
-
-# ╔═╡ 9aa911de-e818-4565-a7e2-1adc18f3fce0
+# ╔═╡ 572cade9-c131-4206-b79d-e1ee118f230b
 #=╠═╡
-CSV.read(IOBuffer(to_csv(cascading)), DataFrame)
-  ╠═╡ =#
-
-# ╔═╡ f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
-function do_the_plot_of_the_results(;distributed, 
-		cascading, 
-		centralized)
-
-	distributed = runs_performance(distributed)
-	cascading = runs_performance(cascading)
-	centralized = runs_performance(centralized)
-
-	
-	all_performances = [distributed.performance..., 	
-		cascading.performance..., centralized.performance...]
-
-	ylims = (min(all_performances...) -25, max(all_performances...) + 40)
-
-	stylings = (
-		legend=:bottomleft,
-		linewidth=2,
-		markerstrokewidth=2,
-		markerstrokecolor=:white)
-	
-	plot(;size=(350, 250),
-		ylims,
-		xlabel="Total episodes trained",
-		ylabel="Performance")
-	
-	plot!(distributed.runs, distributed.performance;
-		label="Distributed",
-		color=colors.PETER_RIVER,
-		marker=(:pentagon, 6),
-		stylings...)
-	
-	plot!(cascading.runs, cascading.performance;
-		label="Cascading",
-		color=colors.NEPHRITIS,
-		marker=(:rtriangle, 9),
-		stylings...)
-	
-	plot!(centralized.runs, centralized.performance;
-		label="Centralized",
-		color=colors.AMETHYST,
-		marker=(:circle, 6),
-		stylings...)
-	
-	
-end
-
-# ╔═╡ 74674f2d-c384-4c01-957b-ca8d15062db3
-#=╠═╡
-do_the_plot_of_the_results(;distributed, cascading, centralized)
+@bind first_repetition_only CheckBox(default=false)
   ╠═╡ =#
 
 # ╔═╡ a0159339-14f3-4280-8160-447702f19d2a
@@ -630,6 +568,107 @@ cleandata = let
 end
   ╠═╡ =#
 
+# ╔═╡ ec3df7e5-80d3-4bc7-8dda-54551ee1936c
+#=╠═╡
+all_runs = cleandata[!, :runs] |> unique |> sort
+  ╠═╡ =#
+
+# ╔═╡ a1cfa77f-b7e7-4cec-9916-cb076517876c
+#=╠═╡
+@bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
+  ╠═╡ =#
+
+# ╔═╡ a3c96777-3878-4abd-b865-e3ee35186808
+#=╠═╡
+# Extract just mean performance as a function of the number of runs.
+function runs_performance(result_dir)
+	buf = IOBuffer(to_csv(result_dir))
+	df = CSV.read(buf, DataFrame, delim=";")
+	fleet_size = max(df.fleet_size...)
+	df = filter(:fleet_size => (==)(fleet_size), df)
+	df = filter(:runs => r -> r ∈ runs_shown, df)
+
+	if first_repetition_only
+		df = filter(:repetition => (==)(1), df)
+	end
+	
+	grouping =  groupby(df, [:runs])
+	
+	df = combine(grouping, 
+		:learned_performance => mean,
+		renamecols=false)
+
+	df = sort(df, :runs)
+
+	return (runs=[r for r  in df.runs], 
+		performance=[reward(p) for p in df.learned_performance])
+end
+  ╠═╡ =#
+
+# ╔═╡ d931fceb-ba91-4fa4-b851-7beba3888cab
+#=╠═╡
+runs_performance(centralized)
+  ╠═╡ =#
+
+# ╔═╡ f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
+#=╠═╡
+function do_the_plot_of_the_results(;distributed, 
+		cascading, 
+		centralized)
+
+	# distributed = runs_performance(distributed)
+	cascading = runs_performance(cascading)
+	centralized = runs_performance(centralized)
+
+	
+	all_performances = [#distributed.performance..., 	
+		cascading.performance..., centralized.performance...]
+
+	ylims = (min(all_performances...) -25, max(all_performances...) + 40)
+
+	stylings = (
+		legend=:bottomleft,
+		linewidth=2,
+		markerstrokewidth=2,
+		markerstrokecolor=:white)
+	
+	plot(;size=(350, 250),
+		ylims,
+		xlabel="Total episodes trained",
+		ylabel="Performance")
+	
+	#plot!(distributed.runs, distributed.performance;
+	#	label="Distributed",
+	#	color=colors.PETER_RIVER,
+	#	marker=(:pentagon, 6),
+	#	stylings...)
+	
+	plot!(cascading.runs, cascading.performance;
+		label="Cascading",
+		color=colors.NEPHRITIS,
+		marker=(:rtriangle, 9),
+		stylings...)
+	
+	plot!(centralized.runs, centralized.performance;
+		label="Centralized",
+		color=colors.AMETHYST,
+		marker=(:circle, 6),
+		stylings...)
+	
+	
+end
+  ╠═╡ =#
+
+# ╔═╡ 74674f2d-c384-4c01-957b-ca8d15062db3
+#=╠═╡
+do_the_plot_of_the_results(;distributed, cascading, centralized)
+  ╠═╡ =#
+
+# ╔═╡ 42b86072-1d01-4940-ade8-3442cc2f1169
+#=╠═╡
+runs_performance(centralized)
+  ╠═╡ =#
+
 # ╔═╡ a675d6b9-0f2b-4023-af2a-1bb43303f6a7
 #=╠═╡
 means = let
@@ -701,6 +740,24 @@ md"""
 size = (width, height)
   ╠═╡ =#
 
+# ╔═╡ 3db1a697-2600-4316-ac35-db5c7fc2b665
+#=╠═╡
+let
+	df = sort(means_fully_trained, :runs)
+	df = filter(:runs => r -> r ∈ runs_shown, df)
+	df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
+	@df df plot(:runs, :global_reward;
+		size,
+		ylims,
+		color=colors.NEPHRITIS,
+		marker=:circle,
+		markerstrokewidth=0,
+		label=nothing,
+		xlabel="Episodes per car",
+		ylabel="Total reward")
+end
+  ╠═╡ =#
+
 # ╔═╡ 9a298f2a-5194-41c9-813d-afbf56ef92eb
 md"""
 ## Performance compared to when it is imported
@@ -767,30 +824,6 @@ end
 unique_runs = means[!, :runs] |> unique |> sort
   ╠═╡ =#
 
-# ╔═╡ 977e914e-3995-463c-ab74-d8f256adec27
-#=╠═╡
-@bind selected_runs MultiSelect(unique_runs, 
-		default=[r for r in unique_runs if (r > 1000 && r%100==0)])
-  ╠═╡ =#
-
-# ╔═╡ 3db1a697-2600-4316-ac35-db5c7fc2b665
-#=╠═╡
-let
-	df = sort(means_fully_trained, :runs)
-	df = filter(:runs => r -> r ∈ selected_runs, df)
-	df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
-	@df df plot(:runs, :global_reward;
-		size,
-		ylims,
-		color=colors.NEPHRITIS,
-		marker=:circle,
-		markerstrokewidth=0,
-		label=nothing,
-		xlabel="Episodes per car",
-		ylabel="Total reward")
-end
-  ╠═╡ =#
-
 # ╔═╡ 7909f497-55cd-4f9d-b34d-515a80241873
 md"""
 ## Performance for different numbers of runs
@@ -799,7 +832,7 @@ md"""
 # ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
 #=╠═╡
 let
-	df = filter((x -> x[:runs] ∈ selected_runs), means)
+	df = filter((x -> x[:runs] ∈ runs_shown), means)
 	
 	plot(;ylims=ylims_local, size)
 
@@ -807,7 +840,7 @@ let
 	
 	strokes = [:dashdot, :dash, :dot, :solid, ]
 	
-	for (i, r) in enumerate(selected_runs)
+	for (i, r) in enumerate(runs_shown)
 		learned_performance_plot!(means, r, 
 			color=c[1 + (i - 1)%length(c)],
 			line=strokes[1 + (i - 1)%length(strokes)],
@@ -941,6 +974,7 @@ end
 # ╟─c9e1bc2c-a6f7-4b88-8038-51cf2ef2a008
 # ╟─4362212e-0f0e-4425-bfb1-a6c3808ed808
 # ╟─95e38fbd-142d-4926-9291-27e69ddf7c75
+# ╠═cd4fb0d2-d1b6-4301-97e4-9ddb3505e061
 # ╠═61c15d44-75be-4613-8b60-484d94847b8a
 # ╠═9d7d57d3-b2ef-4dec-972f-7873e714fad6
 # ╠═15f0808f-8424-4d27-9247-274c7751bf8e
@@ -948,11 +982,16 @@ end
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╟─ef5c1d6e-9046-4da7-bfd1-2a12832d0e7d
 # ╟─9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
+# ╠═9aa911de-e818-4565-a7e2-1adc18f3fce0
 # ╠═a2256c72-3686-4f89-9adf-6684270946b6
 # ╠═266ba2a5-01d0-48a4-be0e-52416dfd2485
 # ╠═a3c96777-3878-4abd-b865-e3ee35186808
-# ╠═9aa911de-e818-4565-a7e2-1adc18f3fce0
+# ╠═d931fceb-ba91-4fa4-b851-7beba3888cab
 # ╠═f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
+# ╠═42b86072-1d01-4940-ade8-3442cc2f1169
+# ╠═572cade9-c131-4206-b79d-e1ee118f230b
+# ╠═ec3df7e5-80d3-4bc7-8dda-54551ee1936c
+# ╠═a1cfa77f-b7e7-4cec-9916-cb076517876c
 # ╠═74674f2d-c384-4c01-957b-ca8d15062db3
 # ╟─a0159339-14f3-4280-8160-447702f19d2a
 # ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
@@ -976,7 +1015,6 @@ end
 # ╟─2b5eb5be-3e34-4eca-84c9-18a32aacdfab
 # ╟─b1090c8e-9f46-429a-93a7-42cedba24188
 # ╠═8ff26541-30b4-42bb-85a0-1d08e1c8d2aa
-# ╠═977e914e-3995-463c-ab74-d8f256adec27
 # ╠═3db1a697-2600-4316-ac35-db5c7fc2b665
 # ╟─9a298f2a-5194-41c9-813d-afbf56ef92eb
 # ╠═ef7d9898-c2be-493b-913e-51a854d74c32

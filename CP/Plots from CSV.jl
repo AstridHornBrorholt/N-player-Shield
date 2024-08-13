@@ -331,7 +331,7 @@ end
 
 # ╔═╡ 4b3789f9-759d-405b-a369-fb50a4a5a42a
 #=╠═╡
-TableOfContents()
+TableOfContents(title="Chemical Production Plots")
   ╠═╡ =#
 
 # ╔═╡ 15f0808f-8424-4d27-9247-274c7751bf8e
@@ -356,53 +356,6 @@ function reward(performance)
 	-performance
 end
 
-# ╔═╡ 782b14e8-a0d4-4584-9082-dded2699b70a
-# Extract just mean performance as a function of the number of runs.
-function runs_performance(result_dir)
-
-	runs = [2500, 5000, 10000, 20000]
-	
-	buf = IOBuffer(to_csv(result_dir))
-	df = CSV.read(buf, DataFrame, delim=";")
-	n_units = max(df.pre_trained_units...) + 1
-	df = filter(:pre_trained_units => (==)(n_units - 1), df)
-	df = filter(:runs => r -> r ∈ runs, df)
-
-	grouping =  groupby(df, [:runs])
-	
-	df = combine(grouping, 
-		:trained_global_performance => mean,
-		renamecols=false)
-
-	df = sort(df, :runs)
-
-	return (runs=[string(r*10) for r  in df.runs], 
-	performance=[reward(p) for p in df.trained_global_performance])
-end
-
-# ╔═╡ ea282e41-f786-4c5c-b2e6-e42826949516
-# Yea and for centralized control the format is completely different.
-function centralized_runs_performance(result_dir)
-
-	
-	runs = [2500, 5000, 10000, 20000].*10
-	
-	buf = IOBuffer(centralized_to_csv.to_csv(result_dir))
-	df = CSV.read(buf, DataFrame, delim=";")
-	df = filter(:runs => r -> r ∈ runs, df)
-
-	grouping =  groupby(df, [:runs])
-	
-	df = combine(grouping, 
-		:trained_performance => mean,
-		renamecols=false)
-
-	df = sort(df, :runs)
-
-	return (runs=[string(r) for r  in df.runs],  
-	performance=[reward(p) for p in df.trained_performance])
-end
-
 # ╔═╡ 802bb5e1-f2e1-4788-abcb-c1716683693e
 function plot_results!(;runs, performance)
 	plot!(runs, performance)
@@ -412,70 +365,14 @@ end
 #=╠═╡
 md"""
 `distributed =` $(@bind distributed TextField(70, 
-	default=homedir()⨝"Results Example/N-player CP Non-specialized"))
+	default=homedir()⨝"Results/N-player CP Non-specialized"))
 
 `cascading =` $(@bind cascading TextField(70, 
-	default=homedir()⨝"Results Example/N-player CP"))
+	default=homedir()⨝"Results/N-player CP"))
 
 `centralized =` $(@bind centralized TextField(70, 
-	default=homedir()⨝"Results Example/N-player CP Centralized Controller"))
+	default=homedir()⨝"Results/N-player CP Centralized Controller"))
 """
-  ╠═╡ =#
-
-# ╔═╡ afe6e072-a335-4e72-a1d4-389ebd624493
-#=╠═╡
-runs_performance(distributed)
-  ╠═╡ =#
-
-# ╔═╡ 5160269e-c0fe-4643-bbaf-9094bb4bd537
-function do_the_plot_of_the_results(;distributed, 
-		cascading, 
-		centralized)
-
-
-	distributed = runs_performance(distributed)
-	cascading = runs_performance(cascading)
-	centralized = centralized_runs_performance(centralized)
-
-	
-	all_performances = [distributed.performance..., 	
-		cascading.performance..., centralized.performance...]
-
-	ylims = (min(all_performances...) -200, max(all_performances...) + 400)
-
-	stylings = (linewidth=2,
-		markerstrokewidth=2,
-		markerstrokecolor=:white)
-	
-	plot(;size=(350, 250),
-		ylims,
-		xlabel="Total episodes trained",
-		ylabel="Performance")
-	
-	plot!(distributed.runs, distributed.performance;
-		label="Distributed",
-		color=colors.PETER_RIVER,
-		marker=(:diamond, 6),
-		stylings...)
-	
-	plot!(cascading.runs, cascading.performance;
-		label="Cascading",
-		color=colors.NEPHRITIS,
-		marker=(:rtriangle, 9),
-		stylings...)
-	
-	plot!(centralized.runs, centralized.performance;
-		label="Centralized",
-		color=colors.AMETHYST,
-		marker=(:circle, 6),
-		stylings...)
-	
-	
-end
-
-# ╔═╡ de90ff81-dace-447e-8d0c-7573536d64a0
-#=╠═╡
-do_the_plot_of_the_results(;distributed, cascading, centralized)
   ╠═╡ =#
 
 # ╔═╡ 60a6c2c5-e5af-4b33-9976-9054b51814d1
@@ -562,6 +459,125 @@ cleandata = let
 	
 	cleandata
 end
+  ╠═╡ =#
+
+# ╔═╡ 02859499-80f9-413d-9488-fcba9728031a
+#=╠═╡
+all_runs = cleandata[!, :runs] |> unique |> sort
+  ╠═╡ =#
+
+# ╔═╡ b9e07438-ea07-4b89-a983-378b706a695b
+#=╠═╡
+@bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
+  ╠═╡ =#
+
+# ╔═╡ 782b14e8-a0d4-4584-9082-dded2699b70a
+#=╠═╡
+# Extract just mean performance as a function of the number of runs.
+function runs_performance(result_dir)
+	
+	buf = IOBuffer(to_csv(result_dir))
+	df = CSV.read(buf, DataFrame, delim=";")
+	n_units = max(df.pre_trained_units...) + 1
+	df = filter(:pre_trained_units => (==)(n_units - 1), df)
+	df = filter(:runs => r -> r ∈ runs_shown, df)
+
+	grouping =  groupby(df, [:runs])
+	
+	df = combine(grouping, 
+		:trained_global_performance => mean,
+		renamecols=false)
+
+	df = sort(df, :runs)
+
+	return (runs=[(r) for r  in df.runs], 
+	performance=[reward(p) for p in df.trained_global_performance])
+end
+  ╠═╡ =#
+
+# ╔═╡ b7d13d00-1b8e-4875-affe-9756ee74ea7f
+#=╠═╡
+runs_performance(cascading)
+  ╠═╡ =#
+
+# ╔═╡ ea282e41-f786-4c5c-b2e6-e42826949516
+#=╠═╡
+# Yea and for centralized control the format is completely different.
+function centralized_runs_performance(result_dir)
+	
+	buf = IOBuffer(centralized_to_csv.to_csv(result_dir))
+	df = CSV.read(buf, DataFrame, delim=";")
+	df = filter(:runs => r -> r ∈ runs_shown, df)
+
+	grouping =  groupby(df, [:runs])
+	
+	df = combine(grouping, 
+		:trained_performance => mean,
+		renamecols=false)
+
+	df = sort(df, :runs)
+
+	return (runs=[r for r  in df.runs],  
+	performance=[reward(p) for p in df.trained_performance])
+end
+  ╠═╡ =#
+
+# ╔═╡ afe6e072-a335-4e72-a1d4-389ebd624493
+#=╠═╡
+centralized_runs_performance(centralized)
+  ╠═╡ =#
+
+# ╔═╡ 5160269e-c0fe-4643-bbaf-9094bb4bd537
+#=╠═╡
+function do_the_plot_of_the_results(;distributed, 
+		cascading, 
+		centralized)
+
+
+	#distributed = runs_performance(distributed)
+	cascading = runs_performance(cascading)
+	centralized = centralized_runs_performance(centralized)
+
+	
+	all_performances = [#distributed.performance..., 	
+		cascading.performance..., centralized.performance...]
+
+	ylims = (min(all_performances...) -200, max(all_performances...) + 400)
+
+	stylings = (linewidth=2,
+		markerstrokewidth=2,
+		markerstrokecolor=:white)
+	
+	plot(;size=(350, 250),
+		ylims,
+		xlabel="Total episodes trained",
+		ylabel="Performance")
+	
+	#plot!(distributed.runs, distributed.performance;
+	#	label="Distributed",
+	#	color=colors.PETER_RIVER,
+	#	marker=(:diamond, 6),
+	#	stylings...)
+	
+	plot!(cascading.runs, cascading.performance;
+		label="Cascading",
+		color=colors.NEPHRITIS,
+		marker=(:rtriangle, 9),
+		stylings...)
+	
+	plot!(centralized.runs, centralized.performance;
+		label="Centralized",
+		color=colors.AMETHYST,
+		marker=(:circle, 6),
+		stylings...)
+	
+	
+end
+  ╠═╡ =#
+
+# ╔═╡ de90ff81-dace-447e-8d0c-7573536d64a0
+#=╠═╡
+do_the_plot_of_the_results(;distributed, cascading, centralized)
   ╠═╡ =#
 
 # ╔═╡ a675d6b9-0f2b-4023-af2a-1bb43303f6a7
@@ -726,7 +742,7 @@ let
 	df = sort(means, :runs)
 	df = filter(:trained_units => t -> t == max_trained_units, df)
 	df = filter(:runs => r -> r ∈ selected_runs, df)
-	df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
+	#df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
 	@df df plot(:runs, :global_reward;
 		size,
 		ylims,
@@ -796,10 +812,13 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╟─193a3fb9-92c9-4ac2-8f41-2a2e4540486f
 # ╠═01af1a0e-8806-40c6-9c8f-a3391368072d
 # ╠═782b14e8-a0d4-4584-9082-dded2699b70a
+# ╠═b7d13d00-1b8e-4875-affe-9756ee74ea7f
 # ╠═ea282e41-f786-4c5c-b2e6-e42826949516
 # ╠═afe6e072-a335-4e72-a1d4-389ebd624493
 # ╠═802bb5e1-f2e1-4788-abcb-c1716683693e
 # ╟─10dc113e-aaa0-46f8-80ef-c345d52d5eec
+# ╠═02859499-80f9-413d-9488-fcba9728031a
+# ╠═b9e07438-ea07-4b89-a983-378b706a695b
 # ╠═5160269e-c0fe-4643-bbaf-9094bb4bd537
 # ╠═de90ff81-dace-447e-8d0c-7573536d64a0
 # ╟─60a6c2c5-e5af-4b33-9976-9054b51814d1
