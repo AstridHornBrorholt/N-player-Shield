@@ -161,13 +161,17 @@ end
 
 # ╔═╡ 5f09b9ed-8218-4a34-a12d-f4ec65e382c4
 """
-Presets:
+Queries (copy-pasta)
 ===
 
 default:
 
 simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3], distance[4], distance[5], distance[6], distance[7]}
 
+Including the last car:
+
+strategy car9 = loadStrategy {}->{velocity[9], velocity[8], distance[8]} ("/home/asger/Results/N-player CC/2000 Runs/Repetition 1/Models/car9.json")
+simulate[<=100;1] {velocity[0], distance[0], distance[1], distance[2], distance[3], distance[4], distance[5], distance[6], distance[7], distance[8]} under car9
 
 three cars:
 
@@ -326,7 +330,7 @@ get_traces(output, "velocity")
 # ╔═╡ c00efc32-c7fe-4af8-acda-79725f83521b
 function plot_cars(distances::T, time::Int64) where T <: Dict{Int64, Vector{Float64}}
 	# Distance is bumper to bumper
-	car_width = 8 
+	car_width = 9
 	# Distance from front to 0
 	
 	sorted = sort(collect(distances), by=(x -> x[1]))
@@ -424,7 +428,11 @@ function animate_cars(distances, velocities)
 	anim = @animate for t in 1:t_max
 		plot_cars(distances, t)
 		distance_covered += 10*Δt
-		distance_covered += velocities[t + 1]*Δt # I don't remember why it was + 1
+		
+		# I don't remember why it was + 1
+		# +15m/s speed modifier so they always move forwards with at least 5m/s
+		distance_covered += (velocities[t + 1] + 15)*Δt 
+		
 		#plot_road(distance_covered, length(distances))
 		plot_landscape(distance_covered, length(distances))
 	end
