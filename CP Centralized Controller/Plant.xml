@@ -44,7 +44,7 @@ const int INPUT_TWO = 2;
 const int INPUT_ONE = 1;
 const int WAIT = 0;
 
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CP/libcpshield.so"
+import "/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/CP/libcpshield.so"
 {
     int get_value(double volume);
 };

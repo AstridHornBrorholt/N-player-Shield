@@ -77,11 +77,11 @@ const int NegativeAcceleration = 0;
 const int NoAcceleration = 2;
 
 /*
-import "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/libcar1.so"
+import /home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/Strategies/libcar1.so"
 {
     int get_action_car1(double velocity, double velocityFront, double distance);
 };
-import "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/libcar2.so"
+import /home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/Strategies/libcar2.so"
 {
     int get_action_car2(double velocity, double velocityFront, double distance);
 };
@@ -119,7 +119,7 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Shield/libshield.so"
+import "/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/CC Shield/libshield.so"
 {
     int get_value(double velocity, double velocityFront, double distance);
 };

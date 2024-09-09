@@ -44,7 +44,7 @@ const int INPUT_TWO = 2;
 const int INPUT_ONE = 1;
 const int WAIT = 0;
 
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CP/libcpshield.so"
+import "/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/CP/libcpshield.so"
 {
     int get_value(double volume);
 };
@@ -92,7 +92,7 @@ const int OCO = 6;
 const int OOO = 7;
 const int CCC = 3;
 
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Strategies/libmoneydollars.so"
+import "/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/Strategies/libmoneydollars.so"
 {
     int get_action_moneydollars(double t, 
         double stored1, double stored2, double stored3, double stored4, double stored5, double stored6, double stored7, double stored8, double stored9, double stored10,
@@ -649,7 +649,7 @@ U1.in
 			<comment/>
 		</query>
 		<query>
-			<formula>saveStrategy("/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Strategies/moneydollars.json", Moneydollars)</formula>
+			<formula>saveStrategy("/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/Strategies/moneydollars.json", Moneydollars)</formula>
 			<comment/>
 		</query>
 	</queries>

@@ -62,7 +62,7 @@ const int NegativeAcceleration = 0;
 const int NoAcceleration = 2;
 
 /*
-import "/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/libcar1.so"
+import /home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/Strategies/libcar1.so"
 {
     int get_action_car1(double velocity, double velocityFront, double distance);
 };
@@ -97,7 +97,7 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Centralized Shield/3-car.so"
+import "/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/CC Centralized Shield/3-car.so"
 {
     int get_value(double v0, double v1, double v2, double d0, double d1);
 };

@@ -109,7 +109,7 @@ Fields in the blueprint surrouned with `%`. Functions or variable names here are
 
 # ╔═╡ 6ba15d9e-1490-47a3-ac77-288eae1dc281
 #=╠═╡
-@bind shield_path TextField(80, default = "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Shield/libshield.so")
+@bind shield_path TextField(80, default = "/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/CC Shield/libshield.so")
   ╠═╡ =#
 
 # ╔═╡ b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb
@@ -201,7 +201,7 @@ md"""
 
 # ╔═╡ fade61a9-8136-4a4c-99a2-dee9bf79fd32
 #=╠═╡
-@bind blueprint_path TextField(80, default="/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/Fleet_blueprint.xml")
+@bind blueprint_path TextField(80, default="/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/Fleet_blueprint.xml")
   ╠═╡ =#
 
 # ╔═╡ a0e02d1a-0355-4496-9b18-70f53c67a389

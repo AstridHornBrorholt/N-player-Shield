@@ -590,7 +590,7 @@ Takes up to 30s with the Discretization step size set to 0.5 (Options-&gt;Statis
 			<comment/>
 		</query>
 		<query>
-			<formula>saveStrategy("/home/asger/Documents/Files/Arbejde/AAU/N-player/dam.json", Opt)</formula>
+			<formula>saveStrategy("/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/dam.json", Opt)</formula>
 			<comment/>
 			<result outcome="success" type="quality" timestamp="2023-08-17 09:56:38 +0200">
 			</result>

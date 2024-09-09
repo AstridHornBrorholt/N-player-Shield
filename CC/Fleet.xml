@@ -105,7 +105,7 @@ void preTrainedChoice(int i) {
 
 /** Shield */
  
-import "/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Shield/libshield.so"
+import "/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/CC Shield/libshield.so"
 {
     int get_value(double velocity, double velocityFront, double distance);
 };
@@ -417,7 +417,7 @@ system Decisions, Dynamics, Random0,
 			<comment/>
 		</query>
 		<query>
-			<formula>saveStrategy("/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/car1.json", car1)</formula>
+			<formula>saveStrategy(/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/Strategies/car1.json", car1)</formula>
 			<comment/>
 		</query>
 		<query>
@@ -429,7 +429,7 @@ system Decisions, Dynamics, Random0,
 			<comment/>
 		</query>
 		<query>
-			<formula>saveStrategy("/home/asger/Documents/Files/Arbejde/AAU/N-player Shield/Strategies/car2.json", car2)</formula>
+			<formula>saveStrategy(/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/Strategies/car2.json", car2)</formula>
 			<comment/>
 		</query>
 		<query>
