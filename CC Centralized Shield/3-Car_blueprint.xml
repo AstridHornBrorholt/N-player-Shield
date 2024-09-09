@@ -51,7 +51,7 @@ hybrid clock distance[fleetSize - 1] = {20, 20}; 	// distance between cars [i] a
 - Are used in concrete simulations (Concrete Simulator, SMC queries like simulate, Pr, minE, maxE, E[...](max:)).      
 */
 
-double coust[fleetSize - 1]; 				// "cost" of distance used in strategy optimization
+double cost[fleetSize - 1]; 				// "cost" of distance used in strategy optimization
 
 void update_cost() {
     int i;
