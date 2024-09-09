@@ -173,14 +173,14 @@ function queries(fleet_size, output_path; checks=1000, skip_training=false)
 	statevars = vcat(statevars, ["distance[$i]" for i in 0:fleet_size - 2])
 	statevars = join(statevars, ", ")
 	if !skip_training
-		result ← "strategy centralized = minE(sum (i:int[0, fleetSize - 2]) D[i]) [<=100] {}->{$statevars}: <> time >= 100"
+		result ← "strategy centralized = minE(sum (i:int[0, fleetSize - 2]) cost[i]) [<=100] {}->{$statevars}: <> time >= 100"
 		result ← "saveStrategy(\"$output_path/centralized.json\", centralized)"
 	else
 		result ← "strategy centralized = loadStrategy{}->{$statevars} (\"$output_path/centralized.json\")"
 	end
 	# Learned performance
 	for i in 0:fleet_size - 2
-		result ← "E[<=100;$checks](max:D[$(i)]) under centralized"
+		result ← "E[<=100;$checks](max:cost[$(i)]) under centralized"
 	end
 	# Probability of safety violation
 	result ← "Pr[<=100;$checks]([] forall (i : int[0, fleetSize - 2]) (distance[i] > minDistance || distance[i] < maxDistance)) under centralized"

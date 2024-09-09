@@ -58,8 +58,6 @@ broadcast chan tick;    // Signal to check if distance greater than 200
 hybrid clock velocity[fleetSize];   		// velocity of each car
 hybrid clock distance[fleetSize - 1] = {%distances%};
 
-hybrid clock D[fleetSize - 1]; 				// "cost" of distance used in strategy optimization
-
 /* Hybrid clocks:
 - Usually represent some continuous (dynamical) cost over the system state space.
 - Can be used in rate (derivative) expressions.
@@ -68,7 +66,14 @@ hybrid clock D[fleetSize - 1]; 				// "cost" of distance used in strategy optimi
 - Are used in concrete simulations (Concrete Simulator, SMC queries like simulate, Pr, minE, maxE, E[...](max:)).      
 */
 
+double coust[fleetSize - 1]; 				// "cost" of distance used in strategy optimization
 
+void update_cost() {
+    int i;
+    for (i=0; i &lt; fleetSize - 1; i++){
+        cost[i] = cost[i] + distance[i];
+    }
+}
 
 /** Pre-trained agent */
 
@@ -370,14 +375,14 @@ that time reversing.</label>
 			<target ref="id29"/>
 			<label kind="guard" x="-365" y="-221">timer &gt;= t_act</label>
 			<label kind="synchronisation" x="-365" y="-238">choose!</label>
+			<label kind="assignment" x="-365" y="-255">update_cost()</label>
 		</transition>
 	</template>
 	<template>
 		<name>Dynamics</name>
 		<location id="id32" x="-153" y="-144">
 			<label kind="invariant" x="-314" y="-127">(forall (i : int[0, fleetSize - 1]) velocity[i]' == acceleration[i]) &amp;&amp;
-(forall (j : int[0, fleetSize - 2]) distance[j]' == velocity[j] - velocity[j + 1]) &amp;&amp;
-(forall (j : int[0, fleetSize - 2]) D[j]' == distance[j])</label>
+(forall (j : int[0, fleetSize - 2]) distance[j]' == velocity[j] - velocity[j + 1])</label>
 		</location>
 		<init ref="id32"/>
 	</template>
@@ -385,15 +390,15 @@ that time reversing.</label>
 	<queries>
 		<option key="--diagnostic" value="0"/>
 		<query>
-			<formula>E[&lt;=100;1000](max:D[0])</formula>
+			<formula>E[&lt;=100;1000](max:cost[0])</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>E[&lt;=100;1000](max:D[1])</formula>
+			<formula>E[&lt;=100;1000](max:cost[1])</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>E[&lt;=100;1000](max: (sum (i : int[0, fleetSize - 2]) D[i])/fleetSize)</formula>
+			<formula>E[&lt;=100;1000](max: (sum (i : int[0, fleetSize - 2]) cost[i])/fleetSize)</formula>
 			<comment/>
 		</query>
 		<query>

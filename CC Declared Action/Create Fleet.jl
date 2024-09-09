@@ -272,19 +272,19 @@ function queries(number_of_strategies, output_path;
 	result = String[]
 	# Cross-checking outcomes of previous (c-compiled) strategies
 	for i in 0:number_of_strategies-1
-		result ← "E[<=100;$checks](max:D[$(i)])"
+		result ← "E[<=100;$checks](max:cost[$(i)])"
 	end
 	# Training or loading strategy
 	i = number_of_strategies + 1
 	optional_front_action = observe_front_action ? ", acceleration[$(i-1)]" : ""
 	if !skip_training
-		result ← "strategy car$i = minE(D[$(i - 1)]) [<=100] {}->{velocity[$i], velocity[$(i - 1)], distance[$(i - 1)]$optional_front_action}: <> time >= 100"
+		result ← "strategy car$i = minE(cost[$(i - 1)]) [<=100] {}->{velocity[$i], velocity[$(i - 1)], distance[$(i - 1)]$optional_front_action}: <> time >= 100"
 		result ← "saveStrategy(\"$output_path/car$i.json\", car$i)"
 	else
 		result ← "strategy car$i = loadStrategy{}->{velocity[$i], velocity[$(i - 1)], distance[$(i - 1)]$optional_front_action} (\"$output_path/car1.json\")"
 	end
 	# Learned performance
-	result ← "E[<=100;$checks](max:D[$(i - 1)]) under car$i"
+	result ← "E[<=100;$checks](max:cost[$(i - 1)]) under car$i"
 	# Probability of safety violation
 	result ← "Pr[<=100;$checks]([] forall (i : int[0, fleetSize - 2]) (distance[i] > minDistance || distance[i] < maxDistance)) under car$i"
 

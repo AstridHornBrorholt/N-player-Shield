@@ -110,10 +110,10 @@ function queries(output_path; checks=1000, name)
 	# Training or loading strategy
 
 	return """
-strategy bothCars = minE(D[0] + D[1]) [<=105] {}->{velocity[0], velocity[1], velocity[2], distance[0], distance[1]}: <> time >= 100
+strategy bothCars = minE(cost[0] + cost[1]) [<=105] {}->{velocity[0], velocity[1], velocity[2], distance[0], distance[1]}: <> time >= 100
 saveStrategy("$output_path/$name.json", bothCars)
-E[<=100;$checks](max:D[0]) under bothCars
-E[<=100;$checks](max:D[1]) under bothCars
+E[<=100;$checks](max:cost[0]) under bothCars
+E[<=100;$checks](max:cost[1]) under bothCars
 Pr[<=100;$checks]([] forall (i : int[0, fleetSize - 2]) (distance[i] > minDistance || distance[i] < maxDistance)) under bothCars
 """
 end

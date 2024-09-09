@@ -26,7 +26,7 @@ I actually have results for 30 cars trained for 2500 episodes each. This took 48
 
 == Random baseline
 
-It is interesting to know what the baseline performance is, to see if learning even occurs. Each agent samples a safe action according to the shield, according to a uniformly random distribution. The avergae performance#footnote[Measured as $sum -D[i]/100$] for a fleet of 10 cars was -1204.
+It is interesting to know what the baseline performance is, to see if learning even occurs. Each agent samples a safe action according to the shield, according to a uniformly random distribution. The avergae performance#footnote[Measured as $sum -"cost"[i]/100$] for a fleet of 10 cars was -1204.
 However, it was safe.
 
 == Decentralized Shield & Decentralized Learning
