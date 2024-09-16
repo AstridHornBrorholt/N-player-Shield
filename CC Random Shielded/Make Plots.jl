@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -368,18 +368,30 @@ Plots.default(fontfamily="serif-roman")
 @bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CC Random Shielded")
   ╠═╡ =#
 
+# ╔═╡ 18f8e591-80d5-48e5-963b-0ae109d5b0aa
+function firstcapture(pattern, string)
+	first(eachmatch(pattern, string))[1]
+end
+
+# ╔═╡ 5e4d6b1c-6017-4239-94eb-210b0922bf15
+firstcapture(r"foo (\w+)", "foo bar")
+
 # ╔═╡ 7f72aebe-fbb6-40fa-a5df-055d40686830
 #=╠═╡
 let
-	safety_query = read(results_dir ⨝ "Safety.txt", String)
-	safe = occursin(r"Result: \(0/\d+ runs\)", safety_query)
+	safety_output_path = results_dir ⨝ "Safety.txt"
+	safety_output = read(safety_output_path, String)
+	runs = firstcapture(r"(\d+) runs", safety_output)
+	safe = occursin("($runs/$runs runs)", safety_output)
 
 	if !safe
 		Markdown.parse("""
 		!!! danger "Not safe"
 			Doesn't seem like the query made to test safety gave the right result:
 		
-				$(join(split(safety_query, "\n"), "\n		"))
+				$(join(split(safety_output, "\n"), "\n		"))
+
+			Path to file: `$safety_output_path`
 		""")
 	else
 		Markdown.parse("""
@@ -473,10 +485,15 @@ end
 refresh_button; data = read_that_data(results_dir)
   ╠═╡ =#
 
+# ╔═╡ ae87e468-0bbb-43d0-9cec-bf82a1b9661b
+#=╠═╡
+data |> mean
+  ╠═╡ =#
+
 # ╔═╡ d1695f9c-ac7d-49ae-a2eb-b14003e691a9
 #=╠═╡
 begin
-	cleandata = [-p/episode_length for p in data]
+	cleandata = [-p for p in data]
 
 	if just_first_10
 		cleandata = cleandata[1:9]
@@ -534,11 +551,14 @@ performance_plot(cleandata; ylims, size)
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
+# ╠═18f8e591-80d5-48e5-963b-0ae109d5b0aa
+# ╠═5e4d6b1c-6017-4239-94eb-210b0922bf15
 # ╟─7f72aebe-fbb6-40fa-a5df-055d40686830
 # ╠═fa39787e-ba6a-47af-b34a-6c2c5e898246
 # ╠═9861f624-61eb-428a-9155-5ad95f260ef7
 # ╠═b38bd77e-ba8f-408c-9905-f8af5f521e25
 # ╠═7d154396-2531-42c8-b5fa-69d28eada5fd
+# ╠═ae87e468-0bbb-43d0-9cec-bf82a1b9661b
 # ╠═3d251c90-c490-473a-8055-bae322175a4c
 # ╠═1ea2bb05-23c0-4523-9893-377073d08784
 # ╠═d1695f9c-ac7d-49ae-a2eb-b14003e691a9
