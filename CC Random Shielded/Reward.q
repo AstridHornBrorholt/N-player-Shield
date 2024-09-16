@@ -1,1 +1,1 @@
-E[<=100;1000](min: -(sum (i : int[0, fleetSize - 2]) cost[i])/100)
+E[<=100;1000](min: (sum (i : int[0, fleetSize - 2]) cost[i]))
