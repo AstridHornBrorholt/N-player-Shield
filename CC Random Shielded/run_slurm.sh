@@ -18,9 +18,9 @@ echo "Scheduling slurm jobs. Writing logs to \"$log_output\""
 ARGS="--out=/dev/null --partition=dhabi -n1 --mem=16G --job-name $job_name"
 
 # Make a copy of the thing. The uppaal file.
-export RANDOM_FLEET="$RESULTS/Random Fleet.xml"
+export RANDOM_FLEET="$results_dir/Random Fleet.xml"
 # Put in correct shield.
-export SHIELD="$RESULTS/libshield.so"
+export SHIELD="$results_dir/libshield.so"
 cp "../CC Shield/libshield.so" "$SHIELD"
 sed "s#/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Shield/libshield.so#$SHIELD#" "Random Fleet.xml" > "$RANDOM_FLEET"
 
