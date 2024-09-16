@@ -22,7 +22,7 @@ export RANDOM_FLEET="$results_dir/Random Fleet.xml"
 # Put in correct shield.
 export SHIELD="$results_dir/libshield.so"
 cp "../CC Shield/libshield.so" "$SHIELD"
-sed "s#/home/asger/Documents/Files/Arbejde/AAU/Artikler/N-player Shield/CC Shield/libshield.so#$SHIELD#" "Random Fleet.xml" > "$RANDOM_FLEET"
+sed "s#/home/asger/Documents/Files/AAU/PhD/Artikler/Multi-agent Shielding/N-player Experiments/CC Shield/libshield.so"#$SHIELD#" "Random Fleet.xml" > "$RANDOM_FLEET"
 
 # Schedule slurm jobs
 for ((i=0; i<=9; i++)); do
