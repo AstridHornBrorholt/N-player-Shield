@@ -11,7 +11,7 @@ echo "Running single experiment."
 if [ "${1}" = "Safety" ]; then
     $verifyta -s "$RANDOM_FLEET" "Safety.q" &> "$RESULTS/Safety.txt"
 
-if [ "${1}" = "Reward" ]; then
+elif [ "${1}" = "Reward" ]; then
     $verifyta -s "$RANDOM_FLEET" "Reward.q" &> "$RESULTS/Reward.txt"
     
 # Check if the first argument is a number
