@@ -365,11 +365,6 @@ end
 TableOfContents(title="Cruise-control Plots")
   ╠═╡ =#
 
-# ╔═╡ 9d7d57d3-b2ef-4dec-972f-7873e714fad6
-#=╠═╡
-TableOfContents()
-  ╠═╡ =#
-
 # ╔═╡ 15f0808f-8424-4d27-9247-274c7751bf8e
 Plots.default(fontfamily="serif-roman") 
 
@@ -378,6 +373,49 @@ Plots.default(fontfamily="serif-roman")
 
 # ╔═╡ ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 ⨝ = joinpath
+
+# ╔═╡ d3bfd66d-f4dd-44a0-b4a7-5da34f030e2e
+md"""
+## Computing Performance
+"""
+
+# ╔═╡ abb7365c-1d40-4f92-9664-e005117b5c00
+md"""
+!!! info "Cost? Reward? Performance?"
+	I'm doing a refactor because of a rather embarassing screw-up in how performance was represented in the plot. I'm hoping to standardize this in the `local_reward` and `global_performance` functions below. 
+
+	When the data is read from UPPAAL query results in `Results to CSV.jl`, the outputs are called **(local) costs**. This is the value that the training algorithm was trying to minimize. 
+	The local cost is the sum of observed distances over a 100-length trace, starting at a distance of 50.
+
+	This is converted to a local **reward**, which is just negative cost.
+
+	Then the term **performance** is used to mean the global performance that will be reported in the paper. Performance is reported as the negative mean of local rewards. 
+"""
+
+# ╔═╡ a2256c72-3686-4f89-9adf-6684270946b6
+const episode_length = 100
+
+# ╔═╡ 266ba2a5-01d0-48a4-be0e-52416dfd2485
+function local_reward(cost)
+	-cost
+end
+
+# ╔═╡ a747c372-4542-4b97-b9c0-7f46da83e9ad
+function global_performance(costs)
+	rewards = local_reward.(costs)
+	mean(rewards)
+end
+
+# ╔═╡ 8fc41ea1-68b0-469f-a085-cf67b35e78a5
+global_performance([1, 2, 3])
+
+# ╔═╡ 2655802d-f3b9-4850-8164-81a860ca5716
+function append(a, b::V) where {V<:AbstractVector}
+	vcat(b, a)
+end
+
+# ╔═╡ 12e5d573-610c-4c9e-a555-237f1fd983b4
+append(5, [1, 2, 3, 4])
 
 # ╔═╡ ef5c1d6e-9046-4da7-bfd1-2a12832d0e7d
 md"""
@@ -402,22 +440,22 @@ md"""
 
 # ╔═╡ 9aa911de-e818-4565-a7e2-1adc18f3fce0
 #=╠═╡
-CSV.read(IOBuffer(to_csv(cascading)), DataFrame)
+rawdata = CSV.read(IOBuffer(to_csv(cascading)), DataFrame)
   ╠═╡ =#
-
-# ╔═╡ a2256c72-3686-4f89-9adf-6684270946b6
-const episode_length = 100
-
-# ╔═╡ 266ba2a5-01d0-48a4-be0e-52416dfd2485
-
-# Performance is the raw result obtained from runnign the thing. This isn't the same as the reward we report because I don't want to re-run the experiments every time we change our minds.
-function reward(performance)
-	-performance/episode_length
-end
 
 # ╔═╡ 572cade9-c131-4206-b79d-e1ee118f230b
 #=╠═╡
 @bind first_repetition_only CheckBox(default=false)
+  ╠═╡ =#
+
+# ╔═╡ ec3df7e5-80d3-4bc7-8dda-54551ee1936c
+#=╠═╡
+all_runs = rawdata[!, :runs] |> unique |> sort
+  ╠═╡ =#
+
+# ╔═╡ a1cfa77f-b7e7-4cec-9916-cb076517876c
+#=╠═╡
+@bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
   ╠═╡ =#
 
 # ╔═╡ a0159339-14f3-4280-8160-447702f19d2a
@@ -443,6 +481,96 @@ function to_vector(str::T, element_type=Float64) where T<:AbstractString
 	 	return Float64[parse(element_type, 🍣) for 🍣 in 🎣]
 	end
 end
+
+# ╔═╡ a3c96777-3878-4abd-b865-e3ee35186808
+#=╠═╡
+# Extract just mean performance as a function of the number of runs.
+function runs_performance(result_dir)
+	buf = IOBuffer(to_csv(result_dir))
+	df = CSV.read(buf, DataFrame, delim=";")
+	fleet_size = max(df.fleet_size...)
+	df = filter(:fleet_size => (==)(fleet_size), df)
+	df = filter(:runs => r -> r ∈ runs_shown, df)
+	df = transform(df, :other_cars_costs => ByRow(to_vector) => :other_cars_costs)
+	df = transform(df, [:learned_cost, :other_cars_costs] => ByRow(append) => :costs)
+	df = transform(df, :costs => ByRow(global_performance) => :performance)
+
+	if first_repetition_only
+		df = filter(:repetition => (==)(1), df)
+	end
+	
+	grouping =  groupby(df, [:runs])
+
+	df = combine(grouping,
+		:performance => mean => :performance)
+
+	df = sort(df, :runs)
+
+	return (runs=[r for r  in df.runs], 
+		performance=[p for p in df.performance])
+end
+  ╠═╡ =#
+
+# ╔═╡ d931fceb-ba91-4fa4-b851-7beba3888cab
+#=╠═╡
+runs_performance(cascading)
+  ╠═╡ =#
+
+# ╔═╡ f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
+#=╠═╡
+function do_the_plot_of_the_results(;distributed, 
+		cascading, 
+		centralized)
+
+	# distributed = runs_performance(distributed)
+	cascading = runs_performance(cascading)
+	centralized = runs_performance(centralized)
+
+	
+	all_performances = [#distributed.performance..., 	
+		cascading.performance..., centralized.performance...]
+
+	ymin, ymax = min(all_performances...), max(all_performances...)
+	ylims = (ymin - abs(ymin)*0.25, ymax + abs(ymax)*0.25)
+	ylims = (-10000, -2000)
+
+	stylings = (
+		legend=:topleft,
+		linewidth=2,
+		markerstrokewidth=2,
+		markerstrokecolor=:white)
+	
+	plot(;size=(350, 250),
+		ylims,
+		xlabel="Total episodes trained",
+		ylabel="Performance")
+	
+	#plot!(distributed.runs, distributed.performance;
+	#	label="Distributed",
+	#	color=colors.PETER_RIVER,
+	#	marker=(:pentagon, 6),
+	#	stylings...)
+	
+	plot!(cascading.runs, cascading.performance;
+		label="Cascading",
+		color=colors.NEPHRITIS,
+		marker=(:rtriangle, 9),
+		stylings...)
+	
+	plot!(centralized.runs, centralized.performance;
+		label="Centralized",
+		color=colors.AMETHYST,
+		marker=(:circle, 6),
+		stylings...)
+	
+	
+end
+  ╠═╡ =#
+
+# ╔═╡ 74674f2d-c384-4c01-957b-ca8d15062db3
+#=╠═╡
+do_the_plot_of_the_results(;distributed, cascading, centralized)
+  ╠═╡ =#
 
 # ╔═╡ be64568d-f451-46f4-8336-bd94fff82471
 to_vector("[3377.35, 2655.58, 2868.0, 2781.98]")
@@ -545,17 +673,17 @@ cleandata = let
 	cleandata = raw_results
 	
 	cleandata = transform(cleandata, 
-		:other_cars => ByRow(to_vector) => :other_cars)
+		:other_cars_costs => ByRow(to_vector) => :other_cars_costs)
 	
 	if only_first_repetition
 		cleandata = filter(:repetition => (x -> x == 1), cleandata)
 	end
 		
 	cleandata = transform(cleandata, 
-		:learned_performance => ByRow(reward) => :reward)
+		:learned_cost => ByRow(local_reward) => :reward)
 	
 	cleandata = transform(cleandata, 
-		:other_cars => ByRow(v -> [-p/episode_length for p in v]) => :other_cars_reward)
+		:other_cars_costs => ByRow(v -> [local_reward(p) for p in v]) => :other_cars_reward)
 
 	# Global reward: Negative total accumulated distance. 
 	# Only makes sense to compute for the last car.
@@ -568,115 +696,14 @@ cleandata = let
 end
   ╠═╡ =#
 
-# ╔═╡ ec3df7e5-80d3-4bc7-8dda-54551ee1936c
-#=╠═╡
-all_runs = cleandata[!, :runs] |> unique |> sort
-  ╠═╡ =#
-
-# ╔═╡ a1cfa77f-b7e7-4cec-9916-cb076517876c
-#=╠═╡
-@bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
-  ╠═╡ =#
-
-# ╔═╡ a3c96777-3878-4abd-b865-e3ee35186808
-#=╠═╡
-# Extract just mean performance as a function of the number of runs.
-function runs_performance(result_dir)
-	buf = IOBuffer(to_csv(result_dir))
-	df = CSV.read(buf, DataFrame, delim=";")
-	fleet_size = max(df.fleet_size...)
-	df = filter(:fleet_size => (==)(fleet_size), df)
-	df = filter(:runs => r -> r ∈ runs_shown, df)
-
-	if first_repetition_only
-		df = filter(:repetition => (==)(1), df)
-	end
-	
-	grouping =  groupby(df, [:runs])
-	
-	df = combine(grouping, 
-		:learned_performance => mean,
-		renamecols=false)
-
-	df = sort(df, :runs)
-
-	return (runs=[r for r  in df.runs], 
-		performance=[reward(p) for p in df.learned_performance])
-end
-  ╠═╡ =#
-
-# ╔═╡ d931fceb-ba91-4fa4-b851-7beba3888cab
-#=╠═╡
-runs_performance(centralized)
-  ╠═╡ =#
-
-# ╔═╡ f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
-#=╠═╡
-function do_the_plot_of_the_results(;distributed, 
-		cascading, 
-		centralized)
-
-	# distributed = runs_performance(distributed)
-	cascading = runs_performance(cascading)
-	centralized = runs_performance(centralized)
-
-	
-	all_performances = [#distributed.performance..., 	
-		cascading.performance..., centralized.performance...]
-
-	ylims = (min(all_performances...) -25, max(all_performances...) + 40)
-
-	stylings = (
-		legend=:bottomleft,
-		linewidth=2,
-		markerstrokewidth=2,
-		markerstrokecolor=:white)
-	
-	plot(;size=(350, 250),
-		ylims,
-		xlabel="Total episodes trained",
-		ylabel="Performance")
-	
-	#plot!(distributed.runs, distributed.performance;
-	#	label="Distributed",
-	#	color=colors.PETER_RIVER,
-	#	marker=(:pentagon, 6),
-	#	stylings...)
-	
-	plot!(cascading.runs, cascading.performance;
-		label="Cascading",
-		color=colors.NEPHRITIS,
-		marker=(:rtriangle, 9),
-		stylings...)
-	
-	plot!(centralized.runs, centralized.performance;
-		label="Centralized",
-		color=colors.AMETHYST,
-		marker=(:circle, 6),
-		stylings...)
-	
-	
-end
-  ╠═╡ =#
-
-# ╔═╡ 74674f2d-c384-4c01-957b-ca8d15062db3
-#=╠═╡
-do_the_plot_of_the_results(;distributed, cascading, centralized)
-  ╠═╡ =#
-
-# ╔═╡ 42b86072-1d01-4940-ade8-3442cc2f1169
-#=╠═╡
-runs_performance(centralized)
-  ╠═╡ =#
-
 # ╔═╡ a675d6b9-0f2b-4023-af2a-1bb43303f6a7
 #=╠═╡
 means = let
 	grouping =  groupby(cleandata, [:runs, :fleet_size])
 	
 	means = combine(grouping, 
-		:learned_performance => mean, 
-		:other_cars => (elementwise_mean), 
+		:learned_cost => mean, 
+		:other_cars_costs => (elementwise_mean), 
 		:other_cars_reward => (elementwise_mean), 
 		:reward => mean,
 		:global_reward => mean, 
@@ -685,7 +712,7 @@ means = let
 	# elementwise_mean returns a string because otherwise it creates a row for each element in returned vector
 	means = transform(means, 
 		:other_cars_reward => ByRow(to_vector), 
-		:other_cars => ByRow(to_vector), 
+		:other_cars_costs => ByRow(to_vector), 
 		renamecols=false)
 end
   ╠═╡ =#
@@ -976,19 +1003,23 @@ end
 # ╟─95e38fbd-142d-4926-9291-27e69ddf7c75
 # ╠═cd4fb0d2-d1b6-4301-97e4-9ddb3505e061
 # ╠═61c15d44-75be-4613-8b60-484d94847b8a
-# ╠═9d7d57d3-b2ef-4dec-972f-7873e714fad6
 # ╠═15f0808f-8424-4d27-9247-274c7751bf8e
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
-# ╟─ef5c1d6e-9046-4da7-bfd1-2a12832d0e7d
-# ╟─9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
-# ╠═9aa911de-e818-4565-a7e2-1adc18f3fce0
+# ╟─d3bfd66d-f4dd-44a0-b4a7-5da34f030e2e
+# ╟─abb7365c-1d40-4f92-9664-e005117b5c00
 # ╠═a2256c72-3686-4f89-9adf-6684270946b6
 # ╠═266ba2a5-01d0-48a4-be0e-52416dfd2485
+# ╠═a747c372-4542-4b97-b9c0-7f46da83e9ad
+# ╠═8fc41ea1-68b0-469f-a085-cf67b35e78a5
+# ╠═9aa911de-e818-4565-a7e2-1adc18f3fce0
 # ╠═a3c96777-3878-4abd-b865-e3ee35186808
+# ╠═2655802d-f3b9-4850-8164-81a860ca5716
+# ╠═12e5d573-610c-4c9e-a555-237f1fd983b4
 # ╠═d931fceb-ba91-4fa4-b851-7beba3888cab
+# ╟─ef5c1d6e-9046-4da7-bfd1-2a12832d0e7d
+# ╟─9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
 # ╠═f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
-# ╠═42b86072-1d01-4940-ade8-3442cc2f1169
 # ╠═572cade9-c131-4206-b79d-e1ee118f230b
 # ╠═ec3df7e5-80d3-4bc7-8dda-54551ee1936c
 # ╠═a1cfa77f-b7e7-4cec-9916-cb076517876c

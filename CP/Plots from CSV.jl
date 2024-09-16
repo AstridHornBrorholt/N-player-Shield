@@ -350,10 +350,25 @@ md"""
 This is the performance vs training time plot.
 """
 
+# ╔═╡ d7848c71-86c8-4f1b-b8dd-49b9158e627e
+md"""
+!!! info "Cost? Performance?"
+	Costs are the raw values extracted from the queries. Reward is individual to agents, and is just negative cost.
+	Performance is the metric for the global system, and is mean negative cost. 
+"""
+
+# ╔═╡ a04f12e3-479b-4312-b531-66d12c59e911
+const n_agents = 10
+
+# ╔═╡ c644df51-eef9-4c39-9ca9-d7a971d07e70
+function local_reward(cost)
+	-cost
+end
+
 # ╔═╡ 01af1a0e-8806-40c6-9c8f-a3391368072d
-# Performance is the raw result obtained from runnign the thing. This isn't the same as the reward we report because I don't want to re-run the experiments every time we change our minds.
-function reward(performance)
-	-performance
+function global_performance(sum_of_costs)
+	# Queries compute sum of costs for historical reasons, so we divide by number of agents to get mean.
+	-sum_of_costs/n_agents
 end
 
 # ╔═╡ 802bb5e1-f2e1-4788-abcb-c1716683693e
@@ -452,8 +467,8 @@ cleandata = let
 	episode_length = 100
 	
 	cleandata = transform(cleandata, 
-		:trained_global_performance => ByRow(p -> -p) => :global_reward,
-		:trained_individual_performance => ByRow(p -> -p) => :individual_reward,
+		:trained_global_cost => ByRow(global_performance) => :global_performance,
+		:trained_individual_cost => ByRow(local_reward) => :individual_reward,
 		:pre_trained_units => ByRow(p -> p + 1) => :trained_units,
 	)
 	
@@ -478,20 +493,19 @@ function runs_performance(result_dir)
 	
 	buf = IOBuffer(to_csv(result_dir))
 	df = CSV.read(buf, DataFrame, delim=";")
-	n_units = max(df.pre_trained_units...) + 1
-	df = filter(:pre_trained_units => (==)(n_units - 1), df)
+	df = filter(:pre_trained_units => (==)(n_agents - 1), df)
 	df = filter(:runs => r -> r ∈ runs_shown, df)
 
 	grouping =  groupby(df, [:runs])
 	
 	df = combine(grouping, 
-		:trained_global_performance => mean,
+		:trained_global_cost => mean,
 		renamecols=false)
 
 	df = sort(df, :runs)
 
 	return (runs=[(r) for r  in df.runs], 
-	performance=[reward(p) for p in df.trained_global_performance])
+	performance=[global_performance(p) for p in df.trained_global_cost])
 end
   ╠═╡ =#
 
@@ -518,7 +532,7 @@ function centralized_runs_performance(result_dir)
 	df = sort(df, :runs)
 
 	return (runs=[r for r  in df.runs],  
-	performance=[reward(p) for p in df.trained_performance])
+	performance=[global_performance(p) for p in df.trained_performance])
 end
   ╠═╡ =#
 
@@ -542,7 +556,7 @@ function do_the_plot_of_the_results(;distributed,
 	all_performances = [#distributed.performance..., 	
 		cascading.performance..., centralized.performance...]
 
-	ylims = (min(all_performances...) -200, max(all_performances...) + 400)
+	ylims = (min(all_performances...) - 10, max(all_performances...) + 50)
 
 	stylings = (linewidth=2,
 		markerstrokewidth=2,
@@ -550,6 +564,7 @@ function do_the_plot_of_the_results(;distributed,
 	
 	plot(;size=(350, 250),
 		ylims,
+		legend=:bottomright,
 		xlabel="Total episodes trained",
 		ylabel="Performance")
 	
@@ -586,12 +601,12 @@ means = let
 	grouping =  groupby(cleandata, [:runs, :trained_units])
 	
 	means = combine(grouping, 
-		:untrained_global_performance => mean, 
-		:trained_global_performance => mean, 
-		:trained_individual_performance => mean,
-		:untrained_individual_performance => mean,
+		:untrained_global_cost => mean, 
+		:trained_global_cost => mean, 
+		:trained_individual_cost => mean,
+		:untrained_individual_cost => mean,
 		:individual_reward => mean,
-		:global_reward => mean,
+		:global_performance => mean,
 		renamecols=false)
 end
   ╠═╡ =#
@@ -611,9 +626,9 @@ max_trained_units = max(cleandata[!, :trained_units]...)
 default_y_min, default_y_max = let
 	df = filter(:trained_units => t -> t == max_trained_units, means)
 	
-	default_y_min = min(df[!, :global_reward]...) - 100
+	default_y_min = min(df[!, :global_performance]...) - 100
 	
-	default_y_max = max(df[!, :global_reward]...) + 100
+	default_y_max = max(df[!, :global_performance]...) + 100
 	
 	default_y_min, default_y_max
 end
@@ -666,7 +681,7 @@ begin
 		trained_min = min(trained_unit_counts...)
 		trained_max = max(trained_unit_counts...)
 		
-		xticks = (collect(trained_min:trained_max), ["$x" for x in 1:trained_max])
+		xticks = (collect(trained_min:trained_max), ["$(n_agents - x + 1)" for x in 1:trained_max])
 		xlims = (trained_min - 1, trained_max + 1)
 		
 		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
@@ -679,7 +694,6 @@ begin
 			xlabel="Unit ID",
 			ylabel="Individual Reward",
 			label=something(label, "Trained for $runs runs each"),
-			legend=:outertop,
 			#marker...,
 			plotargs...)
 	end
@@ -743,7 +757,7 @@ let
 	df = filter(:trained_units => t -> t == max_trained_units, df)
 	df = filter(:runs => r -> r ∈ selected_runs, df)
 	#df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
-	@df df plot(:runs, :global_reward;
+	@df df plot(:runs, :global_performance;
 		size,
 		ylims,
 		color=colors.POMEGRANATE,
@@ -755,17 +769,6 @@ let
 end
   ╠═╡ =#
 
-# ╔═╡ a824f7e5-0304-4836-a4c5-96a990e208bd
-md"""
-!!! info "Note"
-	So there's a discrepancy between the individual rewards (evaluated after the unit is trained) and the global reward (sum of individual rewards, evaluated when the last unit is trained).
-	The global reward is much larger than the sum of the individual rewards as seen in the plot.
-
-	This is explained by the fact that when a unit is trained, the units below it are random. However, when the units below are later trained, they get a higher reward from favouring taking material from the previous units, rather than the providers.
-
-	So in the final system, demand is much greater than what the unit initially learned.
-"""
-
 # ╔═╡ dc0bf1be-f6a5-4c76-b62d-7fdf234cd601
 #=╠═╡
 filter((x -> x[:runs] ∈ selected_runs), means)
@@ -776,7 +779,8 @@ filter((x -> x[:runs] ∈ selected_runs), means)
 let
 	df = filter((x -> x[:runs] ∈ selected_runs), means)
 	
-	plot(;size)
+	plot(legend=:outerright,
+		size=(800, 400))
 
 	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.CARROT, colors.WISTERIA, colors.EMERALD, colors.SUNFLOWER, colors.PETER_RIVER]
 	
@@ -810,6 +814,9 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╟─193a3fb9-92c9-4ac2-8f41-2a2e4540486f
+# ╠═d7848c71-86c8-4f1b-b8dd-49b9158e627e
+# ╠═a04f12e3-479b-4312-b531-66d12c59e911
+# ╠═c644df51-eef9-4c39-9ca9-d7a971d07e70
 # ╠═01af1a0e-8806-40c6-9c8f-a3391368072d
 # ╠═782b14e8-a0d4-4584-9082-dded2699b70a
 # ╠═b7d13d00-1b8e-4875-affe-9756ee74ea7f
@@ -849,7 +856,6 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╟─7909f497-55cd-4f9d-b34d-515a80241873
 # ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
 # ╠═37e95259-e575-45c3-a0a3-4b0115c12694
-# ╟─a824f7e5-0304-4836-a4c5-96a990e208bd
 # ╠═dc0bf1be-f6a5-4c76-b62d-7fdf234cd601
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
 # ╠═3c202730-71e2-4cf6-b334-b30a8dfc14a5

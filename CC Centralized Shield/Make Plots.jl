@@ -30,6 +30,11 @@ begin
 	include("../FlatUI Colors.jl")
 end;
 
+# ╔═╡ 17f541f1-fac1-4cf5-a755-7c548fd8ea20
+md"""
+# Plots for CC Centralized Shield
+"""
+
 # ╔═╡ 6a2ada61-1cf9-4e1d-a69f-ec49897fc133
 html"""
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -66,6 +71,14 @@ function multiline(str)
 	</pre>
 	""")
 end
+
+# ╔═╡ fec3e1ed-fe37-4097-985f-7b718e182231
+TableOfContents()
+
+# ╔═╡ 232aaa75-f6b8-4c49-94cb-a76aa7c128d7
+md"""
+## Loading in Raw Data
+"""
 
 # ╔═╡ 68bf3bf7-71fe-433f-9552-f243e6e74c69
 @bind results_dir TextField(80, default="$(homedir())/Results/N-player CC Centralized Shield/")
@@ -124,7 +137,7 @@ end
 # ╔═╡ 89e83c9a-74cf-11ee-0c31-0f29a93be587
 function to_csv(results_dir)
 	isdir(results_dir) || error("Not found: $results_dir")
-	header = "runs;repetition;variant;car;reward"
+	header = "runs;repetition;variant;car;cost"
 	result = String[header]
 	for 🗄️ in glob("* Runs", results_dir)
 		runs = firstcapture(r"(\d+) Runs", 🗄️)
@@ -162,21 +175,51 @@ raw_data = DataFrame(CSV.File(IOBuffer(csv_string)))
 # ╔═╡ f2799a2c-f694-4cd8-9d32-1810ccc3b7d8
 const episode_length = 100
 
+# ╔═╡ 849c4994-4ca4-4f14-91af-e5fa0f4993e0
+md"""
+## Computing Performance
+"""
+
+# ╔═╡ cbb415bb-23a5-4252-9cd4-f7d5a6e197cf
+md"""
+!!! info "Performance?"
+	See also the info-box in `CC/Plots from CSV`.
+	
+	**Performance** is the negative mean of local cost. Local cost is the sum of observed distances over a 100-step run.
+
+	I keep calling it `:reward` in the code, because I don't feel like refactoring.
+"""
+
+# ╔═╡ af5b1074-ac2b-43b6-b508-7196f6fe8ddd
+function local_reward(cost)
+	-cost
+end
+
+# ╔═╡ 5ddd2108-56a6-426f-95ca-3208b3779c06
+function global_performance(costs)
+	rewards = local_reward.(costs)
+	mean(rewards)
+end
+
 # ╔═╡ ff7d843d-1426-4cf3-8407-531e97e1960d
 cleandata = let
 	cleandata = raw_data
+
+	grouping = groupby(cleandata, [:runs, :repetition, :variant])
+
+	cleandata = combine(grouping,
+		:cost =>(c -> Ref([c...])) => :costs)
 	
-	cleandata = transform(cleandata, :reward => (
-		xs -> [-x/episode_length for x in xs]
-	) => :reward)
+	cleandata = transform(cleandata, 
+		:costs => ByRow(global_performance) => :performance)
 end
 
 # ╔═╡ aea564f9-6fc5-4f1d-8699-1ce77be3a38d
 means = let	
-	grouping =  groupby(cleandata, [:runs, :variant, :car])
+	grouping =  groupby(cleandata, [:runs, :variant])
 	
 	means = combine(grouping, 
-		:reward => mean,
+		:performance => mean,
 		renamecols=false)
 end
 
@@ -188,8 +231,7 @@ all_runs = cleandata[!, :runs] |> unique |> sort
 
 # ╔═╡ 68f6836e-3ba7-42ca-9650-acba6365aa55
 let
-	grouping = groupby(means, [:runs, :variant])
-	df = combine(grouping, :reward => sum => :reward)
+	df = means
 	df = filter(:runs => r -> r ∈ runs_shown, df)
 
 	cent = filter(:variant => (==)("Cent. Co-ord."), df)
@@ -200,19 +242,21 @@ let
 	coord = sort(coord, :runs)
 	
 	cent = (;runs=[r for r in cent[!, :runs]], 
-		performance=cent[!, :reward])
+		performance=cent[!, :performance])
 	
 	dec = (;runs=[r for r in dec[!, :runs]], 
-		performance=dec[!, :reward])
+		performance=dec[!, :performance])
 	
 	coord = (;runs=[r for r in coord[!, :runs]], 
-		performance=coord[!, :reward])
+		performance=coord[!, :performance])
 
 
 	all_performances = [cent.performance..., 	
 		dec.performance..., coord.performance...]
 
-	ylims = (min(all_performances...) - 5, max(all_performances...) + 12)
+	ymin, ymax = min(all_performances...), max(all_performances...)
+
+	ylims = (ymin - abs(ymin)*0.1, ymax + abs(ymax*0.1))
 	
 	stylings = (linewidth=2,
 		markerstrokewidth=2,
@@ -224,14 +268,14 @@ let
 		xlabel="Total episodes trained",
 		ylabel="Performance")
 	
-	plot!(cent.runs, cent.performance;
-		label="Co-ordinated centralized shield",
-		color=colors.POMEGRANATE,
-		marker=(:pentagon, 6),
-		stylings...)
+	#plot!(cent.runs, cent.performance;
+	#	label="Co-ordinated centralized shield",
+	#	color=colors.POMEGRANATE,
+	#	marker=(:pentagon, 6),
+	#	stylings...)
 		
 	plot!(coord.runs, coord.performance;
-		label="Co-ordinated decentralized shield",
+		label="Centralized shield",
 		color=colors.CONCRETE,
 		marker=(:circle, 6),
 		stylings...)
@@ -244,11 +288,9 @@ let
 end
 
 # ╔═╡ 1bf14dff-08e3-4a32-9e5e-dba6438bc670
-standard_deviations = let
-	grouping =  groupby(cleandata, [:runs, :variant, :car])
-	
-	standard_deviations = combine(grouping, 
-		:reward => std,
+standard_deviations = let	
+	standard_deviations = combine(cleandata, 
+		:performance => std,
 		renamecols=false)
 end
 
@@ -270,31 +312,31 @@ size = (width, height)
 
 # ╔═╡ 7f059d13-41f5-4d6c-8468-1de130d66901
 let
-	df = filter(:runs => r -> r == runs, means)
+	df = filter(:runs => r -> r == runs, raw_data)
 	
 	df = transform(df, :car => (
 		xs -> ["Car $x" for x in xs]
 	) => :car)
 	
-	@df df groupedbar(:variant, :reward, group=:car,
+	@df df groupedbar(:variant, :cost, group=:car,
 		bar_width=0.6,
 		color=[colors.TURQUOISE colors.CARROT],
 		linewidth=4,
 		linecolor=:white)
 	
-	ylim = (min(df[!, :reward]...) - 5, 0)
+	ylim = (min(df[!, :cost]...) - 5, 0)
 	
 	plot!(;
 		size,
-		ylim,
+		#ylim,
 		legend=:outertop,
-		ylabel="reward",
+		ylabel="cost",
 	)
 end
 
 # ╔═╡ 0960af3f-6b25-4c92-8d95-caf0029da1fc
 let
-	df = filter(:runs => r -> r == runs, means)
+	df = filter(:runs => r -> r == runs, raw_data)
 	
 	df = transform(df, :car => (
 		xs -> ["Car $x" for x in xs]
@@ -317,11 +359,11 @@ let
 
 	grouped = groupby(df, [:runs, :variant])
 
-	df = combine(grouped, :reward => sum => :reward)
+	df = combine(grouped, :cost => sum => :cost)
 
 	df = sort(df, :variant, by=the_sort)
 	
-	@df df bar(:variant, :reward,
+	@df df bar(:variant, :cost,
 		label=nothing,
 		#xrot=10,
 		bar_width=0.4,
@@ -329,14 +371,14 @@ let
 		linewidth=4,
 		linecolor=:white)
 	
-	ylim = (min(df[!, :reward]...) - 5, 0)
+	ylim = (min(df[!, :cost]...) - 5, 0)
 	hline!([0], label=nothing, color=:black, width=4)
 	
 	plot!(;
 		size=(300,200),
 		ylim,
 		legend=:outertop,
-		ylabel="reward",
+		ylabel="cost",
 	)
 	#=
 	=#
@@ -349,9 +391,12 @@ let
 end
 
 # ╔═╡ Cell order:
+# ╟─17f541f1-fac1-4cf5-a755-7c548fd8ea20
 # ╠═d6481c1f-3020-4a26-b4aa-83aaa14f33e5
 # ╟─6a2ada61-1cf9-4e1d-a69f-ec49897fc133
 # ╟─717470cb-3660-47b1-99f2-103e876b40a9
+# ╠═fec3e1ed-fe37-4097-985f-7b718e182231
+# ╟─232aaa75-f6b8-4c49-94cb-a76aa7c128d7
 # ╠═68bf3bf7-71fe-433f-9552-f243e6e74c69
 # ╠═5ee442ef-5c0c-41fa-98f7-d81019fd330a
 # ╠═0664e58a-5d05-497c-8203-eceef193e4cb
@@ -362,6 +407,10 @@ end
 # ╠═b8188561-e6ff-4d4e-8b79-8897a79f8977
 # ╠═f54beb3d-da04-4c5f-8a66-b4bbe6289c54
 # ╠═f2799a2c-f694-4cd8-9d32-1810ccc3b7d8
+# ╟─849c4994-4ca4-4f14-91af-e5fa0f4993e0
+# ╟─cbb415bb-23a5-4252-9cd4-f7d5a6e197cf
+# ╠═5ddd2108-56a6-426f-95ca-3208b3779c06
+# ╠═af5b1074-ac2b-43b6-b508-7196f6fe8ddd
 # ╠═ff7d843d-1426-4cf3-8407-531e97e1960d
 # ╠═aea564f9-6fc5-4f1d-8699-1ce77be3a38d
 # ╠═12c1bf45-20fe-4332-8477-4a544b0ada2c

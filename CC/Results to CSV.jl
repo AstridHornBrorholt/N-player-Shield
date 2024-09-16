@@ -433,22 +433,10 @@ function safety_violation_occured(query_result, path=nothing)
 	end
 end
 
-# ╔═╡ 69b804f5-24e9-420d-81d5-d3112628c795
-# ╠═╡ skip_as_script = true
-#=╠═╡
-safety_violation_occured("ababa (100/1000 runs) asdasdfasdf")
-  ╠═╡ =#
-
 # ╔═╡ bd82c2e0-bf72-43fe-a878-87b77d1b7f31
 # ╠═╡ skip_as_script = true
 #=╠═╡
 safety_violation_occured("ababa (1000/1000 runs) asdasdfasdf")
-  ╠═╡ =#
-
-# ╔═╡ d2cb5b73-7d26-40bb-9aa3-53570eb73ebf
-# ╠═╡ skip_as_script = true
-#=╠═╡
-safety_violation_occured("ababa asdasdfasdf")
   ╠═╡ =#
 
 # ╔═╡ 479f1124-24e7-411b-acc5-f19bf908f7d0
@@ -465,7 +453,7 @@ md"""
 # ╔═╡ 1e34748a-20ee-4903-a9b2-a514de81b68a
 function to_csv(results_dir)
 	isdir(results_dir) || error("Not found: $results_dir")
-	header = "runs;repetition;fleet_size;learned_performance;other_cars"
+	header = "runs;repetition;fleet_size;learned_cost;other_cars_costs"
 	result = String[header]
 	for 🗄️ in glob("* Runs", results_dir)
 		runs = firstcapture(r"(\d+) Runs", 🗄️)
@@ -481,12 +469,12 @@ function to_csv(results_dir)
 					continue
 				end
 				safety_violation_occured(query_result_str, 🗎)
-				learned_performance = query_results[end]
-				other_cars = query_results[1:end - 1]
-				if length(other_cars) == 0
-					other_cars = "[]"
+				learned_cost = query_results[end]
+				other_cars_costs = query_results[1:end - 1]
+				if length(other_cars_costs) == 0
+					other_cars_costs = "[]"
 				end
-				push!(result, "$runs;$repetition;$fleet_size;$learned_performance;$other_cars")
+				push!(result, "$runs;$repetition;$fleet_size;$learned_cost;$other_cars_costs")
 			end
 		end
 	end
@@ -528,9 +516,7 @@ end
 # ╠═a665c327-d78f-4fef-90f1-ae1acddf73bf
 # ╟─1d00dac9-a3c1-4a25-b456-87e53c03bb1a
 # ╠═5c625d7a-a646-4613-b8dd-b2c246ce0c22
-# ╠═69b804f5-24e9-420d-81d5-d3112628c795
 # ╠═bd82c2e0-bf72-43fe-a878-87b77d1b7f31
-# ╠═d2cb5b73-7d26-40bb-9aa3-53570eb73ebf
 # ╠═479f1124-24e7-411b-acc5-f19bf908f7d0
 # ╟─1b47dcac-5ba2-4b08-a55f-59e1887f9705
 # ╠═1e34748a-20ee-4903-a9b2-a514de81b68a

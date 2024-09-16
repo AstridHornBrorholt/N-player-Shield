@@ -438,7 +438,7 @@ function to_csv(results_dir)
 	isdir(results_dir) || error("Not found: results_dir")
 	
 	header = 
-		"runs;repetition;pre_trained_units;untrained_individual_performance;untrained_global_performance;trained_individual_performance;trained_global_performance"
+		"runs;repetition;pre_trained_units;untrained_individual_cost;untrained_global_cost;trained_individual_cost;trained_global_cost"
 	
 	result = String[header]
 	for 🗄️ in glob("* Runs", results_dir)
@@ -453,14 +453,14 @@ function to_csv(results_dir)
 					@warn "Skipping file with unexpected number of query results" file=🗎 expected=4 actual=length(query_results)
 					continue
 				end
-				untrained_individual_performance, untrained_global_performance, trained_individual_performance, trained_global_performance = query_results
+				untrained_individual_cost, untrained_global_cost, trained_individual_cost, trained_global_cost = query_results
 				
 				push!(result, join(
 					[runs, repetition, pre_trained_units,
-						untrained_individual_performance, 
-						untrained_global_performance, 
-						trained_individual_performance, 
-						trained_global_performance], ";"))
+						untrained_individual_cost, 
+						untrained_global_cost, 
+						trained_individual_cost, 
+						trained_global_cost], ";"))
 			end
 		end
 	end
