@@ -1,6 +1,6 @@
 #!/bin/bash
 
-verifyta=${verifyta:-"$HOME/opt/uppaal-5.1.0-beta5-linux64/bin/verifyta.sh"}
+verifyta=${verifyta:-"$HOME/opt/uppaal-5.0.0-linux64/bin/verifyta.sh"}
 RANDOM_FLEET=${RANDOM_FLEET:-"$PWD/Random Fleet.xml"}
 RESULTS="$HOME/Results/N-player CC Random Shielded"
 echo "Running single experiment."
