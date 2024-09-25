@@ -21,9 +21,9 @@ ARGS="--out=/dev/null --partition=dhabi -n1 --mem=16G --job-name $job_name"
 export max_cars=10
 repetitions=10
 
-min_runs=100
-runs_step=100
-max_runs=2000
+min_runs=6000
+runs_step=6000
+max_runs=60000
 
 for ((r=1; r<=$repetitions; r++)); do
     export repetition=$r
