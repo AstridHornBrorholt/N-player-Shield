@@ -215,11 +215,14 @@ cleandata = let
 end
 
 # ╔═╡ aea564f9-6fc5-4f1d-8699-1ce77be3a38d
+# misnomer: now mins, means,  maxes.
 means = let	
 	grouping =  groupby(cleandata, [:runs, :variant])
 	
 	means = combine(grouping, 
-		:performance => mean,
+		:performance => minimum => :min_performance,
+		:performance => mean => :mean_performance,
+		:performance => maximum => :max_performance,
 		renamecols=false)
 end
 
@@ -228,6 +231,13 @@ all_runs = cleandata[!, :runs] |> unique |> sort
 
 # ╔═╡ 7ca58b79-9a30-4768-ac04-3562042c4a45
 @bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
+
+# ╔═╡ 5a196b9f-76ca-408b-b264-46e9b709639b
+function get_ribbon(mins, means, maxes)
+	lower = means .- mins
+	upper = maxes .- means
+	lower, upper
+end
 
 # ╔═╡ 68f6836e-3ba7-42ca-9650-acba6365aa55
 let
@@ -238,25 +248,34 @@ let
 	cent = sort(cent, :runs)
 	dec = filter(:variant => (==)("Dec."), df)
 	dec = sort(dec, :runs)
-	coord = filter(:variant => (==)("Dec. Co-ord."), df)
-	coord = sort(coord, :runs)
+	#coord = filter(:variant => (==)("Dec. Co-ord."), df)
+	#coord = sort(coord, :runs)
 	
 	cent = (;runs=[r for r in cent[!, :runs]], 
-		performance=cent[!, :performance])
+		min_performance=cent[!, :min_performance],
+		mean_performance=cent[!, :mean_performance],
+		max_performance=cent[!, :max_performance],
+	)
 	
 	dec = (;runs=[r for r in dec[!, :runs]], 
-		performance=dec[!, :performance])
+		min_performance=dec[!, :min_performance],
+		mean_performance=dec[!, :mean_performance],
+		max_performance=dec[!, :max_performance],
+	)
 	
-	coord = (;runs=[r for r in coord[!, :runs]], 
-		performance=coord[!, :performance])
+	#coord = (;runs=[r for r in coord[!, :runs]], 
+	#	mean_performance=coord[!, :mean_performance])
 
 
-	all_performances = [cent.performance..., 	
-		dec.performance..., coord.performance...]
+	min_max_performances = vcat(cent.min_performance,
+		dec.min_performance,
+		cent.max_performance,
+		dec.max_performance,)
 
-	ymin, ymax = min(all_performances...), max(all_performances...)
+	ymin, ymax = min(min_max_performances...), max(min_max_performances...)
 
 	ylims = (ymin - abs(ymin)*0.1, ymax + abs(ymax*0.1))
+	
 	
 	stylings = (linewidth=2,
 		markerstrokewidth=2,
@@ -268,22 +287,26 @@ let
 		xlabel="Total episodes trained",
 		ylabel="Performance")
 	
-	#plot!(cent.runs, cent.performance;
+	#plot!(coord.runs, coord.mean_performance;
 	#	label="Co-ordinated centralized shield",
 	#	color=colors.POMEGRANATE,
-	#	marker=(:pentagon, 6),
+	#	#marker=(:pentagon, 6),
 	#	stylings...)
 		
-	plot!(coord.runs, coord.performance;
+	plot!(cent.runs, cent.mean_performance;
 		label="Centralized shield",
 		color=colors.CONCRETE,
-		marker=(:circle, 6),
+		ribbon=get_ribbon(cent.min_performance, 
+			cent.mean_performance, cent.max_performance),
+		#marker=(:circle, 6),
 		stylings...)
 	
-	plot!(dec.runs, dec.performance;
+	plot!(dec.runs, dec.mean_performance;
 		label="Decentralized shield",
 		color=colors.SUNFLOWER,
-		marker=(:rtriangle, 9),
+		ribbon=get_ribbon(dec.min_performance, 
+			dec.mean_performance, dec.max_performance),
+		#marker=(:rtriangle, 9),
 		stylings...)
 end
 
@@ -415,6 +438,7 @@ end
 # ╠═aea564f9-6fc5-4f1d-8699-1ce77be3a38d
 # ╠═12c1bf45-20fe-4332-8477-4a544b0ada2c
 # ╠═7ca58b79-9a30-4768-ac04-3562042c4a45
+# ╠═5a196b9f-76ca-408b-b264-46e9b709639b
 # ╠═68f6836e-3ba7-42ca-9650-acba6365aa55
 # ╠═1bf14dff-08e3-4a32-9e5e-dba6438bc670
 # ╠═d4e45474-6def-4e02-9fe2-43e6f4fb1bb2

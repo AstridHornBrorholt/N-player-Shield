@@ -374,6 +374,76 @@ Plots.default(fontfamily="serif-roman")
 # ╔═╡ ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 ⨝ = joinpath
 
+# ╔═╡ 24f1af15-c323-4407-92ca-b55cc14263de
+md"""
+## The Raw Data
+"""
+
+# ╔═╡ 9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
+#=╠═╡
+md"""
+`cascading_path =` $(@bind cascading_path TextField(70, 
+	default=homedir()⨝"Results/N-player CC"))
+
+`centralized_path =` $(@bind centralized_path TextField(70, 
+	default=homedir()⨝"Results/N-player CC Centralized Controller"))
+
+`mappo_path =` $(@bind mappo_path TextField(70, 
+	default=homedir()⨝"Results/N-player CC MAPPO"))
+
+`random_shielded_path =` $(@bind random_shielded_path TextField(70, 
+	default=homedir()⨝"Results/N-player CC Random Shielded"))
+"""
+  ╠═╡ =#
+
+# ╔═╡ 10ca302d-f5f3-4e66-877f-1974138235f5
+function read_csv(path)
+	buf = IOBuffer(to_csv(path))
+	df = CSV.read(buf, DataFrame, delim=";")
+end
+
+# ╔═╡ f467cbb0-ac89-462a-86b2-55e4d3580ee6
+#=╠═╡
+cascading_raw = read_csv(cascading_path)
+  ╠═╡ =#
+
+# ╔═╡ 0a71b644-8499-46f9-9614-c65baf23957e
+#=╠═╡
+centralized_raw = read_csv(centralized_path)
+  ╠═╡ =#
+
+# ╔═╡ ec3df7e5-80d3-4bc7-8dda-54551ee1936c
+#=╠═╡
+all_runs = (vcat(cascading_raw[!, :runs], centralized_raw[!, :runs]) 
+	|> unique |> sort)
+  ╠═╡ =#
+
+# ╔═╡ 47f85802-4082-40d6-9854-8ded4441d1e4
+#=╠═╡
+mappo = CSV.read(mappo_path ⨝ "Exported Results.csv", DataFrame)
+  ╠═╡ =#
+
+# ╔═╡ 6698877b-632c-4049-949f-9d7ea0465d23
+#=╠═╡
+random_shielded_exported_results = random_shielded_path ⨝ "Exported Results.txt"
+  ╠═╡ =#
+
+# ╔═╡ b9adeac6-5a91-4c69-b1b1-4b1931c23840
+#=╠═╡
+random_baseline = parse(Float64, 
+	random_shielded_exported_results |> read |> String)
+  ╠═╡ =#
+
+# ╔═╡ 572cade9-c131-4206-b79d-e1ee118f230b
+#=╠═╡
+@bind first_repetition_only CheckBox(default=false)
+  ╠═╡ =#
+
+# ╔═╡ a1cfa77f-b7e7-4cec-9916-cb076517876c
+#=╠═╡
+@bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
+  ╠═╡ =#
+
 # ╔═╡ d3bfd66d-f4dd-44a0-b4a7-5da34f030e2e
 md"""
 ## Computing Performance
@@ -424,51 +494,100 @@ md"""
 This is the performance vs training time plot.
 """
 
-# ╔═╡ 9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
-#=╠═╡
-md"""
-`distributed =` $(@bind distributed TextField(70, 
-	default=homedir()⨝"Results/N-player CC Non-specialized"))
+# ╔═╡ ae5337da-bd26-4229-a72c-0602bc68f774
+function get_ribbon(mins, means, maxes)
+	lower = means .- mins
+	upper = maxes .- means
+	lower, upper
+end
 
-`cascading =` $(@bind cascading TextField(70, 
-	default=homedir()⨝"Results/N-player CC"))
+# ╔═╡ f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
+function do_the_plot_of_the_results(;
+		cascading, 
+		centralized,
+		random_baseline,
+		mappo)
+	
+	all_performances = vcat(cascading.min_performance, 
+		centralized.min_performance,
+		cascading.max_performance, 
+		centralized.max_performance)
 
-`centralized =` $(@bind centralized TextField(70, 
-	default=homedir()⨝"Results/N-player CC Centralized Controller"))
-"""
-  ╠═╡ =#
+	ymin, ymax = min(all_performances...), max(all_performances...)
+	ylims = (ymin - abs(ymin)*0.25, ymax + abs(ymax)*0.25)
+	ylims = (-20000, -1000)
 
-# ╔═╡ 9aa911de-e818-4565-a7e2-1adc18f3fce0
-#=╠═╡
-rawdata = CSV.read(IOBuffer(to_csv(cascading)), DataFrame)
-  ╠═╡ =#
+	
+	stylings = (
+		linewidth=2,
+		markerstrokewidth=2,
+		markerstrokecolor=:white)
+	
+	plot(;size=(350, 250),
+		legend=nothing,
+		ylims,
+		xlabel="Episodes (other)",
+		ylabel="Performance")
 
-# ╔═╡ 572cade9-c131-4206-b79d-e1ee118f230b
-#=╠═╡
-@bind first_repetition_only CheckBox(default=false)
-  ╠═╡ =#
+	axis2 = twiny()
 
-# ╔═╡ ec3df7e5-80d3-4bc7-8dda-54551ee1936c
-#=╠═╡
-all_runs = rawdata[!, :runs] |> unique |> sort
-  ╠═╡ =#
+	plot!(axis2, 
+		legend=(0.1, 0.5),
+		xlabel="Episodes (MAPPO)")
+	
+	plot!(axis2, mappo.episodes, mappo.mean_performance;
+		ylims,
+		label=nothing,
+		color=colors.PETER_RIVER,
+		ribbon=get_ribbon(mappo.min_performance, mappo.mean_performance, mappo.max_performance),
+		linestyle=:dash,
+		#marker=(:rtriangle, 9),
+		stylings...)
 
-# ╔═╡ a1cfa77f-b7e7-4cec-9916-cb076517876c
-#=╠═╡
-@bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
-  ╠═╡ =#
+	plot!(axis2, []; 
+		label="MAPPO", 
+		color=colors.PETER_RIVER, 
+		linestyle=:dash,
+		stylings...)
+	
+	hline!([random_baseline],
+		color=colors.WET_ASPHALT,
+		linestyle=:dashdot,
+		label="Random agents")
+	
+	plot!(axis2, []; label="Random Agents", 
+		color=colors.WET_ASPHALT,
+		linestyle=:dashdot,)
+	
+	plot!(centralized.runs, centralized.mean_performance;
+		color=colors.AMETHYST,
+		ribbon=get_ribbon(centralized.min_performance, centralized.mean_performance, centralized.max_performance),
+		#marker=(:circle, 6),
+		stylings...)
+
+	plot!(axis2, []; 
+		label="Centralized learning",
+		color=colors.AMETHYST, 
+		stylings...)
+	
+	plot!(cascading.runs, cascading.mean_performance;
+		color=colors.NEPHRITIS,
+		ribbon=get_ribbon(cascading.min_performance, cascading.mean_performance, cascading.max_performance),
+		#marker=(:rtriangle, 9),
+		stylings...)
+
+	plot!(axis2, []; 
+		label="Cascading learning",
+		color=colors.NEPHRITIS, 
+		stylings...)
+end
 
 # ╔═╡ a0159339-14f3-4280-8160-447702f19d2a
 md"""
-# Detailed Plots
+# Old junk
 
 A bunch of other plots which were made to explore the data.
 """
-
-# ╔═╡ 1f3a2bee-2817-4314-901e-7dd3743fbab9
-#=╠═╡
-@bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CC")
-  ╠═╡ =#
 
 # ╔═╡ db1720fb-1134-4d81-b0b0-7da700d38798
 # String to vector
@@ -482,12 +601,11 @@ function to_vector(str::T, element_type=Float64) where T<:AbstractString
 	end
 end
 
-# ╔═╡ a3c96777-3878-4abd-b865-e3ee35186808
+# ╔═╡ 7622369d-1363-4032-a910-4e94950d4257
 #=╠═╡
 # Extract just mean performance as a function of the number of runs.
-function runs_performance(result_dir)
-	buf = IOBuffer(to_csv(result_dir))
-	df = CSV.read(buf, DataFrame, delim=";")
+function extract_data(raw_data)
+	df = raw_data
 	fleet_size = max(df.fleet_size...)
 	df = filter(:fleet_size => (==)(fleet_size), df)
 	df = filter(:runs => r -> r ∈ runs_shown, df)
@@ -502,74 +620,44 @@ function runs_performance(result_dir)
 	grouping =  groupby(df, [:runs])
 
 	df = combine(grouping,
-		:performance => mean => :performance)
+		:performance => minimum => :min_performance,
+		:performance => mean => :mean_performance,
+		:performance => maximum => :max_performance,
+	)
 
 	df = sort(df, :runs)
 
 	return (runs=[r for r  in df.runs], 
-		performance=[p for p in df.performance])
+		min_performance=[p for p in df.min_performance],
+		mean_performance=[p for p in df.mean_performance],
+		max_performance=[p for p in df.max_performance],
+		)
 end
   ╠═╡ =#
 
-# ╔═╡ d931fceb-ba91-4fa4-b851-7beba3888cab
+# ╔═╡ 0238227a-cf71-4c32-a1d0-5fea6d7ccfad
 #=╠═╡
-runs_performance(cascading)
+centralized = extract_data(centralized_raw)
   ╠═╡ =#
 
-# ╔═╡ f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
+# ╔═╡ eec06110-31c5-4658-9593-ad3760666019
 #=╠═╡
-function do_the_plot_of_the_results(;distributed, 
-		cascading, 
-		centralized)
+maximum(centralized.max_performance)
+  ╠═╡ =#
 
-	# distributed = runs_performance(distributed)
-	cascading = runs_performance(cascading)
-	centralized = runs_performance(centralized)
+# ╔═╡ 05247031-a354-4e81-b248-6df204d79dae
+#=╠═╡
+cascading = extract_data(cascading_raw)
+  ╠═╡ =#
 
-	
-	all_performances = [#distributed.performance..., 	
-		cascading.performance..., centralized.performance...]
-
-	ymin, ymax = min(all_performances...), max(all_performances...)
-	ylims = (ymin - abs(ymin)*0.25, ymax + abs(ymax)*0.25)
-	ylims = (-10000, -2000)
-
-	stylings = (
-		legend=:topleft,
-		linewidth=2,
-		markerstrokewidth=2,
-		markerstrokecolor=:white)
-	
-	plot(;size=(350, 250),
-		ylims,
-		xlabel="Total episodes trained",
-		ylabel="Performance")
-	
-	#plot!(distributed.runs, distributed.performance;
-	#	label="Distributed",
-	#	color=colors.PETER_RIVER,
-	#	marker=(:pentagon, 6),
-	#	stylings...)
-	
-	plot!(cascading.runs, cascading.performance;
-		label="Cascading",
-		color=colors.NEPHRITIS,
-		marker=(:rtriangle, 9),
-		stylings...)
-	
-	plot!(centralized.runs, centralized.performance;
-		label="Centralized",
-		color=colors.AMETHYST,
-		marker=(:circle, 6),
-		stylings...)
-	
-	
-end
+# ╔═╡ 00004964-8b4c-4e84-b05e-a3df32135aa9
+#=╠═╡
+maximum(cascading.max_performance)
   ╠═╡ =#
 
 # ╔═╡ 74674f2d-c384-4c01-957b-ca8d15062db3
 #=╠═╡
-do_the_plot_of_the_results(;distributed, cascading, centralized)
+do_the_plot_of_the_results(;cascading, centralized, random_baseline, mappo)
   ╠═╡ =#
 
 # ╔═╡ be64568d-f451-46f4-8336-bd94fff82471
@@ -644,21 +732,6 @@ end
 @bind refresh_button CounterButton("Refresh")
   ╠═╡ =#
 
-# ╔═╡ 62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
-#=╠═╡
-refresh_button; csv_string = to_csv(results_dir)
-  ╠═╡ =#
-
-# ╔═╡ e1ddadeb-e9fd-4c37-a206-dff03363724e
-#=╠═╡
-csv_string |> multiline
-  ╠═╡ =#
-
-# ╔═╡ 7cd7f277-8388-413a-b993-9b81fdb495b8
-#=╠═╡
-raw_results = CSV.read(IOBuffer(csv_string), DataFrame)
-  ╠═╡ =#
-
 # ╔═╡ 1f973cbe-a416-44fa-8e3b-e6392f6ddb16
 #=╠═╡
 # Discard all experiment repetitions except the first
@@ -670,7 +743,7 @@ raw_results = CSV.read(IOBuffer(csv_string), DataFrame)
 # ╔═╡ 5484bf48-11be-4ac7-9557-e6fa36802f1d
 #=╠═╡
 cleandata = let
-	cleandata = raw_results
+	cleandata = cascading_raw
 	
 	cleandata = transform(cleandata, 
 		:other_cars_costs => ByRow(to_vector) => :other_cars_costs)
@@ -822,7 +895,7 @@ end
 # ╔═╡ 33d2e7c5-f272-4ecd-93cb-c927ceb735ab
 #=╠═╡
 let 
-	readme = results_dir ⨝ "$runs Runs" ⨝ "readme.txt"
+	readme = cascading_path ⨝ "$runs Runs" ⨝ "readme.txt"
 	if isfile(readme)
 		md"""
 		!!! info "`Readme` found"
@@ -885,25 +958,6 @@ md"""
 The specialized and non-specialized have been hard-coded to 20k and 20k+1 respectively.
 """
 
-# ╔═╡ 7e493642-9343-4c21-9100-093c9e8e11f2
-#=╠═╡
-let
-	specialized = 20000
-	non_specialized = 20001
-	plot(;ylims=ylims_local, size)
-	learned_performance_plot!(means, non_specialized,
-		color=colors.SUNFLOWER, 
-		linestyle=:dashdotdot,
-		label="Trained for $specialized runs once and re-used",
-		show_other_measurements=false)
-	
-	learned_performance_plot!(means, specialized,
-		color=colors.CARROT, 
-		label="Trained for $specialized runs each",
-		show_other_measurements=false)
-end
-  ╠═╡ =#
-
 # ╔═╡ f267c827-7e5d-466c-9ad0-bfdb004befe3
 md"""
 ## Plot for centralized learner experiment
@@ -954,47 +1008,6 @@ let
 end
   ╠═╡ =#
 
-# ╔═╡ efabb8a3-ef0b-412a-aa6d-ea9d6a3c36cf
-md"""
-## Plot for centralized learner experiment (mean performance)
-"""
-
-# ╔═╡ 8ad6aacf-2e18-4e20-ab90-a1f36a2256cf
-#=╠═╡
-let	
-	df = filter(:runs => (x -> x == runs), means)
-	
-	fleet_sizes = df[!, :fleet_size]
-	fleet_min = min(fleet_sizes...)
-	fleet_max = max(fleet_sizes...)
-	xticks = (fleet_min:fleet_max |> collect)
-	xlims = (1, fleet_max + 1)
-	
-	plot(;
-		ylims=ylims_local,
-		size,
-		xticks,
-		xlims,
-		xflip=false,
-		xlabel="Fleet size",
-		ylabel="Mean reward")
-
-	
-	fleet_size = []
-	mean_performance = []
-
-	for row in eachrow(df)
-		fleet_size ← row[:fleet_size]
-		mean_performance ← [row[:reward], row[:other_cars_reward]...] |> mean
-	end
-	bar!(fleet_size, mean_performance, 
-		label=nothing,
-		linecolor=:white,
-		bar=3,
-		color=colors.WET_ASPHALT)
-end
-  ╠═╡ =#
-
 # ╔═╡ Cell order:
 # ╠═d0db8070-41a9-11ee-2b97-818668d7efa8
 # ╟─2bd47b9e-31e3-4ee1-aa87-60dfc40869a9
@@ -1006,29 +1019,35 @@ end
 # ╠═15f0808f-8424-4d27-9247-274c7751bf8e
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
+# ╟─24f1af15-c323-4407-92ca-b55cc14263de
+# ╟─9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
+# ╠═ec3df7e5-80d3-4bc7-8dda-54551ee1936c
+# ╠═10ca302d-f5f3-4e66-877f-1974138235f5
+# ╠═f467cbb0-ac89-462a-86b2-55e4d3580ee6
+# ╠═0a71b644-8499-46f9-9614-c65baf23957e
+# ╠═47f85802-4082-40d6-9854-8ded4441d1e4
+# ╠═6698877b-632c-4049-949f-9d7ea0465d23
+# ╠═b9adeac6-5a91-4c69-b1b1-4b1931c23840
+# ╠═572cade9-c131-4206-b79d-e1ee118f230b
+# ╠═a1cfa77f-b7e7-4cec-9916-cb076517876c
 # ╟─d3bfd66d-f4dd-44a0-b4a7-5da34f030e2e
 # ╟─abb7365c-1d40-4f92-9664-e005117b5c00
 # ╠═a2256c72-3686-4f89-9adf-6684270946b6
 # ╠═266ba2a5-01d0-48a4-be0e-52416dfd2485
 # ╠═a747c372-4542-4b97-b9c0-7f46da83e9ad
 # ╠═8fc41ea1-68b0-469f-a085-cf67b35e78a5
-# ╠═9aa911de-e818-4565-a7e2-1adc18f3fce0
-# ╠═a3c96777-3878-4abd-b865-e3ee35186808
 # ╠═2655802d-f3b9-4850-8164-81a860ca5716
 # ╠═12e5d573-610c-4c9e-a555-237f1fd983b4
-# ╠═d931fceb-ba91-4fa4-b851-7beba3888cab
+# ╠═7622369d-1363-4032-a910-4e94950d4257
 # ╟─ef5c1d6e-9046-4da7-bfd1-2a12832d0e7d
-# ╟─9b4d6b4d-d958-480b-af15-d07a4dc4b8ca
-# ╠═f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
-# ╠═572cade9-c131-4206-b79d-e1ee118f230b
-# ╠═ec3df7e5-80d3-4bc7-8dda-54551ee1936c
-# ╠═a1cfa77f-b7e7-4cec-9916-cb076517876c
+# ╠═0238227a-cf71-4c32-a1d0-5fea6d7ccfad
+# ╠═05247031-a354-4e81-b248-6df204d79dae
+# ╠═ae5337da-bd26-4229-a72c-0602bc68f774
+# ╠═00004964-8b4c-4e84-b05e-a3df32135aa9
+# ╠═eec06110-31c5-4658-9593-ad3760666019
 # ╠═74674f2d-c384-4c01-957b-ca8d15062db3
+# ╠═f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
 # ╟─a0159339-14f3-4280-8160-447702f19d2a
-# ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
-# ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
-# ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
-# ╠═7cd7f277-8388-413a-b993-9b81fdb495b8
 # ╠═db1720fb-1134-4d81-b0b0-7da700d38798
 # ╠═be64568d-f451-46f4-8336-bd94fff82471
 # ╠═5484bf48-11be-4ac7-9557-e6fa36802f1d
@@ -1056,8 +1075,5 @@ end
 # ╟─7909f497-55cd-4f9d-b34d-515a80241873
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
 # ╟─ff362535-2cc2-4784-88b8-1b3ae48d6293
-# ╠═7e493642-9343-4c21-9100-093c9e8e11f2
 # ╟─f267c827-7e5d-466c-9ad0-bfdb004befe3
 # ╠═af2912dc-4fdb-49ad-b22a-df877e2b845a
-# ╟─efabb8a3-ef0b-412a-aa6d-ea9d6a3c36cf
-# ╠═8ad6aacf-2e18-4e20-ab90-a1f36a2256cf

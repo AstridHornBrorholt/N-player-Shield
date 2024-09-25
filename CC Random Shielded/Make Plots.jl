@@ -402,6 +402,17 @@ let
 end
   ╠═╡ =#
 
+# ╔═╡ 88623d6b-a856-4ff3-819f-5bd5930430ab
+md"""
+!!! info "Performance:"
+	👉 $performance 👈
+"""
+
+# ╔═╡ 09ab2ad4-087d-4abd-bbb9-d6d16eebe53c
+#=╠═╡
+@bind export_results_button CounterButton("Export Results")
+  ╠═╡ =#
+
 # ╔═╡ fa39787e-ba6a-47af-b34a-6c2c5e898246
 function extract_results(query_result)
 	re_mean = r"mean=(\d+\.?\d*)"
@@ -442,7 +453,7 @@ episode_length = 100
 
 # ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
 begin
-	function performance_plot!(data;
+	function cost_plot!(data;
 			color=colors.SUNFLOWER,
 			label=nothing,
 			plotargs...)
@@ -464,14 +475,22 @@ begin
 			xlims,
 			xlabel="Car number",
 			ylabel="Reward",
-			label=something(label, "Performance"),
+			label=something(label, "Local cost"),
 			legend=:outertop,
 			#marker...,
 			plotargs...)
+
+		performance=mean(data)
+		
+		hline!([performance],
+			color=colors.WET_ASPHALT,
+			linestyle=:dash,
+			label="Global performance")
+
 	end
-	function performance_plot(data; plotargs...)
+	function cost_plot(data; plotargs...)
 		plot(;plotargs...)
-		performance_plot!(data)
+		cost_plot!(data)
 	end
 end
 
@@ -501,6 +520,23 @@ begin
 end
   ╠═╡ =#
 
+# ╔═╡ 075a5f80-28d8-4a68-8323-34bb32186bbf
+#=╠═╡
+performance = cleandata |> mean
+  ╠═╡ =#
+
+# ╔═╡ 819248d7-e2fa-4baa-ba49-1e9f35261693
+#=╠═╡
+if export_results_button > 0 let
+	
+	exported_results_path = joinpath(results_dir, "Exported Results.txt")
+	open(exported_results_path, "w") do 🗋
+		write(🗋, "$performance")
+	end
+	"✅ Wrote clean data to `$exported_results_path`" |> Markdown.parse
+end end
+  ╠═╡ =#
+
 # ╔═╡ 9a298f2a-5194-41c9-813d-afbf56ef92eb
 md"""
 ## The thing.
@@ -509,9 +545,9 @@ md"""
 # ╔═╡ c90e208d-bb16-4380-a449-61eea4fad65f
 #=╠═╡
 md"""
-`y_min` = $(@bind y_min NumberField(-100000.:1.:100000., default=-93.0))
+`y_min` = $(@bind y_min NumberField(-100000.:1.:100000., default=minimum(cleandata)))
 
-`y_max` = $(@bind y_max NumberField(-100000.:1.:100000., default=-24.0))
+`y_max` = $(@bind y_max NumberField(-100000.:1.:100000., default=maximum(cleandata)))
 """
   ╠═╡ =#
 
@@ -536,7 +572,7 @@ size = (width, height)
 
 # ╔═╡ 0d946f3d-d7d6-40d1-9c29-f64df6f34221
 #=╠═╡
-performance_plot(cleandata; ylims, size)
+cost_plot(cleandata; ylims, size)
   ╠═╡ =#
 
 # ╔═╡ Cell order:
@@ -554,6 +590,9 @@ performance_plot(cleandata; ylims, size)
 # ╠═18f8e591-80d5-48e5-963b-0ae109d5b0aa
 # ╠═5e4d6b1c-6017-4239-94eb-210b0922bf15
 # ╟─7f72aebe-fbb6-40fa-a5df-055d40686830
+# ╟─88623d6b-a856-4ff3-819f-5bd5930430ab
+# ╠═09ab2ad4-087d-4abd-bbb9-d6d16eebe53c
+# ╟─819248d7-e2fa-4baa-ba49-1e9f35261693
 # ╠═fa39787e-ba6a-47af-b34a-6c2c5e898246
 # ╠═9861f624-61eb-428a-9155-5ad95f260ef7
 # ╠═b38bd77e-ba8f-408c-9905-f8af5f521e25
@@ -562,10 +601,11 @@ performance_plot(cleandata; ylims, size)
 # ╠═3d251c90-c490-473a-8055-bae322175a4c
 # ╠═1ea2bb05-23c0-4523-9893-377073d08784
 # ╠═d1695f9c-ac7d-49ae-a2eb-b14003e691a9
+# ╠═075a5f80-28d8-4a68-8323-34bb32186bbf
 # ╠═2cc917ff-7098-4c32-a1f8-e75360c37e2c
 # ╠═5d35a941-ea93-45ed-b309-98db9ad9fc47
 # ╟─9a298f2a-5194-41c9-813d-afbf56ef92eb
-# ╟─c90e208d-bb16-4380-a449-61eea4fad65f
+# ╠═c90e208d-bb16-4380-a449-61eea4fad65f
 # ╠═4d205879-d6bb-4035-bea7-61a8a16fa5e0
 # ╟─47b4278f-543f-4894-9da4-a9d8d0aa8053
 # ╠═7edcc1a4-1610-47fb-be47-dafbb4ada567

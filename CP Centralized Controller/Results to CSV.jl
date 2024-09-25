@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -432,7 +432,7 @@ function to_csv(results_dir)
 	isdir(results_dir) || error("Not found: results_dir")
 	
 	header = 
-		"runs;repetition;untrained_performance;trained_performance"
+		"runs;repetition;untrained_cost;trained_cost"
 	
 	result = String[header]
 	for 🗄️ in glob("* Runs", results_dir)
@@ -445,12 +445,12 @@ function to_csv(results_dir)
 					@warn "Skipping file with unexpected number of query results" file=🗎 expected=2 actual=length(query_results)
 					continue
 				end
-				untrained_performance = query_results[1]
-				trained_performance = query_results[2]
+				untrained_cost = query_results[1]
+				trained_cost = query_results[2]
 				
 				push!(result, join(
 					[runs, repetition,
-						untrained_performance, trained_performance], ";"))
+						untrained_cost, trained_cost], ";"))
 			end
 		end
 	end

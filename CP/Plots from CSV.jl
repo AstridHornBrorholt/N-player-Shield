@@ -390,6 +390,17 @@ md"""
 """
   ╠═╡ =#
 
+# ╔═╡ 8f35ca55-bc93-4dd3-bedd-d0e4752fa9fb
+# Measured by just running the untrained model once.
+const random_baseline = -234
+
+# ╔═╡ e12faaee-4c29-448f-b687-7c36a996c8ec
+function get_ribbon(mins, means, maxes)
+	lower = means .- mins
+	upper = maxes .- means
+	lower, upper
+end
+
 # ╔═╡ 60a6c2c5-e5af-4b33-9976-9054b51814d1
 md"""
 # Detailed Plots
@@ -401,31 +412,6 @@ A bunch of other plots which were made to explore the data.
 #=╠═╡
 @bind results_dir TextField(80, default=homedir() ⨝ "Results/N-player CP")
   ╠═╡ =#
-
-# ╔═╡ db1720fb-1134-4d81-b0b0-7da700d38798
-# String to vector
-function to_vector(str::T, element_type=Float64) where T<:AbstractString
-	🐟 = match(r"\[(.*)\]", str)[1]
-	if 🐟 == ""
-		return []
-	else
-		🎣 = split(🐟, ", ")
-	 	return [parse(element_type, 🍣) for 🍣 in 🎣]
-	end
-end
-
-# ╔═╡ be64568d-f451-46f4-8336-bd94fff82471
-to_vector("[3377.35, 2655.58, 2868.0, 2781.98]")
-
-# ╔═╡ 85871e02-b379-4306-a547-1d6239e61fc2
-function elementwise_mean(vec)
-	result = []
-	length(vec) > 0 || return result |> string
-	for (i, _) in enumerate(vec[1])
-		result ← mean([v[i] for v in vec])
-	end
-	result |> string
-end
 
 # ╔═╡ 5d35a941-ea93-45ed-b309-98db9ad9fc47
 #=╠═╡
@@ -495,17 +481,23 @@ function runs_performance(result_dir)
 	df = CSV.read(buf, DataFrame, delim=";")
 	df = filter(:pre_trained_units => (==)(n_agents - 1), df)
 	df = filter(:runs => r -> r ∈ runs_shown, df)
+	df = transform(df, :trained_global_cost => global_performance => :trained_global_performance)
 
 	grouping =  groupby(df, [:runs])
 	
 	df = combine(grouping, 
-		:trained_global_cost => mean,
+		:trained_global_performance => minimum => :min_performance,
+		:trained_global_performance => mean => :mean_performance,
+		:trained_global_performance => maximum => :max_performance,
 		renamecols=false)
 
 	df = sort(df, :runs)
 
-	return (runs=[(r) for r  in df.runs], 
-	performance=[global_performance(p) for p in df.trained_global_cost])
+	return (runs=[r for r  in df.runs], 
+		min_performance=[p for p in df.min_performance],
+		mean_performance=[p for p in df.mean_performance],
+		max_performance=[p for p in df.max_performance],
+	)
 end
   ╠═╡ =#
 
@@ -522,17 +514,23 @@ function centralized_runs_performance(result_dir)
 	buf = IOBuffer(centralized_to_csv.to_csv(result_dir))
 	df = CSV.read(buf, DataFrame, delim=";")
 	df = filter(:runs => r -> r ∈ runs_shown, df)
+	df = transform(df, :trained_cost => global_performance => :trained_performance)
 
 	grouping =  groupby(df, [:runs])
 	
 	df = combine(grouping, 
-		:trained_performance => mean,
+		:trained_performance => minimum => :min_performance,
+		:trained_performance => mean => :mean_performance,
+		:trained_performance => maximum => :max_performance,
 		renamecols=false)
 
 	df = sort(df, :runs)
 
 	return (runs=[r for r  in df.runs],  
-	performance=[global_performance(p) for p in df.trained_performance])
+	min_performance=[p for p in df.min_performance],
+	mean_performance=[p for p in df.mean_performance],
+	max_performance=[p for p in df.max_performance],
+	)
 end
   ╠═╡ =#
 
@@ -545,7 +543,8 @@ centralized_runs_performance(centralized)
 #=╠═╡
 function do_the_plot_of_the_results(;distributed, 
 		cascading, 
-		centralized)
+		centralized,
+		random_baseline)
 
 
 	#distributed = runs_performance(distributed)
@@ -553,10 +552,12 @@ function do_the_plot_of_the_results(;distributed,
 	centralized = centralized_runs_performance(centralized)
 
 	
-	all_performances = [#distributed.performance..., 	
-		cascading.performance..., centralized.performance...]
+	min_max_performances = vcat(cascading.min_performance, 
+		centralized.min_performance,
+		cascading.max_performance, 
+		centralized.max_performance)
 
-	ylims = (min(all_performances...) - 10, max(all_performances...) + 50)
+	ylims = (min(min_max_performances...) - 10, max(min_max_performances...) + 50)
 
 	stylings = (linewidth=2,
 		markerstrokewidth=2,
@@ -568,31 +569,39 @@ function do_the_plot_of_the_results(;distributed,
 		xlabel="Total episodes trained",
 		ylabel="Performance")
 	
-	#plot!(distributed.runs, distributed.performance;
+	hline!([random_baseline],
+		color=colors.WET_ASPHALT,
+		linestyle=:dash,
+		label="Random agents")
+	
+	#plot!(distributed.runs, distributed.mean_performance;
 	#	label="Distributed",
 	#	color=colors.PETER_RIVER,
 	#	marker=(:diamond, 6),
 	#	stylings...)
 	
-	plot!(cascading.runs, cascading.performance;
-		label="Cascading",
-		color=colors.NEPHRITIS,
-		marker=(:rtriangle, 9),
-		stylings...)
-	
-	plot!(centralized.runs, centralized.performance;
-		label="Centralized",
+	plot!(centralized.runs, centralized.mean_performance;
+		label="Centralized learning",
+		ribbon=get_ribbon(centralized.min_performance, 
+			centralized.mean_performance, centralized.max_performance),
 		color=colors.AMETHYST,
-		marker=(:circle, 6),
+		#marker=(:circle, 6),
 		stylings...)
 	
+	plot!(cascading.runs, cascading.mean_performance;
+		label="Cascading learning",
+		ribbon=get_ribbon(cascading.min_performance, 
+			cascading.mean_performance, cascading.max_performance),
+		color=colors.NEPHRITIS,
+		#marker=(:rtriangle, 9),
+		stylings...)
 	
 end
   ╠═╡ =#
 
 # ╔═╡ de90ff81-dace-447e-8d0c-7573536d64a0
 #=╠═╡
-do_the_plot_of_the_results(;distributed, cascading, centralized)
+do_the_plot_of_the_results(;distributed, cascading, centralized, random_baseline)
   ╠═╡ =#
 
 # ╔═╡ a675d6b9-0f2b-4023-af2a-1bb43303f6a7
@@ -814,7 +823,7 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╟─193a3fb9-92c9-4ac2-8f41-2a2e4540486f
-# ╠═d7848c71-86c8-4f1b-b8dd-49b9158e627e
+# ╟─d7848c71-86c8-4f1b-b8dd-49b9158e627e
 # ╠═a04f12e3-479b-4312-b531-66d12c59e911
 # ╠═c644df51-eef9-4c39-9ca9-d7a971d07e70
 # ╠═01af1a0e-8806-40c6-9c8f-a3391368072d
@@ -826,6 +835,8 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╟─10dc113e-aaa0-46f8-80ef-c345d52d5eec
 # ╠═02859499-80f9-413d-9488-fcba9728031a
 # ╠═b9e07438-ea07-4b89-a983-378b706a695b
+# ╠═8f35ca55-bc93-4dd3-bedd-d0e4752fa9fb
+# ╠═e12faaee-4c29-448f-b687-7c36a996c8ec
 # ╠═5160269e-c0fe-4643-bbaf-9094bb4bd537
 # ╠═de90ff81-dace-447e-8d0c-7573536d64a0
 # ╟─60a6c2c5-e5af-4b33-9976-9054b51814d1
@@ -833,10 +844,7 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 # ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
 # ╠═7cd7f277-8388-413a-b993-9b81fdb495b8
-# ╠═db1720fb-1134-4d81-b0b0-7da700d38798
-# ╠═be64568d-f451-46f4-8336-bd94fff82471
 # ╠═5484bf48-11be-4ac7-9557-e6fa36802f1d
-# ╠═85871e02-b379-4306-a547-1d6239e61fc2
 # ╠═a675d6b9-0f2b-4023-af2a-1bb43303f6a7
 # ╠═8a8ad7a8-94cb-4f94-9e78-7684091272c8
 # ╠═65b36dde-10b2-448b-8367-027a5b072d50
