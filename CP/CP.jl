@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -86,13 +86,27 @@ end
 # ╔═╡ e019f426-8a0f-4698-8b6d-ed487a68ae5c
 m_defaults = CPMechanics()
 
+# ╔═╡ 2551b791-d7e7-4857-9160-a86353d75a1b
+# Number of outgoing connections.
+# Some units only have one outgoing connection, most have 2.
+@bind outgoing_pipes Select([1, 2], default=2)
+
 # ╔═╡ 240cd0df-8f69-4749-8567-a6b560af4aea
-md"""
-The space of random outcomes has 3 dimensions:
-- The environment action (`wait`, `input_one`, `input_two`)
-- Random variance of inflows
-- Random variance of outflows.
-"""
+let
+	if outgoing_pipes == 2
+		environment_actions = "(`wait`, `input_one`, `input_two`)"
+	elseif outgoing_pipes == 1
+		environment_actions = "(`wait`, `input_one`)"
+	else
+		error("unexpected value $((;outgoing_pipes))")
+	end
+	"""
+	The space of random outcomes has 3 dimensions:
+	- The environment action $environment_actions
+	- Random variance of inflows
+	- Random variance of outflows.
+	""" |> Markdown.parse
+end
 
 # ╔═╡ cd9ba9af-db52-485b-af56-d14827926137
 randomness_space = Bounds((0, 0, 0), (1, 1, 1))
@@ -187,12 +201,23 @@ m
 s_unsafe = CPState(m.min_stored)
 
 # ╔═╡ 6ecc0cf7-d7a1-46ef-a840-717fe0784f59
-# Only two outgoing pipes
-function environment_action(rvar)
-	if     (rvar < 1/3)	return wait
-	elseif (rvar < 2/3)	return input_one
-	else return input_two
+if outgoing_pipes == 2
+# Two outgoing pipes
+	function environment_action(rvar)
+		if     (rvar < 1/3)	return wait
+		elseif (rvar < 2/3)	return input_one
+		else return input_two
+		end
 	end
+elseif outgoing_pipes == 1
+	# One outgoing pipe
+	function environment_action(rvar)
+		if (rvar < 1/2) return wait
+		else return input_one
+		end
+	end
+else
+	error("Unexpected value $((;outgoing_pipes))")
 end
 
 # ╔═╡ ed8ea3e2-8a9e-4a90-a19e-11134f9fe2ab
@@ -294,7 +319,7 @@ end
 plot_sequence(trace)
 
 # ╔═╡ 1260d5e5-1f2b-4578-909e-a5d0a367b126
-#gif(@animate(for _ in 1:10 plot_sequence(simulate_sequence(m, 100, s0, random_policy)) end), show_msg=false, fps=1)
+gif(@animate(for _ in 1:10 plot_sequence(simulate_sequence(m, 100, s0, random_policy)) end), show_msg=false, fps=1)
 
 # ╔═╡ 4faea1ce-ad42-456a-8f8f-6cf3bc9787ff
 md"""
@@ -440,17 +465,26 @@ function simulation_function(p, a, r)
 end
 
 # ╔═╡ 56f86d5c-02d0-4252-8984-d9fb4baca1ee
-md"""
-### 🛠 `spa_*`
-
-`spa_V =` $(@bind spa_V NumberField(1:9, default=3))
-
-`spa_random_action =` $(@bind spa_random_action NumberField(1:9, default=3))
-
-The value of `spa_random_action`  was specifically chosen because there are **3** possile actions the adversarial agents can take.
-
-`spa_random_variance =` $(@bind spa_random_variance NumberField(1:9, default=3))
-"""
+begin
+	if outgoing_pipes == 2
+		spa_random_default = 3
+	elseif outgoing_pipes == 1
+		spa_random_default = 2
+	else
+		error("Unexpected value $((;outgoing_pipes))")
+	end
+	md"""
+	### 🛠 `spa_*`
+	
+	`spa_V =` $(@bind spa_V NumberField(1:9, default=3))
+	
+	`spa_random_action =` $(@bind spa_random_action NumberField(1:9, default=spa_random_default))
+	
+	The value of `spa_random_action`  was specifically chosen because there are **$spa_random_default** possile actions the adversarial agents can take.
+	
+	`spa_random_variance =` $(@bind spa_random_variance NumberField(1:9, default=3))
+	"""
+end
 
 # ╔═╡ 05bcbcc1-aa0e-4949-beb2-ab45f06ce81c
 spa_random = (spa_random_action, spa_random_variance, spa_random_variance)
@@ -550,7 +584,7 @@ Try starting at 1 and then stepping through the iterations.
 """
 
 # ╔═╡ 7dedba0d-f017-4af3-805f-3fd945abbddb
-if make_shield_button > 0
+if make_shield_button > 0 || true
 	reachability_function_precomputed = 
 		get_transitions(reachability_function, CPAction, grid)
 end
@@ -559,7 +593,7 @@ end
 begin
 	shield, max_steps_reached = grid, false
 	
-	if make_shield_button > 0
+	if make_shield_button >  0 || true
 
 		# here
 		shield, max_steps_reached = 
@@ -706,55 +740,51 @@ function evaluate_safety(m::CPMechanics, shield::Grid; checks=1000)
 	return (;safe, checks, example_trace)
 end
 
-# ╔═╡ 71cbbe67-1015-4369-90dd-b03dc2d7ca69
-(;safe, checks, example_trace) = evaluate_safety(m, shield; checks=10000)
-
-# ╔═╡ 347f06a4-5524-4407-a833-7cae548b6439
-if !isnothing(example_trace)
-	shielded_trace = example_trace
-else
-	shielded_trace = simulate_sequence(m, 100, s0, shielded_random)
+# ╔═╡ 71b7824c-6db7-40b0-860f-7b86eaa54a50
+function get_trace()
+	trace = simulate_sequence(m, 120, s0, shielded_random)
+	trace = (trace.states, trace.actions)
 end
 
+# ╔═╡ fdf4f0a3-daed-49f0-84de-884d0cf24381
+get_trace()
+
+# ╔═╡ b05661b9-43f3-403f-9a0a-625ad33a10f9
+@bind traces_to_check NumberField(1:100000000, default=1000)
+
+# ╔═╡ 3c68a64f-3f71-43c7-97c8-49e467053327
+safety_report = GridShielding.evaluate_safety(get_trace, is_safe, traces_to_check)
+
+# ╔═╡ f25a264a-8083-4282-b562-606be5bb012a
+example_trace = safety_report.example_trace
+
 # ╔═╡ 17bbfa1f-cf25-45ca-8a1b-f62b8cae5759
-@bind i NumberField(1:length(shielded_trace.states))
+@bind i NumberField(1:length(example_trace[1]))
 
 # ╔═╡ 3d48fcd3-abd6-48dd-a600-c72221209377
-if !isnothing(example_trace)
-	plot_sequence(shielded_trace, time=shielded_trace.times[i], title="Unsafe trace")
-else
-	plot_sequence(shielded_trace, time=shielded_trace.times[i], title="Safe trace")
+let 
+	time = [j*m.t_act for (j, _) in enumerate(example_trace[1])]
+	trace = CPTrace(example_trace[1], time, example_trace[2])
+	plot_sequence(trace; time=time[i], title="Example trace")
 end
 
 # ╔═╡ a62e8c4b-46f9-4d4d-aac5-9cd839e52765
-shielded_trace.states[i], shielded_trace.actions[i], shielded_trace.times[i]
+example_trace[1][i], example_trace[2][i]
 
 # ╔═╡ cf7aee84-d05f-4786-abe9-970e5b57484f
-int_to_actions(CPAction, get_value(box(shield, shielded_trace.states[i])))
+int_to_actions(CPAction, get_value(box(shield, example_trace[1][i])))
 
 # ╔═╡ 95faabfd-14d4-474f-99af-50cf410b5797
-shielded_trace.actions[i] ∈ int_to_actions(CPAction, get_value(box(shield, shielded_trace.states[i])))
+example_trace[2][i] ∈ 
+	int_to_actions(CPAction, get_value(box(shield, example_trace[1][i])))
 
 # ╔═╡ 52c571b4-a6e3-4674-9053-8c02768d91da
 possible_i = possible_outcomes(model, 
-	box(shield, shielded_trace.states[i]), 
-	shielded_trace.actions[i])
+	box(shield, example_trace[1][i]), 
+	example_trace[2][i])
 
 # ╔═╡ bf102935-b72a-4bdf-b18b-bd656d956975
 min(possible_i...), max(possible_i...)
-
-# ╔═╡ 14ae0be0-1395-44e6-bb2c-39f6318d2f60
-if !isnothing(example_trace)
-	md"""
-	!!! danger "Unsafe trace found"
-		:-(
-	"""
-else
-	md"""
-	!!! success "👍👍"
-		Only safe traces found.
-	"""
-end
 
 # ╔═╡ 5ff82f30-fabe-4a39-912f-6aadd31228f1
 md"""
@@ -770,8 +800,18 @@ end
 
 # ╔═╡ a3ea7ead-3589-405e-94f3-1d523e5e0a6c
 let
-	libshield_so = get_libshield(shield)
-	DownloadButton(libshield_so |> read, "libcpshield.so")
+	if (outgoing_pipes == 2) 
+		function_name = "get_value"
+		file_name = "libcpshield.so"
+	elseif (outgoing_pipes == 1) 
+		function_name = "get_value_one_outgoing"
+		file_name = "libcponeoutgoingshield.so"
+	else
+		error("Unexpected value $((;outgoing_pipes))")	
+	end
+	
+	libshield_so = get_libshield(shield; function_name)
+	DownloadButton(libshield_so |> read, file_name)
 end
 
 # ╔═╡ Cell order:
@@ -788,6 +828,7 @@ end
 # ╠═a73bed3f-9e0f-45ad-a32c-935d17a52bb7
 # ╟─39de57fd-ddf5-41f7-9c33-6a0759d0e5a7
 # ╠═8b0e8b12-3b16-4d71-9d29-6fb5db82a47a
+# ╠═2551b791-d7e7-4857-9160-a86353d75a1b
 # ╠═e945773a-6365-4eb0-a384-5fc7c1dfa70e
 # ╟─240cd0df-8f69-4749-8567-a6b560af4aea
 # ╠═cd9ba9af-db52-485b-af56-d14827926137
@@ -885,9 +926,11 @@ end
 # ╠═bf102935-b72a-4bdf-b18b-bd656d956975
 # ╠═52c571b4-a6e3-4674-9053-8c02768d91da
 # ╠═b40d36af-9d76-4226-88e1-899167a84179
-# ╠═71cbbe67-1015-4369-90dd-b03dc2d7ca69
-# ╟─347f06a4-5524-4407-a833-7cae548b6439
-# ╟─14ae0be0-1395-44e6-bb2c-39f6318d2f60
+# ╠═71b7824c-6db7-40b0-860f-7b86eaa54a50
+# ╠═fdf4f0a3-daed-49f0-84de-884d0cf24381
+# ╠═b05661b9-43f3-403f-9a0a-625ad33a10f9
+# ╠═3c68a64f-3f71-43c7-97c8-49e467053327
+# ╠═f25a264a-8083-4282-b562-606be5bb012a
 # ╟─5ff82f30-fabe-4a39-912f-6aadd31228f1
 # ╟─8d0e55c3-ea57-408b-8c9b-d8484226b43d
-# ╟─a3ea7ead-3589-405e-94f3-1d523e5e0a6c
+# ╠═a3ea7ead-3589-405e-94f3-1d523e5e0a6c
