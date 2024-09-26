@@ -43,6 +43,8 @@ begin
             default=pwd() ⨝ "Plant_blueprint.xml"
         "--shield-path"  
             default=pwd() ⨝ "libcpshield.so"
+        "--one-outgoing-shield-path"  
+            default=pwd() ⨝ "libcponeoutgoingshield.so"
         "--skip-training"
             action=:store_true
 	end
@@ -73,13 +75,19 @@ verifyta_call = String[
 
 blueprint_path = args["blueprint-path"]
 shield_path = args["shield-path"]
+one_outgoing_shield_path = args["one-outgoing-shield-path"]
 
 ## Resolving Paths ##
 isfile(shield_path) || error("Shield file not found at $shield_path")
+isfile(one_outgoing_shield_path) || error("Shield file not found at $one_outgoing_shield_path")
 
 shield_path′ = results_dir ⨝ basename(shield_path)
 cp(shield_path, shield_path′, force=true)
 shield_path = shield_path′
+
+one_outgoing_shield_path′ = results_dir ⨝ basename(one_outgoing_shield_path)
+cp(one_outgoing_shield_path, one_outgoing_shield_path′, force=true)
+one_outgoing_shield_path = one_outgoing_shield_path′
 
 working_dir = results_dir ⨝ "$runs Runs" ⨝ "Repetition $repetition"
 mkpath(working_dir)
@@ -93,7 +101,15 @@ strategy_paths = String[]
 for N in n_units:-1:1
     status("Running plant with $(n_units - N) optimized produciton units...  (repetition=$repetition)")
     outfile = query_results_dir ⨝ "Plant $(length(strategy_paths)).txt"
-    model_path, queries_path = create_plant(blueprint_path, strategy_paths, shield_path, models_dir; checks, skip_training)
+
+    model_path, queries_path = create_plant(blueprint_path,
+        strategy_paths,
+        shield_path,
+        one_outgoing_shield_path,
+        models_dir;
+        checks,
+        skip_training)
+
     strategy_paths ← (working_dir ⨝ "Models/unit$N.json")
     open(outfile, "w") do io
         result = [verifyta_call..., model_path, queries_path] |> Cmd |> read |> String

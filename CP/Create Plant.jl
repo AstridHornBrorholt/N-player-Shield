@@ -169,9 +169,19 @@ Fields in the blueprint surrouned with `%`. Functions or variable names here are
 @bind shield_path TextField(80, default = pwd() ⨝ "libcpshield.so")
   ╠═╡ =#
 
+# ╔═╡ e5d66dda-5deb-473e-bac7-bb06a1dc769f
+#=╠═╡
+@bind one_outgoing_shield_path TextField(80, default = pwd() ⨝ "libcponeoutgoingshield.so")
+  ╠═╡ =#
+
 # ╔═╡ b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb
 #=╠═╡
 isfile(shield_path)
+  ╠═╡ =#
+
+# ╔═╡ b8cbdf1d-d4fd-48cc-b38c-3d603a632efd
+#=╠═╡
+isfile(one_outgoing_shield_path)
   ╠═╡ =#
 
 # ╔═╡ 3e9b8c0e-c014-4052-8031-4cd4b8c91177
@@ -402,7 +412,8 @@ Create model and query files `Plant n.xml` and `Plant n.q` at `destination`. `n`
 """
 function create_plant(blueprint_path, 
 		strategy_paths, 
-		shield_path, 
+		shield_path,
+		one_outgoing_shield_path,
 		destination; 
 		checks=100,
 		skip_training=false)
@@ -427,6 +438,7 @@ function create_plant(blueprint_path,
 	# Compute replacements
 	replacements = Dict{String, String}()
 	replacements["%shield path%"] = shield_path
+	replacements["%one outgoing shield path%"] = one_outgoing_shield_path
 	number_of_strategies = length(strategy_paths)
 	replacements["%strategy imports%"] = imports(strategies)
 	replacements["%agent selector%"] = agent_selector(strategies;)
@@ -450,7 +462,11 @@ end;
 
 # ╔═╡ 86082ab2-b9c3-4575-b878-b2734044e7d6
 #=╠═╡
-create_plant(blueprint_path, strategy_paths, shield_path, output_dir)
+create_plant(blueprint_path,
+	strategy_paths,
+	shield_path,
+	one_outgoing_shield_path,
+	output_dir)
   ╠═╡ =#
 
 # ╔═╡ 2f3b6b52-56bb-4324-9dd1-1c08921bc2f2
@@ -487,7 +503,9 @@ end; Markdown.parse("    nautilus $output_dir")
 # ╠═695ffd13-dc54-48e0-a8a4-364cd938e640
 # ╟─c5f3e21f-b929-41e1-81e2-7b0ec2dd0f28
 # ╠═6ba15d9e-1490-47a3-ac77-288eae1dc281
+# ╠═e5d66dda-5deb-473e-bac7-bb06a1dc769f
 # ╠═b8e7846b-e9aa-4d8f-a175-0c596f1ea4fb
+# ╠═b8cbdf1d-d4fd-48cc-b38c-3d603a632efd
 # ╟─3e9b8c0e-c014-4052-8031-4cd4b8c91177
 # ╠═e5e56986-4728-480e-8c07-cb78c61e9579
 # ╠═d642235d-8da6-4a9c-b346-1c01ba5ef885
