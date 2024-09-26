@@ -315,7 +315,7 @@ function queries(number_of_strategies, output_path;
 	result ← "E[<=100;$checks](max:cost[$i]) under unit$i"
 	result ← "E[<=100;$checks](max:sum (i : providerid_t) cost[i]) under unit$i"
 	# Probability of safety violation
-	result ← "Pr[<=100;$checks] (<> forall (i : unitid_t) (MIN_STORED < stored[i] && stored[i] < MAX_STORED)) under unit$i"
+	result ← "Pr[<=100;$checks] ([] forall (i : unitid_t) (MIN_STORED < stored[i] && stored[i] < MAX_STORED)) under unit$i"
 
 	join(result, "\n")
 end

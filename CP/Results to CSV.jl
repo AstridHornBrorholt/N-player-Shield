@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -423,7 +423,7 @@ function safety_violation_occured(query_result)
 	else
 		re_check = r"\(\d+/\d+ runs\)"
 		matches = match(re_check, query_result)
-		@warn "Didn't find a query showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." matches
+		@error "Didn't find a query showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." matches
 		return true
 	end
 end
@@ -434,6 +434,7 @@ safety_violation_occured(query_result)
   ╠═╡ =#
 
 # ╔═╡ 1e34748a-20ee-4903-a9b2-a514de81b68a
+#=╠═╡
 function to_csv(results_dir)
 	isdir(results_dir) || error("Not found: results_dir")
 	
@@ -453,6 +454,8 @@ function to_csv(results_dir)
 					@warn "Skipping file with unexpected number of query results" file=🗎 expected=4 actual=length(query_results)
 					continue
 				end
+				# Function outputs its own error.
+				safety_violation_occured(query_result)
 				untrained_individual_cost, untrained_global_cost, trained_individual_cost, trained_global_cost = query_results
 				
 				push!(result, join(
@@ -466,6 +469,7 @@ function to_csv(results_dir)
 	end
 	join(result, "\n")
 end
+  ╠═╡ =#
 
 # ╔═╡ b646f1e9-e216-44dc-9566-54fc077a9910
 #=╠═╡
