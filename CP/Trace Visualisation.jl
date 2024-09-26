@@ -197,7 +197,7 @@ md"""
 
 # ╔═╡ 55a118e3-a657-4e07-af8a-5ad60f0b509b
 @bind query TextField((95, 32), default="""
-	// strategy unit10 = loadStrategy {}->{t, stored[10]}
+	// strategy unit1 = loadStrategy {}->{t, stored[1]}
 	("/home/asger/Results/N-player CP/20001 Runs/Repetition 1/Models/unit10.json")
 	
 	simulate[<=100;1] {
@@ -224,7 +224,7 @@ md"""
 		unit_out[4], unit_out[5], unit_out[6],
 		unit_out[7], unit_out[8], unit_out[9], unit_out[10]
 	}
-	// under unit10
+	// under unit1
 	""")
 
 # ╔═╡ 16faad42-0357-4fae-a075-333fbe1ee0b0
@@ -894,10 +894,15 @@ function animate_trace(trace::CPTrace, fps)
 	gif(🎥; show_msg=false, fps)
 end
 
+# ╔═╡ 0cb15c58-7be0-47eb-99a8-ee9563e9a2e3
+trace; @bind make_animation_button CounterButton("Make Animation")
+
 # ╔═╡ 7fba5e3f-59f5-4943-9dd2-acf569ac31df
-# Second argument is time between frames.
-# Multiply by a value > 1 to make the animation appear slower.
-animate_trace(trace′, fps)
+if make_animation_button > 0
+	# Second argument is time between frames.
+	# Multiply by a value > 1 to make the animation appear slower.
+	animate_trace(trace′, fps)
+end
 
 # ╔═╡ 05a0f2a9-44a9-4182-b71d-0ecd39902675
 [s.action for s in trace′.states]
@@ -980,5 +985,6 @@ animate_trace(trace′, fps)
 # ╠═f4d139f0-62ba-4d3e-a261-7f2393f15c19
 # ╟─af8b0dd5-46f3-472c-a902-9fc60db6e79f
 # ╠═3a9c8e25-a333-4899-831a-f2e6ff38d71d
+# ╠═0cb15c58-7be0-47eb-99a8-ee9563e9a2e3
 # ╠═7fba5e3f-59f5-4943-9dd2-acf569ac31df
 # ╠═05a0f2a9-44a9-4182-b71d-0ecd39902675
