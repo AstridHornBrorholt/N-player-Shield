@@ -78,7 +78,7 @@ allowedActions intToActions(int bitarray) {
 int debugUnsafeState = 0;
 
 int number_of_outgoing_pipes(unitid_t unit) {
-    if (unit == 1 || unit == 2 || unit == 6 || unit == 8)
+    if (unit == 1 || unit == 3 || unit == 6 || unit == 8)
         return 1;
     else
         return 2;
