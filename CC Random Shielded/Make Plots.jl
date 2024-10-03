@@ -402,12 +402,6 @@ let
 end
   ╠═╡ =#
 
-# ╔═╡ 88623d6b-a856-4ff3-819f-5bd5930430ab
-md"""
-!!! info "Performance:"
-	👉 $performance 👈
-"""
-
 # ╔═╡ 09ab2ad4-087d-4abd-bbb9-d6d16eebe53c
 #=╠═╡
 @bind export_results_button CounterButton("Export Results")
@@ -480,12 +474,12 @@ begin
 			#marker...,
 			plotargs...)
 
-		performance=mean(data)
+		mean_cost=mean(data)
 		
-		hline!([performance],
+		hline!([mean_cost],
 			color=colors.WET_ASPHALT,
 			linestyle=:dash,
-			label="Global performance")
+			label="Mean")
 
 	end
 	function cost_plot(data; plotargs...)
@@ -512,7 +506,7 @@ data |> mean
 # ╔═╡ d1695f9c-ac7d-49ae-a2eb-b14003e691a9
 #=╠═╡
 begin
-	cleandata = [-p for p in data]
+	cleandata = data
 
 	if just_first_10
 		cleandata = cleandata[1:9]
@@ -522,7 +516,15 @@ end
 
 # ╔═╡ 075a5f80-28d8-4a68-8323-34bb32186bbf
 #=╠═╡
-performance = cleandata |> mean
+sum_of_costs = cleandata |> sum
+  ╠═╡ =#
+
+# ╔═╡ 88623d6b-a856-4ff3-819f-5bd5930430ab
+#=╠═╡
+"""
+!!! info "Sum of costs:"
+	👉 $sum_of_costs 👈
+""" |> Markdown.parse
   ╠═╡ =#
 
 # ╔═╡ 819248d7-e2fa-4baa-ba49-1e9f35261693
@@ -531,7 +533,7 @@ if export_results_button > 0 let
 	
 	exported_results_path = joinpath(results_dir, "Exported Results.txt")
 	open(exported_results_path, "w") do 🗋
-		write(🗋, "$performance")
+		write(🗋, "$sum_of_costs")
 	end
 	"✅ Wrote clean data to `$exported_results_path`" |> Markdown.parse
 end end

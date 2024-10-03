@@ -585,7 +585,7 @@ end
 let
 	plot(
 		xlabel="time (s)",
-		ylabel="volume (ℓ)",
+		ylabel="cost (moneydollars)",
 		legend=:outerright,
 		size=(400, 300))
 	

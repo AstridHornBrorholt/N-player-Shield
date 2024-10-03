@@ -347,58 +347,86 @@ Plots.default(fontfamily="serif-roman")
 md"""
 # The Main Plot
 
-This is the performance vs training time plot.
+This is the cost vs training time plot.
 """
-
-# ╔═╡ d7848c71-86c8-4f1b-b8dd-49b9158e627e
-md"""
-!!! info "Cost? Performance?"
-	Costs are the raw values extracted from the queries. Reward is individual to agents, and is just negative cost.
-	Performance is the metric for the global system, and is mean negative cost. 
-"""
-
-# ╔═╡ a04f12e3-479b-4312-b531-66d12c59e911
-const n_agents = 10
-
-# ╔═╡ c644df51-eef9-4c39-9ca9-d7a971d07e70
-function local_reward(cost)
-	-cost
-end
-
-# ╔═╡ 01af1a0e-8806-40c6-9c8f-a3391368072d
-function global_performance(sum_of_costs)
-	# Queries compute sum of costs for historical reasons, so we divide by number of agents to get mean.
-	-sum_of_costs/n_agents
-end
-
-# ╔═╡ 802bb5e1-f2e1-4788-abcb-c1716683693e
-function plot_results!(;runs, performance)
-	plot!(runs, performance)
-end
 
 # ╔═╡ 10dc113e-aaa0-46f8-80ef-c345d52d5eec
 #=╠═╡
 md"""
-`distributed =` $(@bind distributed TextField(70, 
-	default=homedir()⨝"Results/N-player CP Non-specialized"))
-
-`cascading =` $(@bind cascading TextField(70, 
+`cascading_path =` $(@bind cascading_path TextField(70, 
 	default=homedir()⨝"Results/N-player CP"))
 
-`centralized =` $(@bind centralized TextField(70, 
+`centralized_path =` $(@bind centralized_path TextField(70, 
 	default=homedir()⨝"Results/N-player CP Centralized Controller"))
 """
   ╠═╡ =#
 
+# ╔═╡ d7848c71-86c8-4f1b-b8dd-49b9158e627e
+md"""
+!!! info "Cost?"
+	We're back to looking at sum of costs. Sometimes I use `cost` as shorthand for `trained_sum_of_costs`.
+"""
+
 # ╔═╡ 8f35ca55-bc93-4dd3-bedd-d0e4752fa9fb
 # Measured by just running the untrained model once.
-const random_baseline = -234
+const random_baseline = 2344
 
 # ╔═╡ e12faaee-4c29-448f-b687-7c36a996c8ec
 function get_ribbon(mins, means, maxes)
 	lower = means .- mins
 	upper = maxes .- means
 	lower, upper
+end
+
+# ╔═╡ 5160269e-c0fe-4643-bbaf-9094bb4bd537
+function do_the_plot_of_the_results(;
+		cascading, 
+		centralized,
+		random_baseline)
+
+
+	
+	min_max_costs = vcat(cascading.min_cost, 
+		centralized.min_cost,
+		cascading.max_cost, 
+		centralized.max_cost,
+		[random_baseline])
+
+	ylims = (min(min_max_costs...) - 100, max(min_max_costs...) + 500)
+	ylims = (0, 2500)
+
+	stylings = (linewidth=2,
+		markerstrokewidth=2,
+		markerstrokecolor=:white)
+	
+	plot(;size=(350, 200),
+		ylims,
+		legend=:bottomright,
+		xlabel="Total episodes trained",
+		ylabel="Total Cost")
+	
+	plot!(centralized.runs, centralized.mean_cost;
+		label="Centralized learning",
+		ribbon=get_ribbon(centralized.min_cost, 
+			centralized.mean_cost, centralized.max_cost),
+		color=colors.AMETHYST,
+		#marker=(:circle, 6),
+		stylings...)
+	
+	plot!(cascading.runs, cascading.mean_cost;
+		label="Cascading learning",
+		ribbon=get_ribbon(cascading.min_cost, 
+			cascading.mean_cost, cascading.max_cost),
+		color=colors.NEPHRITIS,
+		#marker=(:rtriangle, 9),
+		stylings...)
+	
+	hline!([random_baseline],
+		color=colors.WET_ASPHALT,
+		linewidth=2,
+		linestyle=:dash,
+		label="Random agents")
+	
 end
 
 # ╔═╡ 60a6c2c5-e5af-4b33-9976-9054b51814d1
@@ -433,6 +461,11 @@ csv_string |> multiline
 raw_results = CSV.read(IOBuffer(csv_string), DataFrame)
   ╠═╡ =#
 
+# ╔═╡ 0800d8c6-b85b-40cb-b331-37ae19165421
+#=╠═╡
+sort(raw_results, :trained_sum_of_costs)
+  ╠═╡ =#
+
 # ╔═╡ 1f973cbe-a416-44fa-8e3b-e6392f6ddb16
 #=╠═╡
 # Discard all experiment repetitions except the first
@@ -452,9 +485,7 @@ cleandata = let
 	
 	episode_length = 100
 	
-	cleandata = transform(cleandata, 
-		:trained_global_cost => ByRow(global_performance) => :global_performance,
-		:trained_individual_cost => ByRow(local_reward) => :individual_reward,
+	cleandata = transform(cleandata,
 		:pre_trained_units => ByRow(p -> p + 1) => :trained_units,
 	)
 	
@@ -472,136 +503,41 @@ all_runs = cleandata[!, :runs] |> unique |> sort
 @bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
   ╠═╡ =#
 
-# ╔═╡ 782b14e8-a0d4-4584-9082-dded2699b70a
-#=╠═╡
-# Extract just mean performance as a function of the number of runs.
-function runs_performance(result_dir)
-	
-	buf = IOBuffer(to_csv(result_dir))
-	df = CSV.read(buf, DataFrame, delim=";")
-	df = filter(:pre_trained_units => (==)(n_agents - 1), df)
-	df = filter(:runs => r -> r ∈ runs_shown, df)
-	df = transform(df, :trained_global_cost => global_performance => :trained_global_performance)
-
-	grouping =  groupby(df, [:runs])
-	
-	df = combine(grouping, 
-		:trained_global_performance => minimum => :min_performance,
-		:trained_global_performance => mean => :mean_performance,
-		:trained_global_performance => maximum => :max_performance,
-		renamecols=false)
-
-	df = sort(df, :runs)
-
-	return (runs=[r for r  in df.runs], 
-		min_performance=[p for p in df.min_performance],
-		mean_performance=[p for p in df.mean_performance],
-		max_performance=[p for p in df.max_performance],
-	)
-end
-  ╠═╡ =#
-
-# ╔═╡ b7d13d00-1b8e-4875-affe-9756ee74ea7f
-#=╠═╡
-runs_performance(cascading)
-  ╠═╡ =#
-
 # ╔═╡ ea282e41-f786-4c5c-b2e6-e42826949516
 #=╠═╡
 # Yea and for centralized control the format is completely different.
-function centralized_runs_performance(result_dir)
+function centralized_runs_cost(result_dir)
 	
 	buf = IOBuffer(centralized_to_csv.to_csv(result_dir))
 	df = CSV.read(buf, DataFrame, delim=";")
 	df = filter(:runs => r -> r ∈ runs_shown, df)
-	df = transform(df, :trained_cost => global_performance => :trained_performance)
 
 	grouping =  groupby(df, [:runs])
 	
 	df = combine(grouping, 
-		:trained_performance => minimum => :min_performance,
-		:trained_performance => mean => :mean_performance,
-		:trained_performance => maximum => :max_performance,
+		:trained_cost => minimum => :min_cost,
+		:trained_cost => mean => :mean_cost,
+		:trained_cost => maximum => :max_cost,
 		renamecols=false)
 
 	df = sort(df, :runs)
 
 	return (runs=[r for r  in df.runs],  
-	min_performance=[p for p in df.min_performance],
-	mean_performance=[p for p in df.mean_performance],
-	max_performance=[p for p in df.max_performance],
+	min_cost=[p for p in df.min_cost],
+	mean_cost=[p for p in df.mean_cost],
+	max_cost=[p for p in df.max_cost],
 	)
 end
   ╠═╡ =#
 
 # ╔═╡ afe6e072-a335-4e72-a1d4-389ebd624493
 #=╠═╡
-centralized_runs_performance(centralized)
+centralized = centralized_runs_cost(centralized_path)
   ╠═╡ =#
 
-# ╔═╡ 5160269e-c0fe-4643-bbaf-9094bb4bd537
+# ╔═╡ 78a46d90-fb0b-479b-96e4-196cd216a609
 #=╠═╡
-function do_the_plot_of_the_results(;distributed, 
-		cascading, 
-		centralized,
-		random_baseline)
-
-
-	#distributed = runs_performance(distributed)
-	cascading = runs_performance(cascading)
-	centralized = centralized_runs_performance(centralized)
-
-	
-	min_max_performances = vcat(cascading.min_performance, 
-		centralized.min_performance,
-		cascading.max_performance, 
-		centralized.max_performance)
-
-	ylims = (min(min_max_performances...) - 10, max(min_max_performances...) + 50)
-
-	stylings = (linewidth=2,
-		markerstrokewidth=2,
-		markerstrokecolor=:white)
-	
-	plot(;size=(350, 250),
-		ylims,
-		legend=:bottomright,
-		xlabel="Total episodes trained",
-		ylabel="Performance")
-	
-	hline!([random_baseline],
-		color=colors.WET_ASPHALT,
-		linestyle=:dash,
-		label="Random agents")
-	
-	#plot!(distributed.runs, distributed.mean_performance;
-	#	label="Distributed",
-	#	color=colors.PETER_RIVER,
-	#	marker=(:diamond, 6),
-	#	stylings...)
-	
-	plot!(centralized.runs, centralized.mean_performance;
-		label="Centralized learning",
-		ribbon=get_ribbon(centralized.min_performance, 
-			centralized.mean_performance, centralized.max_performance),
-		color=colors.AMETHYST,
-		#marker=(:circle, 6),
-		stylings...)
-	
-	plot!(cascading.runs, cascading.mean_performance;
-		label="Cascading learning",
-		ribbon=get_ribbon(cascading.min_performance, 
-			cascading.mean_performance, cascading.max_performance),
-		color=colors.NEPHRITIS,
-		#marker=(:rtriangle, 9),
-		stylings...)
-	
-end
-  ╠═╡ =#
-
-# ╔═╡ de90ff81-dace-447e-8d0c-7573536d64a0
-#=╠═╡
-do_the_plot_of_the_results(;distributed, cascading, centralized, random_baseline)
+maximum(centralized.max_cost)
   ╠═╡ =#
 
 # ╔═╡ a675d6b9-0f2b-4023-af2a-1bb43303f6a7
@@ -610,12 +546,11 @@ means = let
 	grouping =  groupby(cleandata, [:runs, :trained_units])
 	
 	means = combine(grouping, 
-		:untrained_global_cost => mean, 
-		:trained_global_cost => mean, 
+		:untrained_sum_of_costs => mean, 
+		:trained_sum_of_costs => mean, 
 		:trained_individual_cost => mean,
 		:untrained_individual_cost => mean,
 		:individual_reward => mean,
-		:global_performance => mean,
 		renamecols=false)
 end
   ╠═╡ =#
@@ -635,9 +570,9 @@ max_trained_units = max(cleandata[!, :trained_units]...)
 default_y_min, default_y_max = let
 	df = filter(:trained_units => t -> t == max_trained_units, means)
 	
-	default_y_min = min(df[!, :global_performance]...) - 100
+	default_y_min = min(df[!, :trained_sum_of_costs]...) - 100
 	
-	default_y_max = max(df[!, :global_performance]...) + 100
+	default_y_max = max(df[!, :trained_sum_of_costs]...) + 100
 	
 	default_y_min, default_y_max
 end
@@ -673,44 +608,8 @@ size = (width, height)
 
 # ╔═╡ 7909f497-55cd-4f9d-b34d-515a80241873
 md"""
-## Individual performance
+## Individual cost
 """
-
-# ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
-begin
-	function individual_performance_plot!(means::DataFrame, 
-			runs;
-			color=colors.POMEGRANATE,
-			label=nothing,
-			plotargs...)
-		
-		df = filter(:runs => (x -> x == runs), means)
-		trained_unit_counts = df[!, :trained_units]
-		df = sort(df, :trained_units)
-		trained_min = min(trained_unit_counts...)
-		trained_max = max(trained_unit_counts...)
-		
-		xticks = (collect(trained_min:trained_max), ["$(n_agents - x + 1)" for x in 1:trained_max])
-		xlims = (trained_min - 1, trained_max + 1)
-		
-		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
-		
-		@df df plot!(:trained_units, :individual_reward;
-			color=color,
-			linewidth=2,
-			xticks,
-			xlims,
-			xlabel="Unit ID",
-			ylabel="Individual Reward",
-			label=something(label, "Trained for $runs runs each"),
-			#marker...,
-			plotargs...)
-	end
-	function individual_performance_plot(x...; plotargs...)
-		plot(;plotargs...)
-		individual_performance_plot!(x...)
-	end
-end
 
 # ╔═╡ 37e95259-e575-45c3-a0a3-4b0115c12694
 #=╠═╡
@@ -766,7 +665,7 @@ let
 	df = filter(:trained_units => t -> t == max_trained_units, df)
 	df = filter(:runs => r -> r ∈ selected_runs, df)
 	#df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
-	@df df plot(:runs, :global_performance;
+	@df df plot(:runs, :trained_sum_of_costs;
 		size,
 		ylims,
 		color=colors.POMEGRANATE,
@@ -783,6 +682,92 @@ end
 filter((x -> x[:runs] ∈ selected_runs), means)
   ╠═╡ =#
 
+# ╔═╡ 3c202730-71e2-4cf6-b334-b30a8dfc14a5
+#=╠═╡
+filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
+  ╠═╡ =#
+
+# ╔═╡ a04f12e3-479b-4312-b531-66d12c59e911
+const n_agents = 10
+
+# ╔═╡ 782b14e8-a0d4-4584-9082-dded2699b70a
+#=╠═╡
+function runs_cost(result_dir)
+	
+	buf = IOBuffer(to_csv(result_dir))
+	df = CSV.read(buf, DataFrame, delim=";")
+	df = filter(:pre_trained_units => (==)(n_agents - 1), df)
+	df = filter(:runs => r -> r ∈ runs_shown, df)
+
+	grouping =  groupby(df, [:runs])
+	
+	df = combine(grouping, 
+		:trained_sum_of_costs => minimum => :min_cost,
+		:trained_sum_of_costs => mean => :mean_cost,
+		:trained_sum_of_costs => maximum => :max_cost,
+		renamecols=false)
+
+	df = sort(df, :runs)
+
+	return (runs=df.runs, 
+		min_cost=df.min_cost,
+		mean_cost=df.mean_cost,
+		max_cost=df.max_cost,
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ b7d13d00-1b8e-4875-affe-9756ee74ea7f
+#=╠═╡
+cascading = runs_cost(cascading_path)
+  ╠═╡ =#
+
+# ╔═╡ 88311da9-d310-441d-b962-7294b05bfb98
+#=╠═╡
+maximum(cascading.max_cost)
+  ╠═╡ =#
+
+# ╔═╡ de90ff81-dace-447e-8d0c-7573536d64a0
+#=╠═╡
+do_the_plot_of_the_results(;cascading, centralized, random_baseline)
+  ╠═╡ =#
+
+# ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
+begin
+	function individual_cost_plot!(means::DataFrame, 
+			runs;
+			color=colors.POMEGRANATE,
+			label=nothing,
+			plotargs...)
+		
+		df = filter(:runs => (x -> x == runs), means)
+		trained_unit_counts = df[!, :trained_units]
+		df = sort(df, :trained_units)
+		trained_min = min(trained_unit_counts...)
+		trained_max = max(trained_unit_counts...)
+		
+		xticks = (collect(trained_min:trained_max), ["$(n_agents - x + 1)" for x in 1:trained_max])
+		xlims = (trained_min - 1, trained_max + 1)
+		
+		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
+		
+		@df df plot!(:trained_units, :individual_reward;
+			color=color,
+			linewidth=2,
+			xticks,
+			xlims,
+			xlabel="Unit ID",
+			ylabel="Individual Reward",
+			label=something(label, "Trained for $runs runs each"),
+			#marker...,
+			plotargs...)
+	end
+	function individual_cost_plot(x...; plotargs...)
+		plot(;plotargs...)
+		individual_cost_plot!(x...)
+	end
+end
+
 # ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
 #=╠═╡
 let
@@ -796,18 +781,13 @@ let
 	strokes = [:dashdot, :dash, :dot, :solid, ]
 	
 	for (i, r) in enumerate(selected_runs)
-		individual_performance_plot!(means, r, 
+		individual_cost_plot!(means, r, 
 			color=c[1 + (i - 1)%length(c)],
 			line=strokes[1 + (i - 1)%length(strokes)],
 			markerstrokecolor=:white)
 	end
 	plot!()
 end
-  ╠═╡ =#
-
-# ╔═╡ 3c202730-71e2-4cf6-b334-b30a8dfc14a5
-#=╠═╡
-filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
   ╠═╡ =#
 
 # ╔═╡ Cell order:
@@ -823,18 +803,16 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╟─193a3fb9-92c9-4ac2-8f41-2a2e4540486f
-# ╟─d7848c71-86c8-4f1b-b8dd-49b9158e627e
-# ╠═a04f12e3-479b-4312-b531-66d12c59e911
-# ╠═c644df51-eef9-4c39-9ca9-d7a971d07e70
-# ╠═01af1a0e-8806-40c6-9c8f-a3391368072d
-# ╠═782b14e8-a0d4-4584-9082-dded2699b70a
-# ╠═b7d13d00-1b8e-4875-affe-9756ee74ea7f
-# ╠═ea282e41-f786-4c5c-b2e6-e42826949516
-# ╠═afe6e072-a335-4e72-a1d4-389ebd624493
-# ╠═802bb5e1-f2e1-4788-abcb-c1716683693e
 # ╟─10dc113e-aaa0-46f8-80ef-c345d52d5eec
 # ╠═02859499-80f9-413d-9488-fcba9728031a
 # ╠═b9e07438-ea07-4b89-a983-378b706a695b
+# ╠═d7848c71-86c8-4f1b-b8dd-49b9158e627e
+# ╠═782b14e8-a0d4-4584-9082-dded2699b70a
+# ╠═b7d13d00-1b8e-4875-affe-9756ee74ea7f
+# ╠═88311da9-d310-441d-b962-7294b05bfb98
+# ╠═ea282e41-f786-4c5c-b2e6-e42826949516
+# ╠═afe6e072-a335-4e72-a1d4-389ebd624493
+# ╠═78a46d90-fb0b-479b-96e4-196cd216a609
 # ╠═8f35ca55-bc93-4dd3-bedd-d0e4752fa9fb
 # ╠═e12faaee-4c29-448f-b687-7c36a996c8ec
 # ╠═5160269e-c0fe-4643-bbaf-9094bb4bd537
@@ -844,6 +822,7 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
 # ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
 # ╠═7cd7f277-8388-413a-b993-9b81fdb495b8
+# ╠═0800d8c6-b85b-40cb-b331-37ae19165421
 # ╠═5484bf48-11be-4ac7-9557-e6fa36802f1d
 # ╠═a675d6b9-0f2b-4023-af2a-1bb43303f6a7
 # ╠═8a8ad7a8-94cb-4f94-9e78-7684091272c8
@@ -867,3 +846,4 @@ filter((x -> x[:runs] ∈ selected_runs && x[:trained_units] == 10), means)
 # ╠═dc0bf1be-f6a5-4c76-b62d-7fdf234cd601
 # ╠═f00c8154-36be-495e-b681-fd3c24f97561
 # ╠═3c202730-71e2-4cf6-b334-b30a8dfc14a5
+# ╠═a04f12e3-479b-4312-b531-66d12c59e911

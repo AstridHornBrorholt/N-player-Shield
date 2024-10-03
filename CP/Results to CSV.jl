@@ -412,7 +412,8 @@ extract_results(query_result)
   ╠═╡ =#
 
 # ╔═╡ 5c625d7a-a646-4613-b8dd-b2c246ce0c22
-function safety_violation_occured(query_result)
+function safety_violation_occured(query_result_path)
+	query_result = query_result_path |> read |> String
 	# The safety query counts how many times the property was satisfied. 
 	# I.e. should be (1000/1000). 
 	# This is right opposite how I do it in the cruise-control example.
@@ -423,23 +424,22 @@ function safety_violation_occured(query_result)
 	else
 		re_check = r"\(\d+/\d+ runs\)"
 		matches = match(re_check, query_result)
-		@error "Didn't find a query showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." matches
+		@error "Didn't find a query showing no safety violations. This could be because of a failed regex, or it could be because of an actual safety violation. Check query file." query_result_path matches
 		return true
 	end
 end
 
 # ╔═╡ 479f1124-24e7-411b-acc5-f19bf908f7d0
 #=╠═╡
-safety_violation_occured(query_result)
+safety_violation_occured(query_result_path)
   ╠═╡ =#
 
 # ╔═╡ 1e34748a-20ee-4903-a9b2-a514de81b68a
-#=╠═╡
 function to_csv(results_dir)
 	isdir(results_dir) || error("Not found: results_dir")
 	
 	header = 
-		"runs;repetition;pre_trained_units;untrained_individual_cost;untrained_global_cost;trained_individual_cost;trained_global_cost"
+		"runs;repetition;pre_trained_units;untrained_individual_cost;untrained_sum_of_costs;trained_individual_cost;trained_sum_of_costs"
 	
 	result = String[header]
 	for 🗄️ in glob("* Runs", results_dir)
@@ -455,21 +455,20 @@ function to_csv(results_dir)
 					continue
 				end
 				# Function outputs its own error.
-				safety_violation_occured(query_result)
-				untrained_individual_cost, untrained_global_cost, trained_individual_cost, trained_global_cost = query_results
+				safety_violation_occured(🗎)
+				untrained_individual_cost, untrained_sum_of_costs, trained_individual_cost, trained_sum_of_costs = query_results
 				
 				push!(result, join(
 					[runs, repetition, pre_trained_units,
 						untrained_individual_cost, 
-						untrained_global_cost, 
+						untrained_sum_of_costs, 
 						trained_individual_cost, 
-						trained_global_cost], ";"))
+						trained_sum_of_costs], ";"))
 			end
 		end
 	end
 	join(result, "\n")
 end
-  ╠═╡ =#
 
 # ╔═╡ b646f1e9-e216-44dc-9566-54fc077a9910
 #=╠═╡

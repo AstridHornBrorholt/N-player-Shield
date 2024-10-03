@@ -13,6 +13,9 @@ begin
 	using Plots
 	using Statistics
 	using StatsPlots
+	using Measures
+	using Printf
+	using Unzip
 end;
 
 # ╔═╡ 61c15d44-75be-4613-8b60-484d94847b8a
@@ -439,45 +442,14 @@ random_baseline = parse(Float64,
 @bind first_repetition_only CheckBox(default=false)
   ╠═╡ =#
 
-# ╔═╡ a1cfa77f-b7e7-4cec-9916-cb076517876c
-#=╠═╡
-@bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
-  ╠═╡ =#
-
-# ╔═╡ d3bfd66d-f4dd-44a0-b4a7-5da34f030e2e
-md"""
-## Computing Performance
-"""
-
 # ╔═╡ abb7365c-1d40-4f92-9664-e005117b5c00
 md"""
-!!! info "Cost? Reward? Performance?"
-	I'm doing a refactor because of a rather embarassing screw-up in how performance was represented in the plot. I'm hoping to standardize this in the `local_reward` and `global_performance` functions below. 
-
-	When the data is read from UPPAAL query results in `Results to CSV.jl`, the outputs are called **(local) costs**. This is the value that the training algorithm was trying to minimize. 
-	The local cost is the sum of observed distances over a 100-length trace, starting at a distance of 50.
-
-	This is converted to a local **reward**, which is just negative cost.
-
-	Then the term **performance** is used to mean the global performance that will be reported in the paper. Performance is reported as the negative mean of local rewards. 
+!!! info "Cost?"
+	We're back to reporting sum of costs in our figures. Pretty simple. Maybe I'll use `global_cost` and `sum_of_costs` interchangably, idk.
 """
 
 # ╔═╡ a2256c72-3686-4f89-9adf-6684270946b6
 const episode_length = 100
-
-# ╔═╡ 266ba2a5-01d0-48a4-be0e-52416dfd2485
-function local_reward(cost)
-	-cost
-end
-
-# ╔═╡ a747c372-4542-4b97-b9c0-7f46da83e9ad
-function global_performance(costs)
-	rewards = local_reward.(costs)
-	mean(rewards)
-end
-
-# ╔═╡ 8fc41ea1-68b0-469f-a085-cf67b35e78a5
-global_performance([1, 2, 3])
 
 # ╔═╡ 2655802d-f3b9-4850-8164-81a860ca5716
 function append(a, b::V) where {V<:AbstractVector}
@@ -508,78 +480,76 @@ function do_the_plot_of_the_results(;
 		random_baseline,
 		mappo)
 	
-	all_performances = vcat(cascading.min_performance, 
-		centralized.min_performance,
-		cascading.max_performance, 
-		centralized.max_performance)
+	all_costs = vcat(cascading.min_cost, 
+		centralized.min_cost,
+		cascading.max_cost, 
+		centralized.max_cost)
 
-	ymin, ymax = min(all_performances...), max(all_performances...)
+	
+	ymin, ymax = min(all_costs...), max(all_costs...)
 	ylims = (ymin - abs(ymin)*0.25, ymax + abs(ymax)*0.25)
-	ylims = (-20000, -1000)
+	ylims = (0, 200000)
 
-	
-	stylings = (
-		linewidth=2,
-		markerstrokewidth=2,
-		markerstrokecolor=:white)
-	
-	plot(;size=(350, 250),
-		legend=nothing,
+	yticks = [(y, @sprintf("%.f", y)) for y in LinRange(ylims[1], ylims[2], 5)] |> unzip
+
+	xmin, xmax = minimum(centralized.runs), maximum(centralized.runs)
+	xticks = [(x, @sprintf("%.f", x)) for x in LinRange(0, xmax, 4)] |> unzip
+
+	# Global styles #
+	plot(;size=(400, 200),
+		legend=:topleft,
 		ylims,
-		xlabel="Episodes (other)",
-		ylabel="Performance")
+		yrot=45,
+		xticks,
+		yticks,
+		rightmargin=3mm,
+		xlabel="Total episodes trained",
+		ylabel="Cost")
 
-	axis2 = twiny()
-
-	plot!(axis2, 
-		legend=(0.1, 0.5),
-		xlabel="Episodes (MAPPO)")
-	
-	plot!(axis2, mappo.episodes, mappo.mean_performance;
-		ylims,
-		label=nothing,
-		color=colors.PETER_RIVER,
-		ribbon=get_ribbon(mappo.min_performance, mappo.mean_performance, mappo.max_performance),
-		linestyle=:dash,
-		#marker=(:rtriangle, 9),
-		stylings...)
-
-	plot!(axis2, []; 
+	# Actual data plotting #
+	# I want the legends to be in another order, hence the X_stylings variables.
+	mappo_stylings = (linewidth=2,
 		label="MAPPO", 
-		color=colors.PETER_RIVER, 
+		color=colors.PETER_RIVER,)
+	
+	plot!(mappo.episodes, mappo.mean_cost;
+		ribbon=get_ribbon(mappo.min_cost, mappo.mean_cost, mappo.max_cost),
+		mappo_stylings...,
+		label=nothing,)
+
+	random_stylings = (linewidth=2.5,
 		linestyle=:dash,
-		stylings...)
-	
-	hline!([random_baseline],
 		color=colors.WET_ASPHALT,
-		linestyle=:dashdot,
-		label="Random agents")
+		label="Random agents",)
 	
-	plot!(axis2, []; label="Random Agents", 
-		color=colors.WET_ASPHALT,
-		linestyle=:dashdot,)
+	hline!([random_baseline];
+		random_stylings...,
+		label=nothing,)
 	
-	plot!(centralized.runs, centralized.mean_performance;
-		color=colors.AMETHYST,
-		ribbon=get_ribbon(centralized.min_performance, centralized.mean_performance, centralized.max_performance),
-		#marker=(:circle, 6),
-		stylings...)
-
-	plot!(axis2, []; 
+	centralized_stylings = (linewidth=2,
 		label="Centralized learning",
-		color=colors.AMETHYST, 
-		stylings...)
+		color=colors.AMETHYST,)
 	
-	plot!(cascading.runs, cascading.mean_performance;
-		color=colors.NEPHRITIS,
-		ribbon=get_ribbon(cascading.min_performance, cascading.mean_performance, cascading.max_performance),
-		#marker=(:rtriangle, 9),
-		stylings...)
+	plot!(centralized.runs, centralized.mean_cost;
+		ribbon=get_ribbon(centralized.min_cost, centralized.mean_cost, centralized.max_cost),
+		#marker=(:circle, 6),
+		centralized_stylings...,
+		label=nothing)
 
-	plot!(axis2, []; 
+	cascading_stylings = (linewidth=2,
 		label="Cascading learning",
-		color=colors.NEPHRITIS, 
-		stylings...)
+		color=colors.NEPHRITIS,)
+	
+	plot!(cascading.runs, cascading.mean_cost;
+		ribbon=get_ribbon(cascading.min_cost, cascading.mean_cost, cascading.max_cost),
+		cascading_stylings...,
+		label=nothing,)
+
+	# Labels #
+	plot!([]; centralized_stylings...)
+	plot!([]; cascading_stylings...)
+	plot!([]; mappo_stylings...)
+	plot!([]; random_stylings...)
 end
 
 # ╔═╡ a0159339-14f3-4280-8160-447702f19d2a
@@ -600,65 +570,6 @@ function to_vector(str::T, element_type=Float64) where T<:AbstractString
 	 	return Float64[parse(element_type, 🍣) for 🍣 in 🎣]
 	end
 end
-
-# ╔═╡ 7622369d-1363-4032-a910-4e94950d4257
-#=╠═╡
-# Extract just mean performance as a function of the number of runs.
-function extract_data(raw_data)
-	df = raw_data
-	fleet_size = max(df.fleet_size...)
-	df = filter(:fleet_size => (==)(fleet_size), df)
-	df = filter(:runs => r -> r ∈ runs_shown, df)
-	df = transform(df, :other_cars_costs => ByRow(to_vector) => :other_cars_costs)
-	df = transform(df, [:learned_cost, :other_cars_costs] => ByRow(append) => :costs)
-	df = transform(df, :costs => ByRow(global_performance) => :performance)
-
-	if first_repetition_only
-		df = filter(:repetition => (==)(1), df)
-	end
-	
-	grouping =  groupby(df, [:runs])
-
-	df = combine(grouping,
-		:performance => minimum => :min_performance,
-		:performance => mean => :mean_performance,
-		:performance => maximum => :max_performance,
-	)
-
-	df = sort(df, :runs)
-
-	return (runs=[r for r  in df.runs], 
-		min_performance=[p for p in df.min_performance],
-		mean_performance=[p for p in df.mean_performance],
-		max_performance=[p for p in df.max_performance],
-		)
-end
-  ╠═╡ =#
-
-# ╔═╡ 0238227a-cf71-4c32-a1d0-5fea6d7ccfad
-#=╠═╡
-centralized = extract_data(centralized_raw)
-  ╠═╡ =#
-
-# ╔═╡ eec06110-31c5-4658-9593-ad3760666019
-#=╠═╡
-maximum(centralized.max_performance)
-  ╠═╡ =#
-
-# ╔═╡ 05247031-a354-4e81-b248-6df204d79dae
-#=╠═╡
-cascading = extract_data(cascading_raw)
-  ╠═╡ =#
-
-# ╔═╡ 00004964-8b4c-4e84-b05e-a3df32135aa9
-#=╠═╡
-maximum(cascading.max_performance)
-  ╠═╡ =#
-
-# ╔═╡ 74674f2d-c384-4c01-957b-ca8d15062db3
-#=╠═╡
-do_the_plot_of_the_results(;cascading, centralized, random_baseline, mappo)
-  ╠═╡ =#
 
 # ╔═╡ be64568d-f451-46f4-8336-bd94fff82471
 to_vector("[3377.35, 2655.58, 2868.0, 2781.98]")
@@ -694,14 +605,14 @@ begin
 		
 		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
 		
-		@df df plot!(:fleet_size, :reward;
+		@df df plot!(:fleet_size, :learned_cost;
 			color=color,
 			linewidth=2,
 			xflip=true,
 			xticks,
 			xlims,
 			xlabel="Car number",
-			ylabel="Reward",
+			ylabel="Cost",
 			label=something(label, "Trained for $runs runs each"),
 			legend=:outertop,
 			#marker...,
@@ -710,7 +621,7 @@ begin
 		if show_other_measurements
 			for f in fleet_min:fleet_max
 				df′ = filter(:fleet_size => (x -> x == f), df)
-				other_cars = df′[!, :other_cars_reward]
+				other_cars = df′[!, :other_cars_cost]
 				other_cars = get(other_cars, 1, [])
 				
 				scatter!(fleet_min:length(other_cars) + 1, other_cars, 
@@ -751,17 +662,10 @@ cleandata = let
 	if only_first_repetition
 		cleandata = filter(:repetition => (x -> x == 1), cleandata)
 	end
-		
-	cleandata = transform(cleandata, 
-		:learned_cost => ByRow(local_reward) => :reward)
-	
-	cleandata = transform(cleandata, 
-		:other_cars_costs => ByRow(v -> [local_reward(p) for p in v]) => :other_cars_reward)
 
-	# Global reward: Negative total accumulated distance. 
-	# Only makes sense to compute for the last car.
+	# Global cost: Sum of costs.
 	cleandata = transform(cleandata,
-		[:reward, :other_cars_reward] => ByRow((r, s) -> (r + sum(s))) => :global_reward)
+		[:cost, :other_cars_cost] => ByRow((r, s) -> (r + sum(s))) => :global_cost)
 
 	cleandata = sort(cleandata, :fleet_size)
 	
@@ -776,15 +680,12 @@ means = let
 	
 	means = combine(grouping, 
 		:learned_cost => mean, 
-		:other_cars_costs => (elementwise_mean), 
-		:other_cars_reward => (elementwise_mean), 
-		:reward => mean,
-		:global_reward => mean, 
+		:other_cars_costs => (elementwise_mean),
+		:global_cost => mean,
 		renamecols=false)
 
 	# elementwise_mean returns a string because otherwise it creates a row for each element in returned vector
-	means = transform(means, 
-		:other_cars_reward => ByRow(to_vector), 
+	means = transform(means,
 		:other_cars_costs => ByRow(to_vector), 
 		renamecols=false)
 end
@@ -792,7 +693,7 @@ end
 
 # ╔═╡ a0a064b3-0abf-4277-aaeb-3f8551436f5e
 md"""
-## Global reward
+## Global Cost
 """
 
 # ╔═╡ 846b023b-5fda-4112-b1d9-64a0477199c1
@@ -804,9 +705,9 @@ means_fully_trained  = filter(:fleet_size => f -> f == 10, means)
 #=╠═╡
 default_y_min, default_y_max = let
 	
-	default_y_min = min(means_fully_trained[!, :global_reward]...) - 30
+	default_y_min = min(means_fully_trained[!, :global_cost]...) - 30
 	
-	default_y_max = max(means_fully_trained[!, :global_reward]...) + 30
+	default_y_max = max(means_fully_trained[!, :global_cost]...) + 30
 	
 	default_y_min, default_y_max
 end
@@ -840,24 +741,6 @@ md"""
 size = (width, height)
   ╠═╡ =#
 
-# ╔═╡ 3db1a697-2600-4316-ac35-db5c7fc2b665
-#=╠═╡
-let
-	df = sort(means_fully_trained, :runs)
-	df = filter(:runs => r -> r ∈ runs_shown, df)
-	df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
-	@df df plot(:runs, :global_reward;
-		size,
-		ylims,
-		color=colors.NEPHRITIS,
-		marker=:circle,
-		markerstrokewidth=0,
-		label=nothing,
-		xlabel="Episodes per car",
-		ylabel="Total reward")
-end
-  ╠═╡ =#
-
 # ╔═╡ 9a298f2a-5194-41c9-813d-afbf56ef92eb
 md"""
 ## Performance compared to when it is imported
@@ -882,11 +765,11 @@ filter(:runs => (x -> x == runs),
 # ╔═╡ 0c7a6078-b795-4f85-99a8-3c1d47f49500
 #=╠═╡
 ylims_local = let
-	default_y_min = min(means[!, :reward]..., 
-		Iterators.flatten(means[!, :other_cars_reward])...) - 2
+	default_y_min = min(means[!, :cost]..., 
+		Iterators.flatten(means[!, :other_cars_cost])...) - 2
 	
-	default_y_max = max(means[!, :reward]..., 
-		Iterators.flatten(means[!, :other_cars_reward])...) + 2
+	default_y_max = max(means[!, :cost]..., 
+		Iterators.flatten(means[!, :other_cars_cost])...) + 2
 	
 	default_y_min, default_y_max
 end
@@ -915,7 +798,7 @@ end
 let
 	df = filter((x -> x[:runs] == runs), means)
 	
-	learned_performance_plot(means, runs; ylims=ylims_local, size)
+	learned_performance_plot(means, runs; ylims=ylims_local, size=(500, 400))
 end
   ╠═╡ =#
 
@@ -928,28 +811,6 @@ unique_runs = means[!, :runs] |> unique |> sort
 md"""
 ## Performance for different numbers of runs
 """
-
-# ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
-#=╠═╡
-let
-	df = filter((x -> x[:runs] ∈ runs_shown), means)
-	
-	plot(;ylims=ylims_local, size)
-
-	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.CARROT, colors.WISTERIA, colors.EMERALD, colors.SUNFLOWER, colors.PETER_RIVER]
-	
-	strokes = [:dashdot, :dash, :dot, :solid, ]
-	
-	for (i, r) in enumerate(runs_shown)
-		learned_performance_plot!(means, r, 
-			color=c[1 + (i - 1)%length(c)],
-			line=strokes[1 + (i - 1)%length(strokes)],
-			markerstrokecolor=:white,
-			show_other_measurements=false)
-	end
-	plot!()
-end
-  ╠═╡ =#
 
 # ╔═╡ ff362535-2cc2-4784-88b8-1b3ae48d6293
 md"""
@@ -981,7 +842,7 @@ let
 		xlims,
 		xflip=true,
 		xlabel="Car number",
-		ylabel="Reward")
+		ylabel="Cost")
 
 	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.CARROT, colors.WISTERIA, colors.EMERALD, colors.SUNFLOWER, colors.PETER_RIVER]
 	markers = [(4, :pentagon), (4, :square), (4, :utriangle), (5, :star4), (5, :star), (4, :circle),]
@@ -990,9 +851,9 @@ let
 		label = "Fleet size $(row[:fleet_size])"
 		color = c[1 + (i - 1)%length(c)]
 		marker = markers[1 + (i - 1)%length(markers)]
-		linealpha = length(row[:other_cars_reward]) > 0 ? 1 : 0
+		linealpha = length(row[:other_cars_cost]) > 0 ? 1 : 0
 		
-		plot!([row[:other_cars_reward]..., row[:reward]];
+		plot!([row[:other_cars_cost]..., row[:learned_cost]];
 			label,
 			ylims=ylims_local,
 			size,
@@ -1003,6 +864,111 @@ let
 			markerstrokecolor=:white,
 			markersize=4,
 			legend=:outerright)
+	end
+	plot!()
+end
+  ╠═╡ =#
+
+# ╔═╡ a1cfa77f-b7e7-4cec-9916-cb076517876c
+#=╠═╡
+@bind runs_shown MultiSelect(all_runs, 
+	# These were the numbers I went with.
+	default=[r for r in all_runs if r ∈ [100, 500, 1000] || r%6000 == 0 ])
+  ╠═╡ =#
+
+# ╔═╡ 7622369d-1363-4032-a910-4e94950d4257
+#=╠═╡
+function extract_data(raw_data)
+	df = raw_data
+	fleet_size = max(df.fleet_size...)
+	df = filter(:fleet_size => (==)(fleet_size), df)
+	df = filter(:runs => r -> r ∈ runs_shown, df)
+	df = transform(df, :other_cars_costs => ByRow(to_vector) => :other_cars_costs)
+	df = transform(df, [:learned_cost, :other_cars_costs] => ByRow(append) => :costs)
+	df = transform(df, :costs => ByRow(sum) => :cost)
+
+	if first_repetition_only
+		df = filter(:repetition => (==)(1), df)
+	end
+	
+	grouping =  groupby(df, [:runs])
+
+	df = combine(grouping,
+		:cost => minimum => :min_cost,
+		:cost => mean => :mean_cost,
+		:cost => maximum => :max_cost,
+	)
+
+	df = sort(df, :runs)
+
+	return (runs=[r for r  in df.runs], 
+		min_cost=[p for p in df.min_cost],
+		mean_cost=[p for p in df.mean_cost],
+		max_cost=[p for p in df.max_cost],
+		)
+end
+  ╠═╡ =#
+
+# ╔═╡ 0238227a-cf71-4c32-a1d0-5fea6d7ccfad
+#=╠═╡
+centralized = extract_data(centralized_raw)
+  ╠═╡ =#
+
+# ╔═╡ eec06110-31c5-4658-9593-ad3760666019
+#=╠═╡
+maximum(centralized.max_cost)
+  ╠═╡ =#
+
+# ╔═╡ 05247031-a354-4e81-b248-6df204d79dae
+#=╠═╡
+cascading = extract_data(cascading_raw)
+  ╠═╡ =#
+
+# ╔═╡ 00004964-8b4c-4e84-b05e-a3df32135aa9
+#=╠═╡
+maximum(cascading.max_cost)
+  ╠═╡ =#
+
+# ╔═╡ 74674f2d-c384-4c01-957b-ca8d15062db3
+#=╠═╡
+do_the_plot_of_the_results(;cascading, centralized, random_baseline, mappo)
+  ╠═╡ =#
+
+# ╔═╡ 3db1a697-2600-4316-ac35-db5c7fc2b665
+#=╠═╡
+let
+	df = sort(means_fully_trained, :runs)
+	df = filter(:runs => r -> r ∈ runs_shown, df)
+	df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
+	@df df plot(:runs, :gobal_cost;
+		size,
+		ylims,
+		color=colors.NEPHRITIS,
+		marker=:circle,
+		markerstrokewidth=0,
+		label=nothing,
+		xlabel="Episodes per car",
+		ylabel="Total cost")
+end
+  ╠═╡ =#
+
+# ╔═╡ f00c8154-36be-495e-b681-fd3c24f97561
+#=╠═╡
+let
+	df = filter((x -> x[:runs] ∈ runs_shown), means)
+	
+	plot(;ylims=ylims_local, size)
+
+	c = [colors.POMEGRANATE, colors.BELIZE_HOLE, colors.GREEN_SEA, colors.CARROT, colors.WISTERIA, colors.EMERALD, colors.SUNFLOWER, colors.PETER_RIVER]
+	
+	strokes = [:dashdot, :dash, :dot, :solid, ]
+	
+	for (i, r) in enumerate(runs_shown)
+		learned_performance_plot!(means, r, 
+			color=c[1 + (i - 1)%length(c)],
+			line=strokes[1 + (i - 1)%length(strokes)],
+			markerstrokecolor=:white,
+			show_other_measurements=false)
 	end
 	plot!()
 end
@@ -1029,13 +995,8 @@ end
 # ╠═6698877b-632c-4049-949f-9d7ea0465d23
 # ╠═b9adeac6-5a91-4c69-b1b1-4b1931c23840
 # ╠═572cade9-c131-4206-b79d-e1ee118f230b
-# ╠═a1cfa77f-b7e7-4cec-9916-cb076517876c
-# ╟─d3bfd66d-f4dd-44a0-b4a7-5da34f030e2e
-# ╟─abb7365c-1d40-4f92-9664-e005117b5c00
+# ╠═abb7365c-1d40-4f92-9664-e005117b5c00
 # ╠═a2256c72-3686-4f89-9adf-6684270946b6
-# ╠═266ba2a5-01d0-48a4-be0e-52416dfd2485
-# ╠═a747c372-4542-4b97-b9c0-7f46da83e9ad
-# ╠═8fc41ea1-68b0-469f-a085-cf67b35e78a5
 # ╠═2655802d-f3b9-4850-8164-81a860ca5716
 # ╠═12e5d573-610c-4c9e-a555-237f1fd983b4
 # ╠═7622369d-1363-4032-a910-4e94950d4257
@@ -1077,3 +1038,4 @@ end
 # ╟─ff362535-2cc2-4784-88b8-1b3ae48d6293
 # ╟─f267c827-7e5d-466c-9ad0-bfdb004befe3
 # ╠═af2912dc-4fdb-49ad-b22a-df877e2b845a
+# ╠═a1cfa77f-b7e7-4cec-9916-cb076517876c
