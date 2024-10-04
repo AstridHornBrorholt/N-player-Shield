@@ -33,7 +33,7 @@ double unit_out[unitid_t];
 double provider_out[providerid_t];
 
 // Cost per litre for the given provider. Unit: moneydollars/L
-double cost_multiplier[providerid_t] = { 0.5, 0.5, 0.5, 1.0, 1.0, 3.0, 3.0, 3.0, 5.0, 5.0};
+double cost_multiplier[providerid_t] = { 3.0, 3.0, 3.0, 4.0, 4.0, 2.0, 2.0, 2.0, 2.0, 6.0};
 clock cost;
 
 
