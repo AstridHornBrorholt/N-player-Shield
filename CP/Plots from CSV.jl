@@ -358,6 +358,9 @@ md"""
 
 `centralized_path =` $(@bind centralized_path TextField(70, 
 	default=homedir()⨝"Results/N-player CP Centralized Controller"))
+
+`mappo_path =` $(@bind mappo_path TextField(70, 
+	default=homedir()⨝"Results/N-player CP MAPPO"))
 """
   ╠═╡ =#
 
@@ -365,11 +368,17 @@ md"""
 md"""
 !!! info "Cost?"
 	We're back to looking at sum of costs. Sometimes I use `cost` as shorthand for `trained_sum_of_costs`.
+	I realize this is easily confused with local cost. Figure it out.
 """
 
 # ╔═╡ 8f35ca55-bc93-4dd3-bedd-d0e4752fa9fb
 # Measured by just running the untrained model once.
 const random_baseline = 2344
+
+# ╔═╡ 0f873878-b2b3-481a-a668-56af247cb494
+#=╠═╡
+mappo = CSV.read(mappo_path ⨝ "Exported Results.csv", DataFrame)
+  ╠═╡ =#
 
 # ╔═╡ e12faaee-4c29-448f-b687-7c36a996c8ec
 function get_ribbon(mins, means, maxes)
@@ -382,9 +391,8 @@ end
 function do_the_plot_of_the_results(;
 		cascading, 
 		centralized,
-		random_baseline)
-
-
+		random_baseline,
+		mappo)
 	
 	min_max_costs = vcat(cascading.min_cost, 
 		centralized.min_cost,
@@ -399,11 +407,12 @@ function do_the_plot_of_the_results(;
 		markerstrokewidth=2,
 		markerstrokecolor=:white)
 	
-	plot(;size=(350, 200),
+	plot(;size=(400, 200),
 		ylims,
-		legend=:bottomright,
+		legend=(0.1, 0.8),
+		legend_columns=2,
 		xlabel="Total episodes trained",
-		ylabel="Total Cost")
+		ylabel="Cost")
 	
 	plot!(centralized.runs, centralized.mean_cost;
 		label="Centralized learning",
@@ -421,11 +430,19 @@ function do_the_plot_of_the_results(;
 		#marker=(:rtriangle, 9),
 		stylings...)
 	
+	plot!(mappo.episodes, mappo.mean_cost;
+		label="MAPPO",
+		ribbon=get_ribbon(mappo.min_cost, 
+			mappo.mean_cost, mappo.max_cost),
+		color=colors.PETER_RIVER,
+		#marker=(:rtriangle, 9),
+		stylings...)
+	
 	hline!([random_baseline],
 		color=colors.WET_ASPHALT,
 		linewidth=2,
 		linestyle=:dash,
-		label="Random agents")
+		label="Shielded random agents")
 	
 end
 
@@ -451,51 +468,14 @@ A bunch of other plots which were made to explore the data.
 refresh_button; csv_string = to_csv(results_dir)
   ╠═╡ =#
 
-# ╔═╡ e1ddadeb-e9fd-4c37-a206-dff03363724e
-#=╠═╡
-csv_string |> multiline
-  ╠═╡ =#
-
 # ╔═╡ 7cd7f277-8388-413a-b993-9b81fdb495b8
 #=╠═╡
 raw_results = CSV.read(IOBuffer(csv_string), DataFrame)
   ╠═╡ =#
 
-# ╔═╡ 0800d8c6-b85b-40cb-b331-37ae19165421
-#=╠═╡
-sort(raw_results, :trained_sum_of_costs)
-  ╠═╡ =#
-
-# ╔═╡ 1f973cbe-a416-44fa-8e3b-e6392f6ddb16
-#=╠═╡
-# Discard all experiment repetitions except the first
-# Essentially avoids taking the mean of the data
-# and just shows result for single run.
-@bind only_first_repetition CheckBox(default=false)
-  ╠═╡ =#
-
-# ╔═╡ 5484bf48-11be-4ac7-9557-e6fa36802f1d
-#=╠═╡
-cleandata = let
-	cleandata = raw_results
-	
-	if only_first_repetition
-		cleandata = filter(:repetition => (x -> x == 1), cleandata)
-	end
-	
-	episode_length = 100
-	
-	cleandata = transform(cleandata,
-		:pre_trained_units => ByRow(p -> p + 1) => :trained_units,
-	)
-	
-	cleandata
-end
-  ╠═╡ =#
-
 # ╔═╡ 02859499-80f9-413d-9488-fcba9728031a
 #=╠═╡
-all_runs = cleandata[!, :runs] |> unique |> sort
+all_runs = raw_results[!, :runs] |> unique |> sort
   ╠═╡ =#
 
 # ╔═╡ b9e07438-ea07-4b89-a983-378b706a695b
@@ -537,7 +517,44 @@ centralized = centralized_runs_cost(centralized_path)
 
 # ╔═╡ 78a46d90-fb0b-479b-96e4-196cd216a609
 #=╠═╡
-maximum(centralized.max_cost)
+minimum(centralized.min_cost)
+  ╠═╡ =#
+
+# ╔═╡ 8193a074-7218-4bb3-9cac-6acb0b443050
+#=╠═╡
+sort(raw_results, :trained_sum_of_costs )
+  ╠═╡ =#
+
+# ╔═╡ 0800d8c6-b85b-40cb-b331-37ae19165421
+#=╠═╡
+sort(raw_results, :trained_sum_of_costs)
+  ╠═╡ =#
+
+# ╔═╡ 1f973cbe-a416-44fa-8e3b-e6392f6ddb16
+#=╠═╡
+# Discard all experiment repetitions except the first
+# Essentially avoids taking the mean of the data
+# and just shows result for single run.
+@bind only_first_repetition CheckBox(default=false)
+  ╠═╡ =#
+
+# ╔═╡ 5484bf48-11be-4ac7-9557-e6fa36802f1d
+#=╠═╡
+cleandata = let
+	cleandata = raw_results
+	
+	if only_first_repetition
+		cleandata = filter(:repetition => (x -> x == 1), cleandata)
+	end
+	
+	episode_length = 100
+	
+	cleandata = transform(cleandata,
+		:pre_trained_units => ByRow(p -> p + 1) => :trained_units,
+	)
+	
+	cleandata
+end
   ╠═╡ =#
 
 # ╔═╡ a675d6b9-0f2b-4023-af2a-1bb43303f6a7
@@ -550,7 +567,6 @@ means = let
 		:trained_sum_of_costs => mean, 
 		:trained_individual_cost => mean,
 		:untrained_individual_cost => mean,
-		:individual_reward => mean,
 		renamecols=false)
 end
   ╠═╡ =#
@@ -724,12 +740,12 @@ cascading = runs_cost(cascading_path)
 
 # ╔═╡ 88311da9-d310-441d-b962-7294b05bfb98
 #=╠═╡
-maximum(cascading.max_cost)
+minimum(cascading.min_cost)
   ╠═╡ =#
 
 # ╔═╡ de90ff81-dace-447e-8d0c-7573536d64a0
 #=╠═╡
-do_the_plot_of_the_results(;cascading, centralized, random_baseline)
+do_the_plot_of_the_results(;cascading, centralized, random_baseline, mappo)
   ╠═╡ =#
 
 # ╔═╡ 2cc917ff-7098-4c32-a1f8-e75360c37e2c
@@ -751,7 +767,7 @@ begin
 		
 		marker = (markercolor=color, markershape=:circle, markersize=3, markerstrokecolor=:white)
 		
-		@df df plot!(:trained_units, :individual_reward;
+		@df df plot!(:trained_units, :trained_individual_cost;
 			color=color,
 			linewidth=2,
 			xticks,
@@ -806,7 +822,7 @@ end
 # ╟─10dc113e-aaa0-46f8-80ef-c345d52d5eec
 # ╠═02859499-80f9-413d-9488-fcba9728031a
 # ╠═b9e07438-ea07-4b89-a983-378b706a695b
-# ╠═d7848c71-86c8-4f1b-b8dd-49b9158e627e
+# ╟─d7848c71-86c8-4f1b-b8dd-49b9158e627e
 # ╠═782b14e8-a0d4-4584-9082-dded2699b70a
 # ╠═b7d13d00-1b8e-4875-affe-9756ee74ea7f
 # ╠═88311da9-d310-441d-b962-7294b05bfb98
@@ -814,14 +830,15 @@ end
 # ╠═afe6e072-a335-4e72-a1d4-389ebd624493
 # ╠═78a46d90-fb0b-479b-96e4-196cd216a609
 # ╠═8f35ca55-bc93-4dd3-bedd-d0e4752fa9fb
+# ╠═0f873878-b2b3-481a-a668-56af247cb494
 # ╠═e12faaee-4c29-448f-b687-7c36a996c8ec
-# ╠═5160269e-c0fe-4643-bbaf-9094bb4bd537
 # ╠═de90ff81-dace-447e-8d0c-7573536d64a0
+# ╠═5160269e-c0fe-4643-bbaf-9094bb4bd537
 # ╟─60a6c2c5-e5af-4b33-9976-9054b51814d1
 # ╠═1f3a2bee-2817-4314-901e-7dd3743fbab9
 # ╠═62086f17-badc-4ec9-a5e8-25ebb0f6cdc8
-# ╠═e1ddadeb-e9fd-4c37-a206-dff03363724e
 # ╠═7cd7f277-8388-413a-b993-9b81fdb495b8
+# ╠═8193a074-7218-4bb3-9cac-6acb0b443050
 # ╠═0800d8c6-b85b-40cb-b331-37ae19165421
 # ╠═5484bf48-11be-4ac7-9557-e6fa36802f1d
 # ╠═a675d6b9-0f2b-4023-af2a-1bb43303f6a7

@@ -473,6 +473,16 @@ function get_ribbon(mins, means, maxes)
 	lower, upper
 end
 
+# ╔═╡ 712fde99-ce98-48df-a487-f78bd2a7f4fd
+#=╠═╡
+random_baseline
+  ╠═╡ =#
+
+# ╔═╡ 3f9a588d-6e0c-4bd4-a123-447c313703cc
+#=╠═╡
+minimum(mappo.min_cost)
+  ╠═╡ =#
+
 # ╔═╡ f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
 function do_the_plot_of_the_results(;
 		cascading, 
@@ -497,7 +507,8 @@ function do_the_plot_of_the_results(;
 
 	# Global styles #
 	plot(;size=(400, 200),
-		legend=:topleft,
+		legend=(0.1, 0.95),
+		legend_columns=2,
 		ylims,
 		yrot=45,
 		xticks,
@@ -505,6 +516,7 @@ function do_the_plot_of_the_results(;
 		rightmargin=3mm,
 		xlabel="Total episodes trained",
 		ylabel="Cost")
+	
 
 	# Actual data plotting #
 	# I want the legends to be in another order, hence the X_stylings variables.
@@ -515,15 +527,6 @@ function do_the_plot_of_the_results(;
 	plot!(mappo.episodes, mappo.mean_cost;
 		ribbon=get_ribbon(mappo.min_cost, mappo.mean_cost, mappo.max_cost),
 		mappo_stylings...,
-		label=nothing,)
-
-	random_stylings = (linewidth=2.5,
-		linestyle=:dash,
-		color=colors.WET_ASPHALT,
-		label="Random agents",)
-	
-	hline!([random_baseline];
-		random_stylings...,
 		label=nothing,)
 	
 	centralized_stylings = (linewidth=2,
@@ -545,6 +548,15 @@ function do_the_plot_of_the_results(;
 		cascading_stylings...,
 		label=nothing,)
 
+
+	random_stylings = (linewidth=1,
+		linestyle=:dash,
+		color=colors.WET_ASPHALT,
+		label="Shielded random agents",)
+	
+	hline!([random_baseline];
+		random_stylings...,
+		label=nothing,)
 	# Labels #
 	plot!([]; centralized_stylings...)
 	plot!([]; cascading_stylings...)
@@ -916,7 +928,7 @@ centralized = extract_data(centralized_raw)
 
 # ╔═╡ eec06110-31c5-4658-9593-ad3760666019
 #=╠═╡
-maximum(centralized.max_cost)
+minimum(centralized.min_cost)
   ╠═╡ =#
 
 # ╔═╡ 05247031-a354-4e81-b248-6df204d79dae
@@ -926,7 +938,7 @@ cascading = extract_data(cascading_raw)
 
 # ╔═╡ 00004964-8b4c-4e84-b05e-a3df32135aa9
 #=╠═╡
-maximum(cascading.max_cost)
+minimum(cascading.min_cost)
   ╠═╡ =#
 
 # ╔═╡ 74674f2d-c384-4c01-957b-ca8d15062db3
@@ -995,7 +1007,7 @@ end
 # ╠═6698877b-632c-4049-949f-9d7ea0465d23
 # ╠═b9adeac6-5a91-4c69-b1b1-4b1931c23840
 # ╠═572cade9-c131-4206-b79d-e1ee118f230b
-# ╠═abb7365c-1d40-4f92-9664-e005117b5c00
+# ╟─abb7365c-1d40-4f92-9664-e005117b5c00
 # ╠═a2256c72-3686-4f89-9adf-6684270946b6
 # ╠═2655802d-f3b9-4850-8164-81a860ca5716
 # ╠═12e5d573-610c-4c9e-a555-237f1fd983b4
@@ -1004,8 +1016,10 @@ end
 # ╠═0238227a-cf71-4c32-a1d0-5fea6d7ccfad
 # ╠═05247031-a354-4e81-b248-6df204d79dae
 # ╠═ae5337da-bd26-4229-a72c-0602bc68f774
+# ╠═712fde99-ce98-48df-a487-f78bd2a7f4fd
 # ╠═00004964-8b4c-4e84-b05e-a3df32135aa9
 # ╠═eec06110-31c5-4658-9593-ad3760666019
+# ╠═3f9a588d-6e0c-4bd4-a123-447c313703cc
 # ╠═74674f2d-c384-4c01-957b-ca8d15062db3
 # ╠═f5561b0b-f16f-454f-bdc5-cbf3b93ecf91
 # ╟─a0159339-14f3-4280-8160-447702f19d2a
