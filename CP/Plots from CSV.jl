@@ -380,6 +380,11 @@ const random_baseline = 2344
 mappo = CSV.read(mappo_path ⨝ "Exported Results.csv", DataFrame)
   ╠═╡ =#
 
+# ╔═╡ 69c69916-3e48-4386-900a-91b13ee86cf1
+#=╠═╡
+minimum(mappo.min_cost)
+  ╠═╡ =#
+
 # ╔═╡ e12faaee-4c29-448f-b687-7c36a996c8ec
 function get_ribbon(mins, means, maxes)
 	lower = means .- mins
@@ -413,6 +418,16 @@ function do_the_plot_of_the_results(;
 		legend_columns=2,
 		xlabel="Total episodes trained",
 		ylabel="Cost")
+
+	mappo_stylings = (color=colors.PETER_RIVER,
+		label="MAPPO",
+		stylings...)
+	
+	plot!(mappo.episodes, mappo.mean_cost;
+		ribbon=get_ribbon(mappo.min_cost, 
+			mappo.mean_cost, mappo.max_cost),
+		mappo_stylings...,
+		label=nothing)
 	
 	plot!(centralized.runs, centralized.mean_cost;
 		label="Centralized learning",
@@ -429,14 +444,8 @@ function do_the_plot_of_the_results(;
 		color=colors.NEPHRITIS,
 		#marker=(:rtriangle, 9),
 		stylings...)
-	
-	plot!(mappo.episodes, mappo.mean_cost;
-		label="MAPPO",
-		ribbon=get_ribbon(mappo.min_cost, 
-			mappo.mean_cost, mappo.max_cost),
-		color=colors.PETER_RIVER,
-		#marker=(:rtriangle, 9),
-		stylings...)
+
+	plot!([]; mappo_stylings...)
 	
 	hline!([random_baseline],
 		color=colors.WET_ASPHALT,
@@ -819,7 +828,7 @@ end
 # ╠═26f87b02-c633-4f45-bdb8-3ecf87ebf7a5
 # ╠═ce5168ba-17e5-4d70-84b9-e396aaf9f9bf
 # ╟─193a3fb9-92c9-4ac2-8f41-2a2e4540486f
-# ╟─10dc113e-aaa0-46f8-80ef-c345d52d5eec
+# ╠═10dc113e-aaa0-46f8-80ef-c345d52d5eec
 # ╠═02859499-80f9-413d-9488-fcba9728031a
 # ╠═b9e07438-ea07-4b89-a983-378b706a695b
 # ╟─d7848c71-86c8-4f1b-b8dd-49b9158e627e
@@ -831,6 +840,7 @@ end
 # ╠═78a46d90-fb0b-479b-96e4-196cd216a609
 # ╠═8f35ca55-bc93-4dd3-bedd-d0e4752fa9fb
 # ╠═0f873878-b2b3-481a-a668-56af247cb494
+# ╠═69c69916-3e48-4386-900a-91b13ee86cf1
 # ╠═e12faaee-4c29-448f-b687-7c36a996c8ec
 # ╠═de90ff81-dace-447e-8d0c-7573536d64a0
 # ╠═5160269e-c0fe-4643-bbaf-9094bb4bd537
