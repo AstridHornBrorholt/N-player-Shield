@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.40
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
@@ -507,13 +507,14 @@ function do_the_plot_of_the_results(;
 
 	# Global styles #
 	plot(;size=(400, 200),
+		bottommargin=1mm,
+		rightmargin=3mm,
 		legend=(0.1, 0.95),
 		legend_columns=2,
 		ylims,
 		yrot=45,
 		xticks,
 		yticks,
-		rightmargin=3mm,
 		xlabel="Total episodes trained",
 		ylabel="Cost")
 	
@@ -633,7 +634,7 @@ begin
 		if show_other_measurements
 			for f in fleet_min:fleet_max
 				df′ = filter(:fleet_size => (x -> x == f), df)
-				other_cars = df′[!, :other_cars_cost]
+				other_cars = df′[!, :other_cars_costs]
 				other_cars = get(other_cars, 1, [])
 				
 				scatter!(fleet_min:length(other_cars) + 1, other_cars, 
@@ -677,7 +678,7 @@ cleandata = let
 
 	# Global cost: Sum of costs.
 	cleandata = transform(cleandata,
-		[:cost, :other_cars_cost] => ByRow((r, s) -> (r + sum(s))) => :global_cost)
+		[:learned_cost, :other_cars_costs] => ByRow((r, s) -> (r + sum(s))) => :global_cost)
 
 	cleandata = sort(cleandata, :fleet_size)
 	
@@ -777,11 +778,11 @@ filter(:runs => (x -> x == runs),
 # ╔═╡ 0c7a6078-b795-4f85-99a8-3c1d47f49500
 #=╠═╡
 ylims_local = let
-	default_y_min = min(means[!, :cost]..., 
-		Iterators.flatten(means[!, :other_cars_cost])...) - 2
+	default_y_min = min(means[!, :learned_cost]..., 
+		Iterators.flatten(means[!, :other_cars_costs])...) - 2
 	
-	default_y_max = max(means[!, :cost]..., 
-		Iterators.flatten(means[!, :other_cars_cost])...) + 2
+	default_y_max = max(means[!, :learned_cost]..., 
+		Iterators.flatten(means[!, :other_cars_costs])...) + 2
 	
 	default_y_min, default_y_max
 end
@@ -863,9 +864,9 @@ let
 		label = "Fleet size $(row[:fleet_size])"
 		color = c[1 + (i - 1)%length(c)]
 		marker = markers[1 + (i - 1)%length(markers)]
-		linealpha = length(row[:other_cars_cost]) > 0 ? 1 : 0
+		linealpha = length(row[:other_cars_costs]) > 0 ? 1 : 0
 		
-		plot!([row[:other_cars_cost]..., row[:learned_cost]];
+		plot!([row[:other_cars_costs]..., row[:learned_cost]];
 			label,
 			ylims=ylims_local,
 			size,
@@ -952,7 +953,7 @@ let
 	df = sort(means_fully_trained, :runs)
 	df = filter(:runs => r -> r ∈ runs_shown, df)
 	df = transform(df, :runs => ByRow(r -> "$r"), renamecols=false)
-	@df df plot(:runs, :gobal_cost;
+	@df df plot(:runs, :global_cost;
 		size,
 		ylims,
 		color=colors.NEPHRITIS,

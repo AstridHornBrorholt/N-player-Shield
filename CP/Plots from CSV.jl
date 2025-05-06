@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.40
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
@@ -13,6 +13,7 @@ begin
 	using Plots
 	using Statistics
 	using StatsPlots
+	using Measures
 	
 	include("Results to CSV.jl")
 	include("../FlatUI Colors.jl")
@@ -413,6 +414,7 @@ function do_the_plot_of_the_results(;
 		markerstrokecolor=:white)
 	
 	plot(;size=(400, 200),
+		bottom_margin=2mm,
 		ylims,
 		legend=(0.1, 0.8),
 		legend_columns=2,
@@ -489,7 +491,8 @@ all_runs = raw_results[!, :runs] |> unique |> sort
 
 # ╔═╡ b9e07438-ea07-4b89-a983-378b706a695b
 #=╠═╡
-@bind runs_shown MultiSelect(all_runs, default=[r for r in all_runs if r <= 2000])
+@bind runs_shown MultiSelect(all_runs, 
+	default=[r for r in all_runs if r == 100 || r >= 6000])
   ╠═╡ =#
 
 # ╔═╡ ea282e41-f786-4c5c-b2e6-e42826949516

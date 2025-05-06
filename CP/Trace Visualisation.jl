@@ -873,7 +873,7 @@ end
 # ╔═╡ f4d139f0-62ba-4d3e-a261-7f2393f15c19
 begin
 	plot(aspectratio=:equal, size=(400, 400), ticks=nothing)
-	draw!(System(trace′.states[800]))
+	draw!(System(trace′.states[1]))
 end
 
 # ╔═╡ af8b0dd5-46f3-472c-a902-9fc60db6e79f

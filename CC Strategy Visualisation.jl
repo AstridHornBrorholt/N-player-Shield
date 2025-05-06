@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -378,6 +378,18 @@ GridShielding.draw(policy_2d::Function, bounds::Bounds, G;
 	GridShielding.draw(grid; colors, color_labels, plotargs...)
 end
 
+# ╔═╡ aa7545c2-c313-4b9f-aebe-5e68cbe2d1fc
+# ╠═╡ disabled = true
+#=╠═╡
+# There is no good place to convert between UPPAAL's action IDs and the internal ones, so I do it here.
+function policy_2d(x, y)
+	action = policy((v_ego, y, x))
+	action = strategy_action_to_CCAction(action)
+	action = Int(action)
+	return action
+end
+  ╠═╡ =#
+
 # ╔═╡ 8fcb8611-e58c-4830-81e1-9541ddeb2780
 bounds = Bounds(Float64[0, -10], Float64[200, 20])
 
@@ -388,6 +400,16 @@ begin
 	action_labels = ["backwards", "neutral", "forwards"]
 	action_colors = [colorant"#9C59D1", colorant"#BD83EB", colorant"#ff74af"]
 end
+
+# ╔═╡ e540ed8c-d752-4870-8487-2cd0ea0ea6ba
+# ╠═╡ disabled = true
+#=╠═╡
+draw(policy_2d, bounds, [1, 0.5], 
+	colors=action_colors, 
+	color_labels=action_labels,
+	xlabel="distance",
+	ylabel="v_front")
+  ╠═╡ =#
 
 # ╔═╡ cd41d294-d1d6-42dd-8246-756c6c40f56c
 @bind v_ego NumberField(-10:2:20)
@@ -402,6 +424,23 @@ end
 md"""
 # Shielding the Policy
 """
+
+# ╔═╡ 0856b055-2c75-47d6-8bfb-db2d4a2cf885
+# ╠═╡ disabled = true
+#=╠═╡
+let
+	state = [v_ego, 0, 50]
+	partition = box(shield, state)
+	slice = Vector{Any}(partition.indices)
+	slice[2] = Colon()
+	slice[3] = Colon()
+	draw(shield, slice, 
+		colors=shield_colors, 
+		color_labels=shield_labels,
+		legend=:outerright,
+		size=(800, 400))
+end
+  ╠═╡ =#
 
 # ╔═╡ 6df8443f-6aa5-44ce-a865-870a830b6737
 begin
@@ -424,23 +463,6 @@ begin
 	(;shield_colors, shield_labels)
 end
 
-# ╔═╡ 0856b055-2c75-47d6-8bfb-db2d4a2cf885
-# ╠═╡ disabled = true
-#=╠═╡
-let
-	state = [v_ego, 0, 50]
-	partition = box(shield, state)
-	slice = Vector{Any}(partition.indices)
-	slice[2] = Colon()
-	slice[3] = Colon()
-	draw(shield, slice, 
-		colors=shield_colors, 
-		color_labels=shield_labels,
-		legend=:outerright,
-		size=(800, 400))
-end
-  ╠═╡ =#
-
 # ╔═╡ aee51ef5-e3d3-43e7-ba9a-0c68b0cff9f0
 function strategy_action_to_CCAction(a)
 	a == 0 ? backwards :
@@ -448,28 +470,6 @@ function strategy_action_to_CCAction(a)
 	a == 2 ? neutral :
 	error("Unexpected value for a: $a")
 end
-
-# ╔═╡ aa7545c2-c313-4b9f-aebe-5e68cbe2d1fc
-# ╠═╡ disabled = true
-#=╠═╡
-# There is no good place to convert between UPPAAL's action IDs and the internal ones, so I do it here.
-function policy_2d(x, y)
-	action = policy((v_ego, y, x))
-	action = strategy_action_to_CCAction(action)
-	action = Int(action)
-	return action
-end
-  ╠═╡ =#
-
-# ╔═╡ e540ed8c-d752-4870-8487-2cd0ea0ea6ba
-# ╠═╡ disabled = true
-#=╠═╡
-draw(policy_2d, bounds, [1, 0.5], 
-	colors=action_colors, 
-	color_labels=action_labels,
-	xlabel="distance",
-	ylabel="v_front")
-  ╠═╡ =#
 
 # ╔═╡ 9da72ccf-d7d9-44ff-9409-5ea5f3a33b34
 function shielded_policy(s)
