@@ -1,5 +1,27 @@
 # N-player Shield
 
+If you use this package in your work, please cite the reference [here](CITATION.bib) or below.
+
+```
+@inproceedings{BrorholtJLLS23,
+  author       = {Asger Horn Brorholt and
+                  Peter Gj{\o}l Jensen and
+                  Kim Guldstrand Larsen and
+                  Florian Lorber and
+                  Christian Schilling},
+  editor       = {Bernhard Steffen},
+  title        = {Shielded Reinforcement Learning for Hybrid Systems},
+  booktitle    = {{AISoLA}},
+  series       = {LNCS},
+  volume       = {14380},
+  pages        = {33--54},
+  publisher    = {Springer},
+  year         = {2023},
+  url          = {https://doi.org/10.1007/978-3-031-46002-9_3},
+  doi          = {10.1007/978-3-031-46002-9_3}
+}
+```
+
 ## Installing Dependencies
 
 It should be possible to run this code on many popular operating systems, but it has been developed on tested on Ubuntu 24.04.1 LTS. The following instructions are specific to this OS, but all dependencies are available for a wide range of systems.
