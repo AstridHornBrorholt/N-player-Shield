@@ -2,23 +2,19 @@
 
 If you use this package in your work, please cite the reference [here](CITATION.bib) or below.
 
-```
-@inproceedings{BrorholtJLLS23,
-  author       = {Asger Horn Brorholt and
-                  Peter Gj{\o}l Jensen and
-                  Kim Guldstrand Larsen and
-                  Florian Lorber and
-                  Christian Schilling},
-  editor       = {Bernhard Steffen},
-  title        = {Shielded Reinforcement Learning for Hybrid Systems},
-  booktitle    = {{AISoLA}},
-  series       = {LNCS},
-  volume       = {14380},
-  pages        = {33--54},
-  publisher    = {Springer},
-  year         = {2023},
-  url          = {https://doi.org/10.1007/978-3-031-46002-9_3},
-  doi          = {10.1007/978-3-031-46002-9_3}
+```bibtex
+@inproceedings{BrorholtLS25
+	doi={10.5555/3709347.3743554},
+	author = {Brorholt, Asger Horn and Larsen, Kim Guldstrand and Schilling, Christian},
+	title = {Compositional Shielding and Reinforcement Learning for Multi-Agent Systems},
+	year = {2025},
+	isbn = {9798400714269},
+	publisher = {International Foundation for Autonomous Agents and Multiagent Systems},
+	address = {Richland, SC},
+	booktitle = {Proceedings of the 24th International Conference on Autonomous Agents and Multiagent Systems},
+	pages = {399–407},
+	location = {Detroit, MI, USA},
+	series = {AAMAS '25}
 }
 ```
 
